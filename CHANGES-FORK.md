@@ -38,14 +38,29 @@ Cursor ships a headless agent binary, `cursor-agent`, that runs non-interactivel
 - `clink/constants.py` — a `cursor` entry with `runner=None` (falls through to `BaseCLIAgent` because `create_agent()` resolves `client.runner or client.name` and `"cursor"` isn't in `_AGENTS`) and `parser="antigravity_text"`, reusing the ANSI-stripping parser.
 - `conf/cli_clients/cursor.json` — preset config (`command: "cursor-agent"`, resolved via `PATH` at call time).
 
-Fixed args are `-p --trust --output-format text --auto-review`:
+Fixed args are `-p --trust --output-format text`:
 
 - `-p` (`--print`) is a **boolean** flag here, unlike `agy --print` — it does not swallow the next token, so the `--model` ordering hazard documented below does not apply.
 - `--trust` is required, otherwise a non-interactive run in a directory Cursor hasn't seen aborts with *"Workspace Trust Required"* and exit code 1.
 - `--output-format text` rather than `json`: `cursor-agent`'s JSON shape is not Claude Code's, so `claude_json` cannot parse it; plain text through `antigravity_text` is both simpler and sufficient.
-- `--auto-review` is what makes the agent's **tools** usable at all headlessly. Without it, an account whose `approvalMode` is `allowlist` (the default once you have ever approved a command interactively) has no way to decide on a tool call that isn't already on the list — headless cannot prompt a human — so `Read`, `Shell`, `Grep`, `Glob` and MCP access all fail. The agent then answers from the prompt text alone, which looks like a working reply. `--auto-review` hands the decision to a server-side classifier that auto-runs the safe calls; it is the narrow fix. `--force`/`--yolo` also work but allow everything, which is far more than a clink subagent needs.
 
-Worth knowing when you debug this yourself: in that broken state `cursor-agent` reports its own failure as a *"PreToolUse hook"* error with a bash syntax message. That diagnosis is wrong — there is no hooks file involved, and searching for one wastes time. Trust `approvalMode` in `~/.cursor/cli-config.json` over the agent's self-report.
+#### On Windows, a `SHELL` pointing at bash silently kills the agent's tools
+
+If the parent process exports `SHELL=…/bash.exe` — which an MCP client may well do — `cursor-agent` runs its internal commands through bash, they are Windows-shaped, and every tool call dies. `Read`, `Shell`, `Grep`, `Glob` and MCP access all fail, and the agent then answers **from the prompt text alone with exit 0**, so the reply looks legitimate while the client is effectively text-only.
+
+Fix it per machine rather than in the shipped preset, since the correct value is platform-specific — drop a `conf/cli_clients/cursor.json` into `~/.pal/cli_clients/` (that directory is a search path, and unlike `site-packages` it survives `uv tool upgrade`):
+
+```json
+{ "name": "cursor", "command": "cursor-agent",
+  "env": { "SHELL": "C:/WINDOWS/system32/cmd.exe" }, "...": "…" }
+```
+
+Verified by A/B on one otherwise-identical command: `SHELL` at bash fails, `SHELL` at `cmd.exe` reads the file and returns its contents.
+
+Two traps this hides behind:
+
+- **The agent misattributes it.** It reports a *"PreToolUse hook"* failure with a bash syntax error. No hooks file is involved — but the *mechanism* it describes (Windows commands run under bash) is exactly right, so treat the label as wrong and the mechanism as a lead.
+- **`--auto-review` looks like the fix and is not.** It is gated on account entitlement; where it is unavailable it prints `Falling back to Allowlist` and changes nothing. It was briefly shipped here as the fix on the strength of runs that passed only because `SHELL` happened to be unset in that shell — the flag was never doing the work. It is no longer in the preset.
 
 `reasoning_effort` is ignored, as with Antigravity — Cursor bakes effort into the model *name* (`-low` / `-high` / `-xhigh`), selected via `model`.
 
