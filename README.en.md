@@ -2,7 +2,14 @@
 
 **🇹🇭 [ภาษาไทย](README.md) · 🇬🇧 English**
 
-> **This is a fork** of [BeehiveInnovations/pal-mcp-server](https://github.com/BeehiveInnovations/pal-mcp-server) (unmaintained since ~mid-2026). It adds, all additively: the `antigravity` clink agent (Google's post-Gemini-CLI tool `agy`, driven via a Windows ConPTY), a `claude-9arm` example config (Claude Code CLI against an alternate model gateway), and an optional **per-call `model` / `reasoning_effort` override** for clink (Codex `-m` + effort; others `--model`). See [CHANGES-FORK.md](CHANGES-FORK.md) and the [clink model/effort guide](docs/clink-model-effort-guide.md) — everything else is unchanged upstream.
+> **This is a fork** of [BeehiveInnovations/pal-mcp-server](https://github.com/BeehiveInnovations/pal-mcp-server) (unmaintained since ~mid-2026), adding:
+> - **`antigravity`** — clink agent for Google's post-Gemini-CLI tool `agy`, driven via a Windows ConPTY
+> - **`cursor`** — clink agent for Cursor's `cursor-agent`, the only route to model families no other client carries (xAI's Grok, Moonshot's Kimi, Zhipu's GLM, Composer)
+> - **`claude-9arm`** — example config pointing Claude Code CLI at an alternate model gateway
+> - **per-call `model` / `reasoning_effort` override** for clink (Codex `-m` + effort; others `--model`)
+> - **bug fixes** — `images` was accepted and silently discarded (no runner ever consumed it) and now raises with the approach that does work; `mcp` is pinned `<2`, since 2.x drops `Server.list_tools` and the server dies at import
+>
+> See [CHANGES-FORK.md](CHANGES-FORK.md) and the [clink model/effort guide](docs/clink-model-effort-guide.md) — everything else is unchanged upstream.
 
 <div align="center">
 
