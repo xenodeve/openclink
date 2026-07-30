@@ -49,6 +49,12 @@ Worth knowing when you debug this yourself: in that broken state `cursor-agent` 
 
 `reasoning_effort` is ignored, as with Antigravity — Cursor bakes effort into the model *name* (`-low` / `-high` / `-xhigh`), selected via `model`.
 
+### `mcp` pinned below 2.0
+
+`pyproject.toml` asked for `mcp>=1.0.0` with no upper bound. `mcp` 2.0.0 removed `Server.list_tools`, which `server.py` uses as a decorator at module scope — so the server dies during import with `AttributeError: 'Server' object has no attribute 'list_tools'` and never gets far enough to report anything useful. From the client side that surfaces only as a bare `-32000`; the real traceback is reachable only by running the entry point by hand.
+
+Nothing has to break for you to hit this. A routine `uv tool upgrade pal-mcp-server` re-resolves dependencies, picks up 2.x, and takes down a previously working install. Now pinned to `mcp>=1.0.0,<2` — lift it only alongside a port to the 2.x server API.
+
 The reason to add it: `cursor-agent --list-models` exposes model families no other clink client reaches, notably `cursor-grok-4.5-high` (xAI) and `kimi-k3-high` (Moonshot), alongside the usual GPT/Claude/Codex tiers — useful when you want genuinely independent opinions rather than three calls into the same two families.
 
 Install: see Cursor's CLI install docs, then `clink cli_name="cursor"` works out of the box.
