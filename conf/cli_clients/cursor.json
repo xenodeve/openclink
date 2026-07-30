@@ -1,7 +1,7 @@
 {
   "name": "cursor",
   "command": "cursor-agent",
-  "additional_args": ["--auto-review"],
+  "additional_args": [],
   "env": {},
   "roles": {
     "default": {
