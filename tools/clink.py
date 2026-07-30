@@ -216,6 +216,19 @@ class CLinkTool(SimpleTool):
         images = self.get_request_images(request)
         continuation_id = self.get_request_continuation_id(request)
 
+        # No clink agent consumes `images`: every runner discards it (`_ = (files,
+        # images)`), and unlike file paths it cannot be embedded into a text prompt.
+        # Accepting it silently returns exit 0 from a CLI that never saw the image,
+        # which reads as success. Fail loudly instead, and point at what does work.
+        if images:
+            self._raise_tool_error(
+                "clink does not support the `images` parameter: the underlying CLIs "
+                "take a text prompt only, so images are silently dropped rather than "
+                "delivered. Put the absolute image path in the `prompt` text and ask "
+                "the agent to open it with its own tools instead — that works for "
+                "vision-capable models."
+            )
+
         self._model_context = arguments.get("_model_context")
 
         system_prompt_text = role_config.prompt_path.read_text(encoding="utf-8")
