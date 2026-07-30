@@ -38,11 +38,14 @@ Cursor ships a headless agent binary, `cursor-agent`, that runs non-interactivel
 - `clink/constants.py` — a `cursor` entry with `runner=None` (falls through to `BaseCLIAgent` because `create_agent()` resolves `client.runner or client.name` and `"cursor"` isn't in `_AGENTS`) and `parser="antigravity_text"`, reusing the ANSI-stripping parser.
 - `conf/cli_clients/cursor.json` — preset config (`command: "cursor-agent"`, resolved via `PATH` at call time).
 
-Fixed args are `-p --trust --output-format text`:
+Fixed args are `-p --trust --output-format text --auto-review`:
 
 - `-p` (`--print`) is a **boolean** flag here, unlike `agy --print` — it does not swallow the next token, so the `--model` ordering hazard documented below does not apply.
 - `--trust` is required, otherwise a non-interactive run in a directory Cursor hasn't seen aborts with *"Workspace Trust Required"* and exit code 1.
 - `--output-format text` rather than `json`: `cursor-agent`'s JSON shape is not Claude Code's, so `claude_json` cannot parse it; plain text through `antigravity_text` is both simpler and sufficient.
+- `--auto-review` is what makes the agent's **tools** usable at all headlessly. Without it, an account whose `approvalMode` is `allowlist` (the default once you have ever approved a command interactively) has no way to decide on a tool call that isn't already on the list — headless cannot prompt a human — so `Read`, `Shell`, `Grep`, `Glob` and MCP access all fail. The agent then answers from the prompt text alone, which looks like a working reply. `--auto-review` hands the decision to a server-side classifier that auto-runs the safe calls; it is the narrow fix. `--force`/`--yolo` also work but allow everything, which is far more than a clink subagent needs.
+
+Worth knowing when you debug this yourself: in that broken state `cursor-agent` reports its own failure as a *"PreToolUse hook"* error with a bash syntax message. That diagnosis is wrong — there is no hooks file involved, and searching for one wastes time. Trust `approvalMode` in `~/.cursor/cli-config.json` over the agent's self-report.
 
 `reasoning_effort` is ignored, as with Antigravity — Cursor bakes effort into the model *name* (`-low` / `-high` / `-xhigh`), selected via `model`.
 
@@ -51,6 +54,14 @@ The reason to add it: `cursor-agent --list-models` exposes model families no oth
 Install: see Cursor's CLI install docs, then `clink cli_name="cursor"` works out of the box.
 
 **Windows path gotcha.** A config's `command` is passed through `shlex.split()` in POSIX mode, which treats `\` as an escape character — so an absolute Windows path written with backslashes (`C:\\Users\\me\\...` in JSON) is silently mangled into `C:Usersme...` and fails with *"Executable not found in PATH"*. If the binary isn't on `PATH` and you must hardcode a path, write it with **forward slashes** (`C:/Users/me/AppData/Local/cursor-agent/cursor-agent.cmd`). This applies to every clink client, not just this one.
+
+### `images` now fails loudly instead of being silently dropped
+
+`tools/clink.py` accepted an `images` parameter that **no runner has ever consumed** — every agent discards it (`_ = (files, images)`), and unlike `absolute_file_paths` an image cannot be embedded into a text prompt, so nothing reached the CLI. The call still returned exit 0 with a plausible answer, which is the worst possible shape for a bug: the model simply never saw the picture and answered around it.
+
+It now raises a tool error naming the working alternative — put the absolute image path in the `prompt` text and ask the agent to open it with its own tools. That path is verified: with tools available, a vision-capable model opens the file and describes it correctly. So this is a transport limitation of the CLIs, not a model one.
+
+This is the one change here that touches shared code rather than only the Cursor preset.
 
 ### Per-call `model` + `reasoning_effort` override
 
