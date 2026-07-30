@@ -57,4 +57,16 @@ INTERNAL_DEFAULTS: dict[str, CLIInternalDefaults] = {
         default_role_prompt="systemprompts/clink/default.txt",
         runner="antigravity",
     ),
+    "cursor": CLIInternalDefaults(
+        # `cursor-agent -p` reads the prompt from stdin and writes a plain-text
+        # reply to stdout, so the ANSI-stripping antigravity_text parser fits.
+        # Its JSON shape differs from Claude Code's, so claude_json is not usable.
+        # `--trust` is required for non-interactive runs in an untrusted directory.
+        parser="antigravity_text",
+        additional_args=["-p", "--trust", "--output-format", "text"],
+        default_role_prompt="systemprompts/clink/default.txt",
+        # No dedicated runner: BaseCLIAgent already emits `--model <model>`, and
+        # cursor bakes reasoning effort into the model name (e.g. `-high`/`-xhigh`).
+        runner=None,
+    ),
 }
