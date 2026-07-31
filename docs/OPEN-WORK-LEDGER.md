@@ -71,6 +71,19 @@ Source: `docs/reports/2026-07-16-clink-brainstorm-gap-analysis.md` (codex + clau
 
 ### Other
 
+- 🔴 **An unknown CLI in `~/.pal/cli_clients/` fails the whole registry, not just that client.**
+  `_resolve_config` (`clink/registry.py:137`) raises when a config's name is absent from
+  `INTERNAL_DEFAULTS`; `server.py` builds the registry at import, so `pytest` dies at collection
+  across every suite that imports the server. Reproduced 2026-08-01 (7 collection errors, 0 tests
+  run) from a stale `cursor.json` override against a branch predating `main`'s cursor support.
+  Fail-closed is defensible, but the blast radius should be one client — consider warn-and-skip for
+  a *user-dir* config, keeping the hard error for a bundled one. See
+  [[pal-two-installs-and-config-cache]].
+- 🔴 **Two venv names coexist on a dev box.** `run-server.sh` / `run-server.ps1` (and therefore
+  `CLAUDE.md` / `AGENTS.md`) use `.pal_venv`, but this checkout carries a `.venv` that those scripts
+  never created — and it had no `pytest` until 2026-08-01. An agent that follows the docs finds no
+  venv; one that finds `.venv` gets an under-provisioned environment. Neither is wrong, which is what
+  makes it cost a session. Decide on one name, or have the docs detect either.
 - 🔴 **Cross-platform CLI discovery** — `clink/discovery.py` known-install-locations are
   Windows-focused (winget / `%LOCALAPPDATA%` / npm). macOS/Linux paths not yet added; on those
   OSes it degrades to PATH-only. Add per-OS candidates when the fork runs there.
