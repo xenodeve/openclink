@@ -30,8 +30,10 @@ Consequences learned the hard way:
   the registry at import, **`pytest` fails at collection** — every suite that imports the server,
   not only the clink tests. Measured 2026-08-01 on `chore/bootstrap-t4-operating-layer`:
   `~/.pal/cli_clients/cursor.json` + a branch predating `main`'s `cursor` entry → 7 collection
-  errors, 16 deselected, 0 tests run. Fix is to rebase (or temporarily move the override aside);
-  the symptom looks like a broken checkout and is easy to misdiagnose.
+  errors, 16 deselected, 0 tests run. Rebasing (or moving the override aside) clears **this** error;
+  it did not make the suite green, because a second, unrelated blocker sat behind it — see
+  [[requirements-unbounded-mcp-pin]]. The symptom looks like a broken checkout and is easy to
+  misdiagnose, and one cause hides the next: falsify before declaring the root cause.
 
 **How to apply:** to ship a code/config change to the *running* PAL, update the right install (or all
 of them), restart PAL, and verify with a real `clink` call — don't assume a push or a reconnect took.

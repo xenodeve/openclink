@@ -18,7 +18,8 @@ weaker back-end. Root cause measured: the MCP transport gives up at ~60–108s w
 timeout is 1800s, so the master is told "failed" while the child runs on — and no in-flight registry
 exists to refuse the duplicate.
 
-Split into one issue per deliverable. **Start order: #13 → #14, and #12 in parallel.**
+Split into one issue per deliverable. **Start order: #17 (unblocks the test suite) → #13 → #14,
+with #12 runnable in parallel throughout since it needs no working suite.**
 
 | # | Deliverable | State |
 |---|---|---|
@@ -68,6 +69,15 @@ Source: `docs/reports/2026-07-16-clink-brainstorm-gap-analysis.md` (codex + clau
 - 🔴 **No Windows CI** (`.github/workflows/test.yml` = ubuntu-only) — the fork's Windows-first core is
   untested in CI. **(M.)** Plus lower-tier: `shlex` Windows-path corruption, unbounded output/metadata,
   unsanitized command metadata, Claude `--print` ordering untested, antigravity timeout orphans child.
+
+### Blocks the epic — fix before #13
+
+- **`mcp>=1.0.0` is unbounded and a fresh install is broken (#17).** `mcp` 2.0.0 removed
+  `Server.list_tools`, which `server.py:629` decorates with, so a clean
+  `pip install -r requirements.txt` yields a tree that dies at import and a unit suite that fails at
+  collection (measured 2026-08-01: 7 collection errors, 0 tests run). Invisible from the already-installed
+  PAL, which still runs `mcp` 1.x. **TDD is impossible until this is fixed**, so #13 depends on it.
+  See [[requirements-unbounded-mcp-pin]].
 
 ### Other
 
