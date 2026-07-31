@@ -3,6 +3,17 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-01 — T4 operating layer (Seed) + clink research relocated (#4)
+
+The fork now runs agent-primary: a fresh session recovers state from `Obsidian-Pal_MCP/Home.md`
+(MoC + 6 durable notes), `docs/OPEN-WORK-LEDGER.md`, and this log, with the conventions in
+`docs/agents/{domain,workflow,issue-tracker,triage-labels}.md`, decisions in `docs/adr/` (0001–0003),
+and four clink/subagent research reports moved here from the T4-Fastwork repo where they were
+misfiled. `CLAUDE.md` gained an "Operating standard (T4, fork)" section; the upstream guide is
+preserved. Adapted to Python/uv/pytest/ruff, not Bun. **Validated:** docs-only — `git diff --name-only`
+is `*.md` plus the vault, no code path is reachable from the diff, so no suite applies; the layer's
+real test is that the epic filed on top of it (#11 → #12–#16) was written entirely from these files.
+
 ## 2026-07-16 — Zero-setup CLI discovery + active `claude-9arm` (#3, `d44ae01`)
 
 Installing PAL normally exposes `codex` / `antigravity` / `claude-9arm` with no extra setup; an
