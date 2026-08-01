@@ -76,7 +76,15 @@ Source: `docs/reports/2026-07-16-clink-brainstorm-gap-analysis.md` (codex + clau
 - ✅ **Non-zero CLI exit reported as `success`** — now tracked as **#13** (Phase 1 of the epic above).
   (`clink/agents/{claude,codex}.py` `_recover_from_error`; no test asserts otherwise.) **(M.)**
 - 🔴 **No Windows CI** (`.github/workflows/test.yml` = ubuntu-only) — the fork's Windows-first core is
-  untested in CI. **(M.)** Plus lower-tier: `shlex` Windows-path corruption, unbounded output/metadata,
+  untested in CI. **(M.)** **Measured 2026-08-01 on clean `origin/main` (`4eff266`): 25 failed, 851
+  passed, 4 skipped** on Windows. Cause sampled, not assumed — the tests hard-code POSIX paths, e.g.
+  `assert is_dangerous_path(Path("/etc/passwd")) is True` resolves to `WindowsPath('/etc/passwd')` and
+  returns `False`. So these are test-portability defects, not product defects, but **they must be fixed
+  before Windows CI can be switched on** or it lands permanently red. Spread:
+  `test_path_traversal_security` 6 · `test_conversation_file_features` 6 · `test_conversation_memory` 4 ·
+  `test_file_protection` 3 · `test_pip_detection_fix` 3 · `test_utils` 1 ·
+  `test_chat_cross_model_continuation` 1 · `test_chat_codegen_integration` 1.
+  Plus lower-tier: `shlex` Windows-path corruption, unbounded output/metadata,
   unsanitized command metadata, Claude `--print` ordering untested, antigravity timeout orphans child.
 
 ### Other
