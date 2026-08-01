@@ -10,15 +10,13 @@ protocol in `docs/agents/` and the entry map (`using-t4`).
 
 ## Active
 
-### 🚧 Blocks everything that needs a test run — finish #17 first
+### Decide: adopt the mcp 2.x server API, or stay bounded (#18)
 
-**`requirements.txt` still has unbounded `mcp>=1.0.0` even though `pyproject.toml` already pins
-`mcp>=1.0.0,<2` (`14782f7` on main).** `mcp` 2.0.0 removed `Server.list_tools`, which `server.py:630`
-decorates with. A clean `pip install -r requirements.txt` (what `run-server` / agents often do)
-resolves 2.0.0 and dies at import; `uv`/`pip install .` from `pyproject.toml` is fine. Measured
-2026-08-01 against `requirements.txt`: 7 collection errors, 16 deselected, 0 tests run. **#17 stays
-open for the `requirements.txt` / `pyproject.toml` drift only** — the pin itself already shipped.
-See [[requirements-unbounded-mcp-pin]].
+#17 bounded `mcp` at `<2` in both manifests, which unblocks the suite but is a **stop-gap, not a
+decision**. `mcp` 2.0.0 removed `Server.list_tools`, which `server.py` decorates with at import, so
+adopting 2.x means rewriting the registration path in the file every tool routes through. Tracked as
+**#18** (`needs-info`) — the investigation is not started. **Do not lift the `<2` bound outside that
+issue.** See [[requirements-unbounded-mcp-pin]].
 
 ### Supervised subagent sessions — epic PRD (#11)
 
@@ -28,8 +26,8 @@ weaker back-end. Root cause measured: the MCP transport gives up at ~60–108s w
 timeout is 1800s, so the master is told "failed" while the child runs on — and no in-flight registry
 exists to refuse the duplicate.
 
-Split into one issue per deliverable. **Start order: #17 (unblocks the test suite) → #13 → #14,
-with #12 runnable in parallel throughout since it needs no working suite.**
+Split into one issue per deliverable. **#17 has landed, so the suite runs and red-first TDD is
+possible again. Start order: #13 → #14, with #12 runnable in parallel throughout.**
 
 | # | Deliverable | State |
 |---|---|---|
@@ -68,16 +66,25 @@ Source: `docs/reports/2026-07-16-clink-brainstorm-gap-analysis.md` (codex + clau
 - 🔴 **Setup scripts + docs install `upstream`, not the fork** — `run-server.sh:1872,1897,2449` +
   `docs/getting-started.md` generate `uvx --from git+…/BeehiveInnovations/…`; a doc-following user runs
   upstream with none of the fork's work. Also check `run-server.ps1`. **(S, do first — verified.)**
-- 🔴 **`pywinpty` missing from `requirements.txt`** (present in `pyproject.toml`); run scripts install
-  from `requirements.txt` → install OK, first `agy` call fails. No `uv.lock`. **(S — verified.)**
+- ✅ **`pywinpty` missing from `requirements.txt`** — shipped with **#17**; both manifests now agree and
+  `tests/test_dependency_pins.py` fails if they drift again. **`uv.lock` is still absent** — nothing
+  pins the resolution, so this class of drift can still arrive from a transitive dependency. **(S.)**
 - 🔴 **Delegated CLIs inherit all of `os.environ`** (`clink/agents/base.py:228`) — secret exposure;
   needs minimal env + per-client allowlist. **(M — verified.)**
 - 🔴 **All CLIs told "You are operating through the Gemini CLI agent"** (`tools/clink.py:487`) —
   parameterize by `client.name`. **(S — verified; line shifted after the cursor merge.)**
 - ✅ **Non-zero CLI exit reported as `success`** — now tracked as **#13** (Phase 1 of the epic above).
   (`clink/agents/{claude,codex}.py` `_recover_from_error`; no test asserts otherwise.) **(M.)**
-- 🔴 **No Windows CI** (`.github/workflows/test.yml` = ubuntu-only) — the fork's Windows-first core is
-  untested in CI. **(M.)** **Measured 2026-08-01 on clean `origin/main` (`4eff266`): 25 failed, 851
+- 🔴 **No CI runs at all — and it cannot be switched on.** Superseding the "no *Windows* CI" framing:
+  `gh workflow list --all` shows every workflow `active`, but `gh run list` returns **one run in the
+  repo's entire history** (a Copilot review), so `test.yml` has **never executed** — PR #5 merged and
+  PR #19 opened with zero checks. **The account is billing-blocked, so enabling Actions is not an
+  available fix** (developer, 2026-08-01). **Consequence: the PR gate is workflow discipline at
+  open-time, not a green check** — there is no machine backstop, so the evidence rules in
+  `t4-dev-workflow` are the only thing standing between a red change and `main`. See
+  [[ci-unavailable-billing-blocked]]. The Windows-portability defects below still matter (they are
+  what a local run trips over), but they are no longer gated on "before CI can be switched on".
+  **(M.)** **Measured 2026-08-01 on clean `origin/main` (`4eff266`): 25 failed, 851
   passed, 4 skipped** on Windows. Cause sampled, not assumed — the tests hard-code POSIX paths, e.g.
   `assert is_dangerous_path(Path("/etc/passwd")) is True` resolves to `WindowsPath('/etc/passwd')` and
   returns `False`. So these are test-portability defects, not product defects, but **they must be fixed
