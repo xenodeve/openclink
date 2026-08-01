@@ -17,6 +17,23 @@ fork)" section; the upstream guide is preserved. Adapted to Python/uv/pytest/ruf
 this diff). The layer's real test is that the epic filed on top of it (#11 → #12–#16) was written
 from these files.
 
+## 2026-08-01 — Bound the `mcp` pin in `requirements.txt` + add `pywinpty` (#17)
+
+`requirements.txt` carried an unbounded `mcp>=1.0.0` and no `pywinpty`, while `pyproject.toml` had
+both right — so any installer reading `requirements.txt` (run-server, agents) built an unimportable
+tree, because `mcp` 2.0.0 removed `Server.list_tools` which `server.py` decorates with at import.
+Fixed by making the two manifests agree, guarded by a new `tests/test_dependency_pins.py` that fails
+on any drift between them. **Validated red→green:** the guard test failed first, naming both defects
+(`drift: 'mcp>=1.0.0,<2' (pyproject) vs 'mcp>=1.0.0' (requirements)` + `absent from requirements.txt:
+"pywinpty>=2.0.0; sys_platform=='win32'"`), then passed. **Validated end-to-end in a clean venv**
+(`python -m venv` + `pip install -r requirements.txt -r requirements-dev.txt`): resolved
+`mcp==1.29.0` and `pywinpty==3.0.5`, `hasattr(Server('x'),'list_tools')` → `True`, `import server`
+→ OK, and `pytest tests/ -q -m "not integration"` → **25 failed, 852 passed, 4 skipped, 16
+deselected** — i.e. it *collects and runs* (it previously produced 7 collection errors and 0 tests
+run), with the 25 failures matching the pre-existing Windows POSIX-path baseline on clean `main`.
+ruff/black/isort clean. Adoption of the `mcp` 2.x API is deliberately **not** decided here — split
+to **#18**.
+
 ## 2026-07-16 — Zero-setup CLI discovery + active `claude-9arm` (#3, `d44ae01`)
 
 Installing PAL normally exposes `codex` / `antigravity` / `claude-9arm` with no extra setup; an

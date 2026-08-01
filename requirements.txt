@@ -1,8 +1,15 @@
-mcp>=1.0.0
+# Keep in sync with pyproject.toml [project] dependencies —
+# tests/test_dependency_pins.py fails if the two drift.
+# Upper bound is load-bearing: mcp 2.0.0 removed `Server.list_tools`, which
+# server.py uses as a decorator at import time, so an unbounded resolve makes
+# the server die on startup with an AttributeError before it can serve
+# anything. Lift this only alongside a port to the 2.x server API.
+mcp>=1.0.0,<2
 google-genai>=1.19.0
 openai>=1.55.2  # Minimum version for httpx 0.28.0 compatibility
 pydantic>=2.0.0
 python-dotenv>=1.0.0
+pywinpty>=2.0.0; sys_platform=='win32'
 importlib-resources>=5.0.0; python_version<"3.9"
 
 # Development dependencies (install with pip install -r requirements-dev.txt)
