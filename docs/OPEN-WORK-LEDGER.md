@@ -75,8 +75,16 @@ Source: `docs/reports/2026-07-16-clink-brainstorm-gap-analysis.md` (codex + clau
   parameterize by `client.name`. **(S — verified; line shifted after the cursor merge.)**
 - ✅ **Non-zero CLI exit reported as `success`** — now tracked as **#13** (Phase 1 of the epic above).
   (`clink/agents/{claude,codex}.py` `_recover_from_error`; no test asserts otherwise.) **(M.)**
-- 🔴 **No Windows CI** (`.github/workflows/test.yml` = ubuntu-only) — the fork's Windows-first core is
-  untested in CI. **(M.)** **Measured 2026-08-01 on clean `origin/main` (`4eff266`): 25 failed, 851
+- 🔴 **No CI runs at all — and it cannot be switched on.** Superseding the "no *Windows* CI" framing:
+  `gh workflow list --all` shows every workflow `active`, but `gh run list` returns **one run in the
+  repo's entire history** (a Copilot review), so `test.yml` has **never executed** — PR #5 merged and
+  PR #19 opened with zero checks. **The account is billing-blocked, so enabling Actions is not an
+  available fix** (developer, 2026-08-01). **Consequence: the PR gate is workflow discipline at
+  open-time, not a green check** — there is no machine backstop, so the evidence rules in
+  `t4-dev-workflow` are the only thing standing between a red change and `main`. See
+  [[ci-unavailable-billing-blocked]]. The Windows-portability defects below still matter (they are
+  what a local run trips over), but they are no longer gated on "before CI can be switched on".
+  **(M.)** **Measured 2026-08-01 on clean `origin/main` (`4eff266`): 25 failed, 851
   passed, 4 skipped** on Windows. Cause sampled, not assumed — the tests hard-code POSIX paths, e.g.
   `assert is_dangerous_path(Path("/etc/passwd")) is True` resolves to `WindowsPath('/etc/passwd')` and
   returns `False`. So these are test-portability defects, not product defects, but **they must be fixed

@@ -13,5 +13,6 @@ what shipped + how it was validated → `DONE.md`; fork-specific changes → `CH
 - [[clink-quota-routing-and-harness-equivalence]] — `codex` is nearly out of weekly quota (use `luna`, not `sol`) and `claude` is at its limit; `claude-9arm` is the same harness, so harness-level findings transfer from it for free
 - [[pal-two-installs-and-config-cache]] — Claude Code's PAL (uv-tool) vs Codex's PAL (uvx) are separate installs; `~/.pal` is shared; config is cached at start; a reinstall wipes site-packages conf
 - [[requirements-unbounded-mcp-pin]] — `mcp>=1.0.0` is unbounded; mcp 2.0.0 dropped `Server.list_tools`, so a fresh install can't import `server.py` and the suite dies at collection
+- [[ci-unavailable-billing-blocked]] — GitHub Actions has never run here (billing-blocked account) even though every workflow reads `active`; the PR gate is local evidence, not a green check
 
 Unresolved `[[wikilinks]]` are memories worth writing later, not errors.
