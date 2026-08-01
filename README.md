@@ -4,8 +4,10 @@
 
 > **นี่คือ fork** ของ [BeehiveInnovations/pal-mcp-server](https://github.com/BeehiveInnovations/pal-mcp-server) (ต้นทางหยุดดูแลตั้งแต่ ~กลางปี 2026) โดยเพิ่มแบบ additive ล้วน ไม่แตะพฤติกรรมเดิม:
 > - **`antigravity`** — clink agent สำหรับ Antigravity CLI (`agy`) ตัวสืบทอดจาก Gemini CLI ของ Google ขับผ่าน Windows ConPTY
+> - **`cursor`** — clink agent สำหรับ `cursor-agent` ของ Cursor เปิดทางไปยังตระกูลโมเดลที่ client อื่นไม่มี (Grok ของ xAI, Kimi ของ Moonshot, GLM ของ Zhipu, Composer)
 > - **`claude-9arm`** — config ตัวอย่างชี้ Claude Code CLI ไปยัง model gateway ทางเลือก
 > - **override `model` / `reasoning_effort` ต่อ call** ของ clink (Codex ใช้ `-m` + effort; ตัวอื่นใช้ `--model`)
+> - **แก้บั๊ก** — `images` เดิมถูกรับไว้แล้วทิ้งเงียบ ๆ (ไม่มี runner ตัวไหนใช้เลย) ตอนนี้ error พร้อมบอกวิธีที่ได้ผลจริง · pin `mcp<2` เพราะ 2.x ถอด `Server.list_tools` ทำให้ server ตายตั้งแต่ import
 >
 > รายละเอียด: [CHANGES-FORK.md](CHANGES-FORK.md) และ [คู่มือ clink model/effort](docs/clink-model-effort-guide.md) — ส่วนอื่นเหมือน upstream ทุกอย่าง
 

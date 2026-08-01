@@ -1,6 +1,6 @@
 # Fork changes
 
-This is a fork of [BeehiveInnovations/pal-mcp-server](https://github.com/BeehiveInnovations/pal-mcp-server) (Apache-2.0), which has been **unmaintained since ~mid-2026**. Everything from upstream is unchanged except for the additive `clink` changes described below: two new agents (`antigravity`, `claude-9arm`) plus an optional **per-call `model` / `reasoning_effort` override**. Existing CLI (`gemini`, `claude`, `codex`) behavior is unchanged whenever the new params are omitted — they default to off.
+This is a fork of [BeehiveInnovations/pal-mcp-server](https://github.com/BeehiveInnovations/pal-mcp-server) (Apache-2.0), which has been **unmaintained since ~mid-2026**. Everything from upstream is unchanged except for the additive `clink` changes described below: three new agents (`antigravity`, `claude-9arm`, `cursor`) plus an optional **per-call `model` / `reasoning_effort` override**. Existing CLI (`gemini`, `claude`, `codex`) behavior is unchanged whenever the new params are omitted — they default to off.
 
 ## What was added
 
@@ -30,6 +30,59 @@ To activate:
 2. Replace `command` with the absolute path to your `claude`/`claude.exe`
 3. Replace the `--settings`/`--model` placeholders with your gateway's settings file path and model ID
 4. Restart the MCP server (config is cached at process start, not read per-call)
+
+### `cursor` — Cursor's CLI (`cursor-agent`) as a clink agent
+
+Cursor ships a headless agent binary, `cursor-agent`, that runs non-interactively with `-p`. It needs **no new code**: `clink/agents/base.py`'s `BaseCLIAgent` already pipes the prompt over stdin and appends `--model <model>`, which is exactly `cursor-agent`'s interface. So this is a `constants.py` entry plus a config file:
+
+- `clink/constants.py` — a `cursor` entry with `runner=None` (falls through to `BaseCLIAgent` because `create_agent()` resolves `client.runner or client.name` and `"cursor"` isn't in `_AGENTS`) and `parser="antigravity_text"`, reusing the ANSI-stripping parser.
+- `conf/cli_clients/cursor.json` — preset config (`command: "cursor-agent"`, resolved via `PATH` at call time).
+
+Fixed args are `-p --trust --output-format text`:
+
+- `-p` (`--print`) is a **boolean** flag here, unlike `agy --print` — it does not swallow the next token, so the `--model` ordering hazard documented below does not apply.
+- `--trust` is required, otherwise a non-interactive run in a directory Cursor hasn't seen aborts with *"Workspace Trust Required"* and exit code 1.
+- `--output-format text` rather than `json`: `cursor-agent`'s JSON shape is not Claude Code's, so `claude_json` cannot parse it; plain text through `antigravity_text` is both simpler and sufficient.
+
+#### On Windows, a `SHELL` pointing at bash silently kills the agent's tools
+
+If the parent process exports `SHELL=…/bash.exe` — which an MCP client may well do — `cursor-agent` runs its internal commands through bash, they are Windows-shaped, and every tool call dies. `Read`, `Shell`, `Grep`, `Glob` and MCP access all fail, and the agent then answers **from the prompt text alone with exit 0**, so the reply looks legitimate while the client is effectively text-only.
+
+Fix it per machine rather than in the shipped preset, since the correct value is platform-specific — drop a `conf/cli_clients/cursor.json` into `~/.pal/cli_clients/` (that directory is a search path, and unlike `site-packages` it survives `uv tool upgrade`):
+
+```json
+{ "name": "cursor", "command": "cursor-agent",
+  "env": { "SHELL": "C:/WINDOWS/system32/cmd.exe" }, "...": "…" }
+```
+
+Verified by A/B on one otherwise-identical command: `SHELL` at bash fails, `SHELL` at `cmd.exe` reads the file and returns its contents.
+
+Two traps this hides behind:
+
+- **The agent misattributes it.** It reports a *"PreToolUse hook"* failure with a bash syntax error. No hooks file is involved — but the *mechanism* it describes (Windows commands run under bash) is exactly right, so treat the label as wrong and the mechanism as a lead.
+- **`--auto-review` looks like the fix and is not.** It is gated on account entitlement; where it is unavailable it prints `Falling back to Allowlist` and changes nothing. It was briefly shipped here as the fix on the strength of runs that passed only because `SHELL` happened to be unset in that shell — the flag was never doing the work. It is no longer in the preset.
+
+`reasoning_effort` is ignored, as with Antigravity — Cursor bakes effort into the model *name* (`-low` / `-high` / `-xhigh`), selected via `model`.
+
+### `mcp` pinned below 2.0
+
+`pyproject.toml` asked for `mcp>=1.0.0` with no upper bound. `mcp` 2.0.0 removed `Server.list_tools`, which `server.py` uses as a decorator at module scope — so the server dies during import with `AttributeError: 'Server' object has no attribute 'list_tools'` and never gets far enough to report anything useful. From the client side that surfaces only as a bare `-32000`; the real traceback is reachable only by running the entry point by hand.
+
+Nothing has to break for you to hit this. A routine `uv tool upgrade pal-mcp-server` re-resolves dependencies, picks up 2.x, and takes down a previously working install. Now pinned to `mcp>=1.0.0,<2` — lift it only alongside a port to the 2.x server API.
+
+The reason to add it: `cursor-agent --list-models` exposes model families no other clink client reaches, notably `cursor-grok-4.5-high` (xAI) and `kimi-k3-high` (Moonshot), alongside the usual GPT/Claude/Codex tiers — useful when you want genuinely independent opinions rather than three calls into the same two families.
+
+Install: see Cursor's CLI install docs, then `clink cli_name="cursor"` works out of the box.
+
+**Windows path gotcha.** A config's `command` is passed through `shlex.split()` in POSIX mode, which treats `\` as an escape character — so an absolute Windows path written with backslashes (`C:\\Users\\me\\...` in JSON) is silently mangled into `C:Usersme...` and fails with *"Executable not found in PATH"*. If the binary isn't on `PATH` and you must hardcode a path, write it with **forward slashes** (`C:/Users/me/AppData/Local/cursor-agent/cursor-agent.cmd`). This applies to every clink client, not just this one.
+
+### `images` now fails loudly instead of being silently dropped
+
+`tools/clink.py` accepted an `images` parameter that **no runner has ever consumed** — every agent discards it (`_ = (files, images)`), and unlike `absolute_file_paths` an image cannot be embedded into a text prompt, so nothing reached the CLI. The call still returned exit 0 with a plausible answer, which is the worst possible shape for a bug: the model simply never saw the picture and answered around it.
+
+It now raises a tool error naming the working alternative — put the absolute image path in the `prompt` text and ask the agent to open it with its own tools. That path is verified: with tools available, a vision-capable model opens the file and describes it correctly. So this is a transport limitation of the CLIs, not a model one.
+
+This is the one change here that touches shared code rather than only the Cursor preset.
 
 ### Per-call `model` + `reasoning_effort` override
 
