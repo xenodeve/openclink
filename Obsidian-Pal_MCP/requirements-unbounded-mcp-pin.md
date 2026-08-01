@@ -5,8 +5,11 @@ metadata:
   type: reference
 ---
 
-`requirements.txt:1` is `mcp>=1.0.0` — **no upper bound**. `mcp` 2.0.0 is released, and its `Server`
-class no longer exposes `list_tools`. `server.py:629` decorates with `@server.list_tools()`, so a
+**Status as of 2026-08-01:** `pyproject.toml` already pins `mcp>=1.0.0,<2` (`14782f7` on main).
+`requirements.txt:1` is still `mcp>=1.0.0` with **no upper bound** — that drift is what remains of #17.
+Installers that read `requirements.txt` (common for agents / run-server) still resolve `mcp` 2.0.0.
+
+`mcp` 2.0.0 removed `Server.list_tools`. `server.py:630` decorates with `@server.list_tools()`, so a
 **fresh** `pip install -r requirements.txt` produces a tree that dies at import:
 
 ```

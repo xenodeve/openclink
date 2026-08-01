@@ -10,14 +10,15 @@ protocol in `docs/agents/` and the entry map (`using-t4`).
 
 ## Active
 
-### 🚧 Blocks everything that needs a test run — fix first (#17)
+### 🚧 Blocks everything that needs a test run — finish #17 first
 
-**`mcp>=1.0.0` is unbounded and a fresh install is broken.** `mcp` 2.0.0 removed `Server.list_tools`,
-which `server.py:629` decorates with, so a clean `pip install -r requirements.txt` yields a tree that
-cannot import `server.py` and a unit suite that dies at collection (measured 2026-08-01: 7 collection
-errors, 16 deselected, 0 tests run). Invisible from the already-installed PAL, which still runs
-`mcp` 1.x — so it only bites a fresh env, CI, or an agent setting up to run tests. **Red-first TDD is
-impossible until this lands**, so #13 depends on it. See [[requirements-unbounded-mcp-pin]].
+**`requirements.txt` still has unbounded `mcp>=1.0.0` even though `pyproject.toml` already pins
+`mcp>=1.0.0,<2` (`14782f7` on main).** `mcp` 2.0.0 removed `Server.list_tools`, which `server.py:630`
+decorates with. A clean `pip install -r requirements.txt` (what `run-server` / agents often do)
+resolves 2.0.0 and dies at import; `uv`/`pip install .` from `pyproject.toml` is fine. Measured
+2026-08-01 against `requirements.txt`: 7 collection errors, 16 deselected, 0 tests run. **#17 stays
+open for the `requirements.txt` / `pyproject.toml` drift only** — the pin itself already shipped.
+See [[requirements-unbounded-mcp-pin]].
 
 ### Supervised subagent sessions — epic PRD (#11)
 
@@ -71,8 +72,8 @@ Source: `docs/reports/2026-07-16-clink-brainstorm-gap-analysis.md` (codex + clau
   from `requirements.txt` → install OK, first `agy` call fails. No `uv.lock`. **(S — verified.)**
 - 🔴 **Delegated CLIs inherit all of `os.environ`** (`clink/agents/base.py:228`) — secret exposure;
   needs minimal env + per-client allowlist. **(M — verified.)**
-- 🔴 **All CLIs told "You are operating through the Gemini CLI agent"** (`tools/clink.py:472–474`) —
-  parameterize by `client.name`. **(S — verified.)**
+- 🔴 **All CLIs told "You are operating through the Gemini CLI agent"** (`tools/clink.py:487`) —
+  parameterize by `client.name`. **(S — verified; line shifted after the cursor merge.)**
 - ✅ **Non-zero CLI exit reported as `success`** — now tracked as **#13** (Phase 1 of the epic above).
   (`clink/agents/{claude,codex}.py` `_recover_from_error`; no test asserts otherwise.) **(M.)**
 - 🔴 **No Windows CI** (`.github/workflows/test.yml` = ubuntu-only) — the fork's Windows-first core is
