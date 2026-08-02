@@ -85,14 +85,28 @@ Source: `docs/reports/2026-07-16-clink-brainstorm-gap-analysis.md` (codex + clau
   [[ci-unavailable-billing-blocked]]. The Windows-portability defects below still matter (they are
   what a local run trips over), but they are no longer gated on "before CI can be switched on".
   **(M.)** **Measured 2026-08-01 on clean `origin/main` (`4eff266`): 25 failed, 851
-  passed, 4 skipped** on Windows. Cause sampled, not assumed — the tests hard-code POSIX paths, e.g.
-  `assert is_dangerous_path(Path("/etc/passwd")) is True` resolves to `WindowsPath('/etc/passwd')` and
-  returns `False`. So these are test-portability defects, not product defects, but **they must be fixed
-  before Windows CI can be switched on** or it lands permanently red. Spread:
-  `test_path_traversal_security` 6 · `test_conversation_file_features` 6 · `test_conversation_memory` 4 ·
-  `test_file_protection` 3 · `test_pip_detection_fix` 3 · `test_utils` 1 ·
-  `test_chat_cross_model_continuation` 1 · `test_chat_codegen_integration` 1.
-  Plus lower-tier: `shlex` Windows-path corruption, unbounded output/metadata,
+  passed, 4 skipped** on Windows. ✅ **Fixed 2026-08-03 — the suite is now 0 failed / 886 passed**
+  (**#30**, branch `fix/30-suite-green-on-windows`, `3bcd1e0`). **The diagnosis recorded here was
+  wrong, and the way it was wrong is the lesson:** it sampled one failure, found a hard-coded POSIX
+  path, and generalised that to all 25. There were **three unrelated causes**, and the largest was
+  not a path problem at all —
+  **(a) locale encoding, 12 of 25:** google-genai's vendored replay client opens cassettes with
+  `open(path, 'r')` and no encoding, so Windows decodes UTF-8 gemini cassettes as cp1252 and the
+  exact-equality request comparison fails on the mojibake. This also accounted for the 10
+  `test_conversation_*` failures that **passed in isolation** and looked like test pollution — they
+  were downstream of the chat tests failing, and needed no fix of their own.
+  **(b) bash resolution, 3 of 25:** `subprocess` with a bare `"bash"` hits System32's WSL stub,
+  because CreateProcess searches System32 before PATH. Note `shutil.which("bash")` disagrees and
+  reports Git-for-Windows, so any PATH-based reasoning about this is misleading.
+  **(c) POSIX path semantics, 10 of 25:** the originally-sampled cause, and genuinely a test defect —
+  Windows' own dangerous paths (`C:\Windows`, `C:\Program Files`, `C:\Users`) are enforced correctly,
+  and a POSIX path on Windows resolves to an ordinary user location where blocking would be a false
+  positive. Fixed by parametrising the security tests per platform rather than skipping, so Windows
+  gains real path-traversal coverage it never had; reintroducing the original CWE-22 is caught by 8
+  tests.
+  **Windows CI is no longer gated on this** — it would now land green, though Actions still cannot be
+  switched on while the account is billing-blocked. See [[ci-unavailable-billing-blocked]].
+  Plus lower-tier, still open: `shlex` Windows-path corruption, unbounded output/metadata,
   unsanitized command metadata, Claude `--print` ordering untested, antigravity timeout orphans child.
 
 ### Other
