@@ -10,6 +10,42 @@ protocol in `docs/agents/` and the entry map (`using-t4`).
 
 ## Active
 
+### Validate the (client, model, effort) tuple + report requested/resolved/observed — PRD (#22)
+
+`clink` accepts any model string or none at all, and reports nothing about what actually ran.
+Verified 2026-08-02: the request field is optional and free-form and its own description says
+*"Omit to use the CLI's configured default"* (`tools/clink.py`), a supplied value is forwarded
+unchecked, and `CLIClientConfig` (`clink/models.py`) carries no catalog. Only the Antigravity runner
+fails closed today, and only because `agy` itself exits non-zero on an unknown model
+(`clink/agents/antigravity.py:89`) — so the same mistake is caught on one client and tolerated on
+the others.
+
+Worse, a correct *request* is not proof the backend honoured it: this fork already shipped a fix for
+`agy` silently substituting its default while the constructed command was correct, with the flag-order
+unit test green throughout (see `DONE.md`, 2026-07-16). Nothing records requested vs resolved vs
+observed, so a recurrence is undetectable.
+
+**Seam: same as #21** — validation in the runner (not a host hook, so it binds every agent), three
+model values on `AgentOutput`. Either issue can land first. Catalogs are per-client config and their
+absence stays permissive, so this lands incrementally. **The guarantee is deliberately narrow and is
+stated in the response**: passing proves catalog membership, not that the routing was good
+(→ `xeno-skills#74`) and not that the backend complied (→ the observed value).
+Tracked as **#22** (`ready-for-agent`).
+
+### Report the cost of every clink call — PRD (#21)
+
+A master agent cannot see what a delegation cost it. Usage is reported under a different key per CLI
+(`usage` / `model_usage` / `token_usage`) and **not at all** for `cursor` and `antigravity`;
+`AgentOutput` never records which model or effort actually ran, so attribution means re-parsing
+`sanitized_command`; and no cost concept exists anywhere in `clink/` or `tools/`.
+
+Measured 2026-08-02: choosing `gpt-5.6-luna` over `gpt-5.6-sol` cost **13–24× fewer subscription
+credits for the same correct answer**, established only by copying token counts out of six responses
+by hand against a rate card fetched from OpenAI's site. **Seam agreed with the developer:
+`AgentOutput`** — one seam covering all six clients and the failure paths (note it has **5**
+construction sites, so new fields must default to absent). Reporting only; budget enforcement is
+deliberately out of scope and left to a later issue. Tracked as **#21** (`ready-for-agent`).
+
 ### Decide: adopt the mcp 2.x server API, or stay bounded (#18)
 
 #17 bounded `mcp` at `<2` in both manifests, which unblocks the suite but is a **stop-gap, not a
