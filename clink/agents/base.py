@@ -166,10 +166,14 @@ class BaseCLIAgent:
             )
         except asyncio.TimeoutError as exc:
             process.kill()
-            await process.communicate()
+            # Keep the partial transcript: it is the only record of what the run
+            # got through before the deadline.
+            drained_stdout, drained_stderr = await process.communicate()
             raise CLIAgentError(
                 f"CLI '{self.client.name}' timed out after {self.client.timeout_seconds} seconds",
                 returncode=None,
+                stdout=(drained_stdout or b"").decode("utf-8", errors="replace"),
+                stderr=(drained_stderr or b"").decode("utf-8", errors="replace"),
             ) from exc
 
         duration = time.monotonic() - start_time

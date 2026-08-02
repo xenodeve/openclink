@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from clink.agents.base import AgentOutput, TokenUsage
+from clink.agents.base import AgentOutput, CLIAgentError, TokenUsage
 from clink.agents.codex import CodexAgent
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
 from clink.parsers.base import ParsedCLIResponse
@@ -161,6 +161,46 @@ async def test_a_non_zero_exit_still_reports_what_it_consumed(monkeypatch):
         input_tokens=20267, cached_input_tokens=8960, output_tokens=279, reasoning_output_tokens=200
     )
     assert (result.resolved_model, result.resolved_effort) == ("gpt-5.6-luna", "xhigh")
+
+
+@pytest.mark.asyncio
+async def test_a_timeout_preserves_what_the_cli_had_already_emitted(monkeypatch):
+    """A timeout must not throw away the partial transcript.
+
+    Normalised usage stays empty here by construction, not by omission: codex
+    reports usage on `turn.completed`, the last event of a turn, and a turn that
+    timed out never emitted it. What was observed is the partial stdout, so that
+    is what the error carries.
+    """
+    agent, role = _codex_agent()
+    partial = b'{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"partway"}}\n'
+
+    class HangingProcess:
+        returncode = None
+
+        def __init__(self):
+            self._drained = False
+
+        async def communicate(self, _input=None):
+            if not self._drained:
+                self._drained = True
+                raise asyncio.TimeoutError
+            return partial, b"killed"
+
+        def kill(self):
+            pass
+
+    async def fake_create_subprocess_exec(*_args, **_kwargs):
+        return HangingProcess()
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+
+    with pytest.raises(CLIAgentError) as excinfo:
+        await agent.run(role=role, prompt="do something", files=[], images=[])
+
+    assert "partway" in excinfo.value.stdout
+    assert "killed" in excinfo.value.stderr
 
 
 # --- the tool seam: what a caller actually receives -------------------------
