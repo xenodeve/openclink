@@ -252,6 +252,7 @@ def mock_provider_availability(request, monkeypatch):
 @pytest.fixture(autouse=True)
 def clear_model_restriction_env(monkeypatch):
     """Ensure per-test isolation from user-defined model restriction env vars."""
+    import utils.model_restrictions as model_restrictions
 
     restriction_vars = [
         "OPENAI_ALLOWED_MODELS",
@@ -263,6 +264,15 @@ def clear_model_restriction_env(monkeypatch):
 
     for var in restriction_vars:
         monkeypatch.delenv(var, raising=False)
+
+    # Clearing the env vars is not enough on its own: the service snapshots them
+    # once at construction and lives in a module-level singleton, so a test that
+    # already built it under a restrictive env keeps restricting every test after
+    # it. Reset on both sides — before, so this test starts clean; after, so a
+    # test whose own cleanup was skipped by a raise cannot leak into the next one.
+    monkeypatch.setattr(model_restrictions, "_restriction_service", None)
+    yield
+    model_restrictions._restriction_service = None
 
 
 @pytest.fixture(autouse=True)
