@@ -21,6 +21,20 @@ logger = logging.getLogger("clink.agent")
 
 
 @dataclass
+class TokenUsage:
+    """Normalised token account for a single CLI call.
+
+    A field the CLI did not report stays None: an unreported field is not the
+    same as a reported zero, and only the former may be filled in later.
+    """
+
+    input_tokens: int | None = None
+    cached_input_tokens: int | None = None
+    output_tokens: int | None = None
+    reasoning_output_tokens: int | None = None
+
+
+@dataclass
 class AgentOutput:
     """Container returned by CLI agents after successful execution."""
 
@@ -32,6 +46,24 @@ class AgentOutput:
     duration_seconds: float
     parser_name: str
     output_file_content: str | None = None
+    resolved_model: str | None = None
+    resolved_effort: str | None = None
+    token_usage: TokenUsage | None = None
+    # Filled in by the rate-card slice; absent until then.
+    cost: float | None = None
+
+
+def last_flag_value(command: Sequence[str], *flags: str) -> str | None:
+    """Value following the last occurrence of any of `flags`.
+
+    Per-call overrides are appended last, so the last occurrence is the one the
+    CLI will honour.
+    """
+    found: str | None = None
+    for index, token in enumerate(command[:-1]):
+        if token in flags:
+            found = command[index + 1]
+    return found
 
 
 class CLIAgentError(RuntimeError):
@@ -186,6 +218,8 @@ class BaseCLIAgent:
                 stderr=stderr_text,
             ) from exc
 
+        resolved_model, resolved_effort = self._resolve_model_effort(sanitized_command)
+
         return AgentOutput(
             parsed=parsed,
             sanitized_command=sanitized_command,
@@ -195,7 +229,28 @@ class BaseCLIAgent:
             duration_seconds=duration,
             parser_name=self._parser.name,
             output_file_content=output_file_content,
+            resolved_model=resolved_model,
+            resolved_effort=resolved_effort,
+            token_usage=self._extract_token_usage(parsed),
         )
+
+    def _extract_token_usage(self, parsed: ParsedCLIResponse) -> TokenUsage | None:
+        """Map this CLI's raw usage report onto the normalised account.
+
+        Returns None by default: a client whose adapter is not written yet
+        reports no usage rather than a wrong one.
+        """
+        _ = parsed
+        return None
+
+    def _resolve_model_effort(self, command: Sequence[str]) -> tuple[str | None, str | None]:
+        """What the built command asks for, once per-call overrides, config args
+        and role args have been merged.
+
+        This is the *resolved* request, not proof the backend complied — that is
+        the observed value, which most CLIs do not report back.
+        """
+        return last_flag_value(command, "--model"), None
 
     def _build_command(
         self,

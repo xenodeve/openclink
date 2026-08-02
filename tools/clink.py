@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -362,12 +363,32 @@ class CLinkTool(SimpleTool):
             "return_code": result.returncode,
         }
         metadata.update(result.parsed.metadata)
+        metadata.update(self._call_accounting(result))
 
         if result.stderr.strip():
             metadata.setdefault("stderr", result.stderr.strip())
         if result.output_file_content and "raw" not in metadata:
             metadata["raw_output_file"] = result.output_file_content
         return metadata
+
+    def _call_accounting(self, result: AgentOutput) -> dict[str, Any]:
+        """What the call requested and what it consumed, omitting what is unknown.
+
+        A key is absent when the client reported nothing for it, so a caller can
+        tell "not reported" from a reported zero.
+        """
+        accounting: dict[str, Any] = {}
+        if result.resolved_model:
+            accounting["resolved_model"] = result.resolved_model
+        if result.resolved_effort:
+            accounting["resolved_effort"] = result.resolved_effort
+        if result.token_usage is not None:
+            reported = {name: value for name, value in asdict(result.token_usage).items() if value is not None}
+            if reported:
+                accounting["token_usage"] = reported
+        if result.cost is not None:
+            accounting["cost"] = result.cost
+        return accounting
 
     def _merge_metadata(self, base: dict[str, Any] | None, extra: dict[str, Any]) -> dict[str, Any]:
         merged = dict(base or {})
