@@ -5,6 +5,7 @@ Test file protection mechanisms to ensure MCP doesn't scan:
 3. Excluded directories
 """
 
+import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -116,20 +117,41 @@ class TestHomeDirectoryProtection:
             assert is_home_directory_root(Path("/Users/testuser/projects")) is False
             assert is_home_directory_root(Path("/Users/testuser/Documents/code")) is False
 
-    def test_detect_home_patterns_macos(self):
-        """Test detection of macOS home directory patterns."""
-        # Test various macOS home patterns
-        assert is_home_directory_root(Path("/Users/john")) is True
-        assert is_home_directory_root(Path("/Users/jane")) is True
-        # But subdirectories should be allowed
-        assert is_home_directory_root(Path("/Users/john/projects")) is False
+    # is_home_directory_root() calls Path.resolve(), so a path only carries the
+    # meaning the host OS gives it: on Windows "/Users/john" is not absolute and
+    # resolves onto the current drive, matching no home pattern. Each platform
+    # therefore asserts the home layouts it can actually have — the same property
+    # (a home root is blocked, a subdirectory under it is not), stated in the
+    # vocabulary of the OS running the test.
+    HOME_ROOTS = (
+        [Path("C:/Users/john"), Path("C:/Users/jane")]
+        if os.name == "nt"
+        else [Path("/Users/john"), Path("/Users/jane"), Path("/home/ubuntu"), Path("/home/user")]
+    )
+    HOME_SUBDIRS = (
+        [Path("C:/Users/john/projects")]
+        if os.name == "nt"
+        else [Path("/Users/john/projects"), Path("/home/ubuntu/code")]
+    )
 
-    def test_detect_home_patterns_linux(self):
-        """Test detection of Linux home directory patterns."""
-        assert is_home_directory_root(Path("/home/ubuntu")) is True
-        assert is_home_directory_root(Path("/home/user")) is True
-        # But subdirectories should be allowed
-        assert is_home_directory_root(Path("/home/ubuntu/code")) is False
+    def test_detect_home_roots_for_this_platform(self):
+        """A home directory root is detected on the platform running the test."""
+        for root in self.HOME_ROOTS:
+            assert is_home_directory_root(root) is True, root
+
+    def test_detect_home_subdirectories_for_this_platform(self):
+        """Subdirectories under a home root stay allowed."""
+        for subdir in self.HOME_SUBDIRS:
+            assert is_home_directory_root(subdir) is False, subdir
+
+    # The foreign-platform half of the pattern list (the POSIX patterns when
+    # running on Windows, and vice versa) is deliberately left unasserted here.
+    # is_home_directory_root() resolves against the real filesystem before it
+    # pattern-matches, so a foreign path cannot reach the matching step at all —
+    # and a test that re-listed the patterns and checked them against its own
+    # strings would pass by construction without touching the function.
+    # Making that half testable means extracting the matching into a pure
+    # helper, which is a change to the module under test, not to its tests.
 
     def test_detect_home_patterns_windows(self):
         """Test detection of Windows home directory patterns."""
@@ -283,7 +305,9 @@ class TestIntegrationScenarios:
         with patch("utils.file_utils.is_mcp_directory", side_effect=mock_is_mcp):
             files = expand_paths([str(user_project)])
 
-        file_paths = [str(f) for f in files]
+        # Compare with forward slashes: the expectations below are written with
+        # "/" separators, which never appear in a Windows path string.
+        file_paths = [Path(f).as_posix() for f in files]
 
         # User files should be included
         assert any("my-awesome-project/README.md" in p for p in file_paths)

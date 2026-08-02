@@ -3,8 +3,11 @@ Pytest configuration for PAL MCP Server tests
 """
 
 import asyncio
+import functools
 import importlib
 import os
+import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -43,6 +46,77 @@ importlib.reload(config)
 # Configure asyncio for Windows compatibility
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+
+def _force_utf8_replay_cassettes() -> None:
+    """Make the vendored google-genai replay client read cassettes as UTF-8.
+
+    `_replay_api_client.py` calls `open(path, 'r')` with no encoding, so Python
+    falls back to the locale default — cp1252 on a stock Windows box. The gemini
+    cassettes contain non-ASCII characters ('│', '•', '—') that then decode into
+    mojibake, and the replay client compares the request body for exact equality,
+    so a single mangled character fails the test. The OpenAI cassettes are pure
+    ASCII, which is why only the gemini ones break.
+
+    This is upstream's bug (a missing `encoding='utf-8'`), not a stale cassette:
+    read as UTF-8 the recorded body matches the generated one exactly.
+    """
+    try:
+        import google.genai._replay_api_client as replay_client
+    except ImportError:  # SDK absent — nothing to patch
+        return
+
+    builtin_open = open
+
+    def utf8_open(file, mode="r", *args, **kwargs):
+        if "b" not in mode:
+            kwargs.setdefault("encoding", "utf-8")
+        return builtin_open(file, mode, *args, **kwargs)
+
+    # Patch the module global so both the read and the record-mode write use UTF-8.
+    replay_client.open = utf8_open
+
+
+_force_utf8_replay_cassettes()
+
+
+_GIT_BASH_CANDIDATES = (
+    r"C:\Program Files\Git\bin\bash.exe",
+    r"C:\Program Files\Git\usr\bin\bash.exe",
+    r"C:\Program Files (x86)\Git\bin\bash.exe",
+)
+
+
+@functools.lru_cache(maxsize=1)
+def find_bash() -> str | None:
+    """Absolute path to a bash that actually runs, or None.
+
+    Passing the bare name "bash" to subprocess is unusable on Windows:
+    CreateProcess searches C:\\Windows\\system32 before PATH, and the bash.exe
+    there is the WSL launcher stub, which fails with a relay error on a machine
+    with no WSL distro. `shutil.which("bash")` does NOT agree with that lookup —
+    it reports the Git-for-Windows bash — so the resolver has to validate by
+    executing rather than trusting `which`.
+
+    Git-for-Windows is preferred over whatever `which` returns because a working
+    WSL bash would pass the probe below and still choke on the Windows-style
+    paths (`source "D:\\..."`) these tests interpolate.
+    """
+    candidates = []
+    if sys.platform == "win32":
+        candidates += [p for p in _GIT_BASH_CANDIDATES if Path(p).is_file()]
+    found = shutil.which("bash")
+    if found:
+        candidates.append(found)
+    for exe in candidates:
+        try:
+            proc = subprocess.run([exe, "-c", "echo ok"], capture_output=True, text=True, timeout=30)
+        except (OSError, subprocess.SubprocessError):
+            continue
+        if proc.returncode == 0 and proc.stdout.strip() == "ok":
+            return exe
+    return None
+
 
 # Register providers for all tests
 from providers.gemini import GeminiModelProvider  # noqa: E402

@@ -11,13 +11,19 @@ from pathlib import Path
 
 import pytest
 
+from tests.conftest import find_bash
+
+# Bare "bash" resolves to the WSL stub on Windows; find_bash() validates by executing.
+BASH = find_bash()
+pytestmark = pytest.mark.skipif(BASH is None, reason="no working bash available on this machine")
+
 
 class TestPipDetectionFix:
     """Test cases for issue #188: PIP is available but not recognized."""
 
     def test_run_server_script_syntax_valid(self):
         """Test that run-server.sh has valid bash syntax."""
-        result = subprocess.run(["bash", "-n", "./run-server.sh"], capture_output=True, text=True)
+        result = subprocess.run([BASH, "-n", "./run-server.sh"], capture_output=True, text=True)
         assert result.returncode == 0, f"Syntax error in run-server.sh: {result.stderr}"
 
     def test_run_server_has_proper_shebang(self):
@@ -46,7 +52,7 @@ class TestPipDetectionFix:
         assert 'cd "$(dirname' in content, "Should convert to absolute path"
 
         # Test successful completion - our fix should make the script more robust
-        result = subprocess.run(["bash", "-n", "./run-server.sh"], capture_output=True, text=True)
+        result = subprocess.run([BASH, "-n", "./run-server.sh"], capture_output=True, text=True)
         assert result.returncode == 0, "Script should have valid syntax after our fix"
 
     def test_pip_detection_with_non_interactive_shell(self):
@@ -117,7 +123,7 @@ class TestPipDetectionFix:
         setup_env_file
         """
         env = os.environ.copy()
-        subprocess.run(["bash", "-lc", command], check=True, env=env, text=True)
+        subprocess.run([BASH, "-lc", command], check=True, env=env, text=True)
 
         artifacts = {p.name for p in tmp_path.glob(".env*")}
         assert ".env''" not in artifacts, "setup_env_file should not create BSD sed backup artifacts"
