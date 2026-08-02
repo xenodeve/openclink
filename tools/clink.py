@@ -275,7 +275,10 @@ class CLinkTool(SimpleTool):
 
         model_info = {
             "provider": client_config.name,
-            "model_name": result.parsed.metadata.get("model_used"),
+            # Prefer what the CLI reported it ran; fall back to what the command
+            # asked for. Without the fallback, codex and antigravity record a
+            # null model on every stored turn while the response names one.
+            "model_name": result.parsed.metadata.get("model_used") or result.resolved_model,
         }
 
         if continuation_id:
@@ -378,14 +381,17 @@ class CLinkTool(SimpleTool):
         tell "not reported" from a reported zero.
         """
         accounting: dict[str, Any] = {}
-        if result.resolved_model:
+        if result.resolved_model is not None:
             accounting["resolved_model"] = result.resolved_model
-        if result.resolved_effort:
+        if result.resolved_effort is not None:
             accounting["resolved_effort"] = result.resolved_effort
         if result.token_usage is not None:
-            reported = {name: value for name, value in asdict(result.token_usage).items() if value is not None}
-            if reported:
-                accounting["token_usage"] = reported
+            # `normalized_usage`, not `token_usage`: the gemini parser already
+            # publishes `token_usage` in that CLI's own raw shape, and one key
+            # carrying two schemas would force every consumer to sniff.
+            accounting["normalized_usage"] = {
+                name: value for name, value in asdict(result.token_usage).items() if value is not None
+            }
         if result.cost is not None:
             accounting["cost"] = result.cost
         return accounting

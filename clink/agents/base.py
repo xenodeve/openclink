@@ -53,17 +53,37 @@ class AgentOutput:
     cost: float | None = None
 
 
-def last_flag_value(command: Sequence[str], *flags: str) -> str | None:
+# The error path does not run through the tool's output limiter, so whatever is
+# captured for a failed call reaches the caller whole. A long run is exactly the
+# one that times out, so the transcript is bounded at the point of capture.
+MAX_DRAINED_OUTPUT_CHARS = 10_000
+
+
+def last_flag_value(command: Sequence[str], *flags: str, prefix: str | None = None) -> str | None:
     """Value following the last occurrence of any of `flags`.
 
     Per-call overrides are appended last, so the last occurrence is the one the
-    CLI will honour.
+    CLI will honour. With `prefix`, only values carrying it match and the prefix
+    is stripped — that is the `-c key=value` shape, where the flag alone does not
+    identify the setting.
     """
     found: str | None = None
     for index, token in enumerate(command[:-1]):
-        if token in flags:
-            found = command[index + 1]
+        if token not in flags:
+            continue
+        value = command[index + 1]
+        if prefix is None:
+            found = value
+        elif value.startswith(prefix):
+            found = value[len(prefix) :]
     return found
+
+
+def _tail(raw: bytes | None) -> str:
+    """Decode the last of a drained stream — where the run was when it stopped."""
+    if not raw:
+        return ""
+    return raw[-MAX_DRAINED_OUTPUT_CHARS:].decode("utf-8", errors="replace")
 
 
 class CLIAgentError(RuntimeError):
@@ -78,6 +98,18 @@ class CLIAgentError(RuntimeError):
 
 class BaseCLIAgent:
     """Execute a configured CLI command and parse its output."""
+
+    # How this CLI spells the model and effort knobs. Declared once so the code
+    # that *writes* them (`_model_args`) and the code that *reads them back*
+    # (`_resolve_model_effort`) cannot drift apart — this fork already has a scar
+    # from a CLI silently ignoring a correctly-constructed `--model`.
+    MODEL_FLAGS: tuple[str, ...] = ("--model",)
+    EFFORT_FLAG: str | None = None
+    EFFORT_PREFIX: str | None = None
+
+    # CLI usage key -> normalised TokenUsage field. Empty means this client has no
+    # adapter yet, so it reports no usage rather than a wrong one.
+    USAGE_FIELD_MAP: dict[str, str] = {}
 
     def __init__(self, client: ResolvedCLIClient):
         self.client = client
@@ -172,8 +204,8 @@ class BaseCLIAgent:
             raise CLIAgentError(
                 f"CLI '{self.client.name}' timed out after {self.client.timeout_seconds} seconds",
                 returncode=None,
-                stdout=(drained_stdout or b"").decode("utf-8", errors="replace"),
-                stderr=(drained_stderr or b"").decode("utf-8", errors="replace"),
+                stdout=_tail(drained_stdout),
+                stderr=_tail(drained_stderr),
             ) from exc
 
         duration = time.monotonic() - start_time
@@ -222,15 +254,42 @@ class BaseCLIAgent:
                 stderr=stderr_text,
             ) from exc
 
-        resolved_model, resolved_effort = self._resolve_model_effort(sanitized_command)
-
-        return AgentOutput(
+        return self.finalize_output(
             parsed=parsed,
             sanitized_command=sanitized_command,
             returncode=return_code,
             stdout=stdout_text,
             stderr=stderr_text,
             duration_seconds=duration,
+            output_file_content=output_file_content,
+        )
+
+    def finalize_output(
+        self,
+        *,
+        parsed: ParsedCLIResponse,
+        sanitized_command: list[str],
+        returncode: int,
+        stdout: str,
+        stderr: str,
+        duration_seconds: float,
+        output_file_content: str | None = None,
+    ) -> AgentOutput:
+        """Build the result, deriving the call accounting from what is in scope.
+
+        Every construction site goes through here — including the error-recovery
+        hooks and the runners that override `run` — so a new accounting field is
+        added once rather than at each site, and no path can silently return an
+        unaccounted result.
+        """
+        resolved_model, resolved_effort = self._resolve_model_effort(sanitized_command)
+        return AgentOutput(
+            parsed=parsed,
+            sanitized_command=sanitized_command,
+            returncode=returncode,
+            stdout=stdout,
+            stderr=stderr,
+            duration_seconds=duration_seconds,
             parser_name=self._parser.name,
             output_file_content=output_file_content,
             resolved_model=resolved_model,
@@ -241,20 +300,30 @@ class BaseCLIAgent:
     def _extract_token_usage(self, parsed: ParsedCLIResponse) -> TokenUsage | None:
         """Map this CLI's raw usage report onto the normalised account.
 
-        Returns None by default: a client whose adapter is not written yet
-        reports no usage rather than a wrong one.
+        Driven by `USAGE_FIELD_MAP`, which is empty in the base — a client whose
+        adapter is not written yet reports no usage rather than a wrong one.
         """
-        _ = parsed
-        return None
+        if not self.USAGE_FIELD_MAP:
+            return None
+        usage = parsed.metadata.get("usage")
+        if not isinstance(usage, dict):
+            return None
+        reported = {field: usage[key] for key, field in self.USAGE_FIELD_MAP.items() if isinstance(usage.get(key), int)}
+        return TokenUsage(**reported) if reported else None
 
     def _resolve_model_effort(self, command: Sequence[str]) -> tuple[str | None, str | None]:
         """What the built command asks for, once per-call overrides, config args
         and role args have been merged.
 
-        This is the *resolved* request, not proof the backend complied — that is
-        the observed value, which most CLIs do not report back.
+        Read back from the command rather than from the request, because a model
+        can arrive via `config_args` or `role_args` that never pass through
+        `_model_args`. This is the *resolved* request, not proof the backend
+        complied — that is the observed value, which most CLIs do not report.
         """
-        return last_flag_value(command, "--model"), None
+        model = last_flag_value(command, *self.MODEL_FLAGS)
+        if self.EFFORT_FLAG is None:
+            return model, None
+        return model, last_flag_value(command, self.EFFORT_FLAG, prefix=self.EFFORT_PREFIX)
 
     def _build_command(
         self,

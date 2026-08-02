@@ -106,14 +106,13 @@ class AntigravityAgent(BaseCLIAgent):
                 stdout=raw_output,
             ) from exc
 
-        return AgentOutput(
+        return self.finalize_output(
             parsed=parsed,
             sanitized_command=list(command),  # logged without the prompt payload
             returncode=returncode,
             stdout=raw_output,
             stderr="",
             duration_seconds=duration,
-            parser_name=self._parser.name,
         )
 
     def _run_in_pty(self, command: list[str], env: dict[str, str], cwd: str | None, timeout: int) -> tuple[int, str]:

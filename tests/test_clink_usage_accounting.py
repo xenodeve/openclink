@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from clink.agents.base import AgentOutput, CLIAgentError, TokenUsage
+from clink.agents.base import MAX_DRAINED_OUTPUT_CHARS, AgentOutput, CLIAgentError, TokenUsage
 from clink.agents.codex import CodexAgent
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
 from clink.parsers.base import ParsedCLIResponse
@@ -203,6 +203,46 @@ async def test_a_timeout_preserves_what_the_cli_had_already_emitted(monkeypatch)
     assert "killed" in excinfo.value.stderr
 
 
+@pytest.mark.asyncio
+async def test_a_timeout_keeps_only_the_tail_of_a_large_transcript(monkeypatch):
+    """Preserving the transcript must not mean returning megabytes of it.
+
+    The error path does not run through the tool's output limiter, so what is
+    captured here is what a caller receives. A long run is exactly the one that
+    times out, so the cap belongs at capture. The tail is kept because that is
+    where the CLI was when it died.
+    """
+    agent, role = _codex_agent()
+    huge = (b"noise\n" * 200_000) + b"LAST-THING-IT-SAID"
+
+    class HangingProcess:
+        returncode = None
+
+        def __init__(self):
+            self._drained = False
+
+        async def communicate(self, _input=None):
+            if not self._drained:
+                self._drained = True
+                raise asyncio.TimeoutError
+            return huge, b""
+
+        def kill(self):
+            pass
+
+    async def fake_create_subprocess_exec(*_args, **_kwargs):
+        return HangingProcess()
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+
+    with pytest.raises(CLIAgentError) as excinfo:
+        await agent.run(role=role, prompt="do something", files=[], images=[])
+
+    assert len(excinfo.value.stdout) <= MAX_DRAINED_OUTPUT_CHARS
+    assert "LAST-THING-IT-SAID" in excinfo.value.stdout
+
+
 # --- the tool seam: what a caller actually receives -------------------------
 
 
@@ -250,7 +290,7 @@ async def test_tool_surfaces_the_account_in_response_metadata(monkeypatch):
 
     assert metadata.get("resolved_model") == "gpt-5.6-luna"
     assert metadata.get("resolved_effort") == "xhigh"
-    assert metadata.get("token_usage") == {
+    assert metadata.get("normalized_usage") == {
         "input_tokens": 20267,
         "cached_input_tokens": 8960,
         "output_tokens": 279,
@@ -266,7 +306,7 @@ async def test_the_account_survives_the_output_limiter(monkeypatch):
     assert metadata.get("output_truncated") is True
     assert metadata.get("resolved_model") == "gpt-5.6-luna"
     assert metadata.get("resolved_effort") == "xhigh"
-    assert metadata.get("token_usage", {}).get("input_tokens") == 20267
+    assert metadata.get("normalized_usage", {}).get("input_tokens") == 20267
 
 
 @pytest.mark.asyncio
@@ -302,12 +342,50 @@ async def test_end_to_end_a_real_codex_payload_reaches_the_caller(monkeypatch):
 
     assert metadata.get("resolved_model") == "gpt-5.6-luna"
     assert metadata.get("resolved_effort") == "xhigh"
-    assert metadata.get("token_usage") == {
+    assert metadata.get("normalized_usage") == {
         "input_tokens": 20267,
         "cached_input_tokens": 8960,
         "output_tokens": 279,
         "reasoning_output_tokens": 200,
     }
+
+
+@pytest.mark.asyncio
+async def test_the_account_does_not_squat_on_the_gemini_parsers_token_usage_key(monkeypatch):
+    """`token_usage` is already taken, in a different shape.
+
+    `clink/parsers/gemini.py` publishes that key carrying Gemini's own raw
+    counters. Publishing the normalised account under the same name would leave
+    one key meaning two schemas depending on which CLI ran, forcing every
+    consumer to sniff. The raw key must survive untouched.
+    """
+    tool = CLinkTool()
+    raw_gemini_shape = {"prompt": 11, "candidates": 22, "total": 33}
+
+    class DummyAgent:
+        async def run(self, **_kwargs):
+            return AgentOutput(
+                parsed=ParsedCLIResponse(content="Hello", metadata={"token_usage": raw_gemini_shape}),
+                sanitized_command=["gemini", "--model", "gemini-3.6-flash"],
+                returncode=0,
+                stdout="",
+                stderr="",
+                duration_seconds=0.1,
+                parser_name="gemini_json",
+                output_file_content=None,
+                resolved_model="gemini-3.6-flash",
+                token_usage=TokenUsage(input_tokens=11, output_tokens=22),
+            )
+
+    monkeypatch.setattr("tools.clink.create_agent", lambda client: DummyAgent())
+
+    results = await tool.execute(
+        {"prompt": "hi", "cli_name": "gemini", "role": "default", "absolute_file_paths": [], "images": []}
+    )
+    metadata = json.loads(results[0].text).get("metadata", {})
+
+    assert metadata["token_usage"] == raw_gemini_shape
+    assert metadata["normalized_usage"] == {"input_tokens": 11, "output_tokens": 22}
 
 
 @pytest.mark.asyncio
@@ -341,7 +419,7 @@ async def test_absent_fields_are_omitted_rather_than_reported_as_null(monkeypatc
     )
     metadata = json.loads(results[0].text).get("metadata", {})
 
-    assert "token_usage" not in metadata
+    assert "normalized_usage" not in metadata
     assert "resolved_model" not in metadata
     assert "resolved_effort" not in metadata
     assert "cost" not in metadata

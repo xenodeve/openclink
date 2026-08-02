@@ -46,13 +46,12 @@ class ClaudeAgent(BaseCLIAgent):
         except ParserError:
             return None
 
-        return AgentOutput(
+        return self.finalize_output(
             parsed=parsed,
             sanitized_command=sanitized_command,
             returncode=returncode,
             stdout=stdout,
             stderr=stderr,
             duration_seconds=duration_seconds,
-            parser_name=self._parser.name,
             output_file_content=output_file_content,
         )
