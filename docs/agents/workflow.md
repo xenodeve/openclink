@@ -34,8 +34,70 @@ truth. Every code change maps to an issue you're allowed to work (authored by us
 - **Don't leak secrets** into configs/prompts (gateway keys live in the user's settings file, not
   the repo).
 
+## Paired repository — `xenodeve/xeno-skills`
+
+This fork is the **tools layer**. [`xenodeve/xeno-skills`](https://github.com/xenodeve/xeno-skills) is
+the **agent-enforcement layer**: the skills that decide how a master agent uses these tools. Most
+`clink` work has a counterpart there, and **a change to one side is usually incomplete on its own**.
+
+| here (tools — what `clink` *can do*) | xeno-skills (agent — how a master *must behave*) |
+|---|---|
+| **#11** supervised subagent sessions (epic; phases #12–#16) | **#71** enforcement layer for supervised delegation |
+| **#20** subagent lifetime — no fixed deadline, process-tree ownership, cancel/reap | **#74** master-agent pre-delegation checklist — acceptance, feasibility, containment, failure semantics, verification |
+| **#21** report the cost of every call — usage, resolved model/effort, credits | **#73** route on measured cost — refresh the figures, name every scale, contract-test them |
+| — | **#72** research: the capability matrix that sources #73's figures |
+
+**The rule: when you change one side, check the other in the same session.** Specifically —
+
+- **A tool capability lands here** → the skill that told agents to compensate for its absence is now
+  wrong. `xeno-skills#74` labels every checklist item `discipline` or `tool` **and names the issue**
+  that delivers it, so the items to revisit are mechanically findable.
+- **A number changes here** (a price, a rate card, a default model/effort) → skill figures sourced
+  from it go stale. `xeno-skills#73` adds a contract test so this breaks a test rather than silently
+  misleading an agent.
+- **A skill starts requiring something the tool cannot do** → that is a tool gap; file it here.
+
+Four requirements currently belong to **no issue in either repository**: argument allowlisting,
+defences against prompt injection carried in repository content, resource admission, and
+conflict-aware promotion. They are recorded in `xeno-skills#74`.
+
+> Note the tracker asymmetry: this repo has the T4 triage labels (`ready-for-agent`, `clink`,
+> `Feature`, `security`, …); xeno-skills currently has only GitHub's defaults, so its issues are
+> unlabelled. Don't read the missing labels as missing triage.
+
 ## Auto-triggered disciplines
 
 Bug/stack trace → `/debug-mantra`. After a fix → `/post-mortem`. After writing code → `/simplify`.
 Before merge → `/code-review` + `/scrutinize`. Touching a security boundary (a token/gateway
 setting) → `/security-review`. Delegating a mechanical leaf → `clink-subagents` (verify everything).
+
+## Convening a panel — `clink-brainstorm` needs no permission
+
+**Standing authorization: invoke `clink-brainstorm` whenever you judge it useful. Don't ask first.**
+It is the one discipline here you may spend freely, because the cases it covers are the ones where
+being wrong is expensive and being slow is not.
+
+Reach for it when:
+
+- **The plan is complex** — several interacting parts, or an approach you cannot fully specify yet.
+- **The decision is hard to reverse** — an architectural seam, a schema, a public interface, a
+  dependency adoption, anything heading for an ADR. If `t4-engineering-records` would want an ADR
+  for it, that is a reason to convene a panel *before* deciding, not after.
+- **The stakes are high** — a trust boundary, a change that lands across many call sites, a
+  migration.
+- **You are confident and alone.** A single agent's confident answer is the failure mode a panel
+  exists to catch — measured in this repo's own research, one seat got 9 of 10 absence claims wrong
+  while formatting them authoritatively, and only disagreement with the other seats surfaced it.
+
+**What it is, and is not.** `clink-brainstorm` convenes several independent agents on the *same*
+question and returns **judgment** — what is wrong, what to build, which approach wins. That is not
+what `clink-subagents` does (it returns **finished work**), and the two must not share model or
+effort settings. Don't route a panel through the small model; the deliverable is reasoning.
+
+**It is not free, and that is not a reason to skip it here.** A round is several agents and minutes
+of wall-clock. Weigh it against the cost of the decision, not against the cost of a single call —
+for a reversible one-liner it is overkill, for a seam you will live with it is cheap.
+
+**Synthesize, don't paste.** The panel's answers are input to your judgment, not a vote to average.
+Say where they converged, where they split, and which side you think is right — you hold the session
+context they do not. And verify their claims: convergence is evidence, not proof.
