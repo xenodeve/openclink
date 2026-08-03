@@ -8,7 +8,7 @@ import pytest
 from clink.agents.base import CLIAgentError
 from clink.agents.claude import ClaudeAgent
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
-from clink.parsers.base import ParsedCLIResponse
+from clink.parsers.base import NO_ANSWER_METADATA_KEY, ParsedCLIResponse
 
 
 class DummyProcess:
@@ -151,7 +151,8 @@ async def test_a_run_that_produced_no_answer_is_a_failure_despite_exiting_zero(c
     The issue describes this as "exit 0 with empty output", but no parser in the
     tree can produce that — all four raise on empty content. The real mechanism
     is narrower and is already labelled: `clink/parsers/antigravity.py` returns
-    **stderr as the content** when stdout is empty, tagging it `empty_stdout`.
+    **stderr as the content** when stdout is empty, tagging it with the shared
+    `NO_ANSWER_METADATA_KEY`.
     An empty run therefore arrives with non-empty content, and the tag that says
     so is the only thing distinguishing it from a real answer.
 
@@ -160,7 +161,7 @@ async def test_a_run_that_produced_no_answer_is_a_failure_despite_exiting_zero(c
     agent, _role = claude_agent
     parsed = ParsedCLIResponse(
         content="a tool required a permission headless mode cannot prompt for",
-        metadata={"empty_stdout": True},
+        metadata={NO_ANSWER_METADATA_KEY: True},
     )
 
     with pytest.raises(CLIAgentError) as excinfo:

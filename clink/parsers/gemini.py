@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from .base import BaseParser, ParsedCLIResponse, ParserError
+from .base import NO_ANSWER_METADATA_KEY, BaseParser, ParsedCLIResponse, ParserError
 
 
 class GeminiJSONParser(BaseParser):
@@ -61,7 +61,7 @@ class GeminiJSONParser(BaseParser):
 
         stderr_text = stderr.strip() if stderr else ""
         stderr_lower = stderr_text.lower()
-        extra_metadata: dict[str, Any] = {"empty_response": True}
+        extra_metadata: dict[str, Any] = {NO_ANSWER_METADATA_KEY: True}
 
         if "429" in stderr_lower or "rate limit" in stderr_lower:
             extra_metadata["rate_limit_status"] = 429

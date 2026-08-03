@@ -251,6 +251,31 @@ async def test_a_timeout_keeps_only_the_tail_of_a_large_transcript(monkeypatch):
     assert "LAST-THING-IT-SAID" in excinfo.value.stdout
 
 
+def test_error_metadata_caps_every_diagnostic_it_carries():
+    """The cap belongs to the *class* of diagnostic, not to the fields we happened to name.
+
+    The timeout path was bounded first (`MAX_DRAINED_OUTPUT_CHARS`) and the
+    non-zero-exit path was left open — fixing the instance rather than the kind.
+    So this pins all three strings a failed run carries, and any fourth added
+    later has to join them or this test is the wrong shape.
+    """
+    agent, _role = _codex_agent()
+    error = CLIAgentError(
+        "CLI failed",
+        returncode=1,
+        stdout="S" * (MAX_RESPONSE_CHARS + 1),
+        stderr="E" * (MAX_RESPONSE_CHARS + 1),
+        parsed=ParsedCLIResponse(content="P" * (MAX_RESPONSE_CHARS + 1), metadata={}),
+    )
+
+    metadata = CLinkTool()._build_error_metadata(agent.client, error)
+
+    assert metadata["salvaged_content"] == "P" * MAX_RESPONSE_CHARS
+    assert metadata["stdout"] == "S" * MAX_RESPONSE_CHARS
+    assert metadata["stderr"] == "E" * MAX_RESPONSE_CHARS
+    assert metadata["truncated_fields"] == ["salvaged_content", "stderr", "stdout"]
+
+
 # --- the tool seam: what a caller actually receives -------------------------
 
 

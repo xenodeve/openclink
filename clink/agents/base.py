@@ -16,6 +16,7 @@ from pathlib import Path
 from clink.constants import DEFAULT_STREAM_LIMIT
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
 from clink.parsers import BaseParser, ParsedCLIResponse, ParserError, get_parser
+from clink.parsers.base import NO_ANSWER_METADATA_KEY
 
 logger = logging.getLogger("clink.agent")
 
@@ -302,8 +303,10 @@ class BaseCLIAgent:
           diagnosis, not a success; recovery salvages the content and it travels
           on the error instead of relabelling the run.
         - A run that produced **no answer** failed even on a clean exit. The
-          parsers flag this as `empty_stdout` when they fall back to reporting
-          stderr as content, which is how an empty run acquires non-empty text.
+          parsers flag this with the shared `NO_ANSWER_METADATA_KEY`, declared
+          here because two parsers independently restating one vocabulary was
+          the defect. They fall back to reporting stderr as content, which is
+          how an empty run acquires non-empty text.
         """
         resolved_model, resolved_effort = self._resolve_model_effort(sanitized_command)
         token_usage = self._extract_token_usage(parsed)
@@ -311,7 +314,7 @@ class BaseCLIAgent:
         failure: str | None = None
         if returncode != 0:
             failure = f"CLI '{self.client.name}' exited with status {returncode}"
-        elif parsed.metadata.get("empty_stdout"):
+        elif parsed.metadata.get(NO_ANSWER_METADATA_KEY):
             failure = (
                 f"CLI '{self.client.name}' exited cleanly without producing an answer; "
                 "the content below is its diagnostic output, not a reply"

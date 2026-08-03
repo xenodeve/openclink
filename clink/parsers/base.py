@@ -5,6 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+# The one key a parser sets when the CLI exits without an answer and its content
+# is diagnostic output; declared here so finalize_output and every parser share one vocabulary.
+NO_ANSWER_METADATA_KEY = "no_answer"
+
 
 @dataclass
 class ParsedCLIResponse:
