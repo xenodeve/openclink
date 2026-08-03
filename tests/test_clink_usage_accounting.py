@@ -276,6 +276,27 @@ def test_error_metadata_caps_every_diagnostic_it_carries():
     assert metadata["truncated_fields"] == ["salvaged_content", "stderr", "stdout"]
 
 
+def test_the_bounded_diagnostic_wins_over_parser_metadata_of_the_same_name():
+    """Parser metadata is merged wholesale, so it must not be able to unbound a bounded field.
+
+    No parser writes `salvaged_content` today. That is the reason to pin it now:
+    the cap is only worth anything if nothing downstream can quietly replace it.
+    """
+    agent, _role = _codex_agent()
+    error = CLIAgentError(
+        "CLI failed",
+        returncode=1,
+        parsed=ParsedCLIResponse(
+            content="P" * (MAX_RESPONSE_CHARS + 1),
+            metadata={"salvaged_content": "Z" * (MAX_RESPONSE_CHARS + 1)},
+        ),
+    )
+
+    metadata = CLinkTool()._build_error_metadata(agent.client, error)
+
+    assert metadata["salvaged_content"] == "P" * MAX_RESPONSE_CHARS
+
+
 # --- the tool seam: what a caller actually receives -------------------------
 
 
