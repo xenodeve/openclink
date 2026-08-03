@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from clink.parsers.base import ParserError
+from clink.parsers.base import NO_ANSWER_METADATA_KEY, ParserError
 from clink.parsers.claude import ClaudeJSONParser
 
 
@@ -38,6 +38,29 @@ def test_claude_parser_falls_back_to_message():
     assert parsed.content == "API error message"
     assert parsed.metadata["is_error"] is True
     assert parsed.metadata["stderr"] == "warning"
+
+
+def test_claude_parser_tags_its_stderr_only_fallback_as_no_answer():
+    """The sentence this branch returns is not an answer — it says there wasn't one.
+
+    Same shape as the antigravity parser: a clean exit with nothing to say
+    acquires non-empty content, so only the tag distinguishes it from a reply.
+    Without it, `finalize_output` reports this run as a success.
+    """
+    parser = ClaudeJSONParser()
+
+    parsed = parser.parse(stdout='{"type":"result","is_error":true}', stderr="upstream connection reset")
+
+    assert parsed.metadata[NO_ANSWER_METADATA_KEY] is True
+    assert parsed.metadata["stderr"] == "upstream connection reset"
+
+
+def test_claude_parser_does_not_tag_a_real_result():
+    parser = ClaudeJSONParser()
+
+    parsed = parser.parse(stdout=_build_success_payload(), stderr="")
+
+    assert NO_ANSWER_METADATA_KEY not in parsed.metadata
 
 
 def test_claude_parser_requires_output():

@@ -109,8 +109,14 @@ Source: `docs/reports/2026-07-16-clink-brainstorm-gap-analysis.md` (codex + clau
   needs minimal env + per-client allowlist. **(M — verified.)**
 - 🔴 **All CLIs told "You are operating through the Gemini CLI agent"** (`tools/clink.py:487`) —
   parameterize by `client.name`. **(S — verified; line shifted after the cursor merge.)**
-- ✅ **Non-zero CLI exit reported as `success`** — now tracked as **#13** (Phase 1 of the epic above).
-  (`clink/agents/{claude,codex}.py` `_recover_from_error`; no test asserts otherwise.) **(M.)**
+- ✅ **Non-zero CLI exit reported as `success`** — **fixed 2026-08-03 (#13, `e3c7c5b`)**. The outcome
+  is now decided in one place, `BaseCLIAgent.finalize_output`, which every construction site reaches
+  including the antigravity runner that overrides `run` wholesale. Salvaged content and normalised
+  usage travel on `CLIAgentError` so honesty costs the caller neither the diagnosis nor the
+  accounting. Verified against the real codex binary, not only in unit tests. **The issue's second
+  case was mis-specified:** "exit 0 with empty output" cannot occur — all four parsers raise on empty
+  content. The real mechanism is `clink/parsers/antigravity.py` returning *stderr as content* when
+  stdout is empty and tagging it `empty_stdout`; the tag existed and nothing read it. See `DONE.md`.
 - 🔴 **No CI runs at all — and it cannot be switched on.** Superseding the "no *Windows* CI" framing:
   `gh workflow list --all` shows every workflow `active`, but `gh run list` returns **one run in the
   repo's entire history** (a Copilot review), so `test.yml` has **never executed** — PR #5 merged and

@@ -147,20 +147,28 @@ async def test_codex_run_reports_the_resolved_tuple(monkeypatch, config_args, ov
 
 @pytest.mark.asyncio
 async def test_a_non_zero_exit_still_reports_what_it_consumed(monkeypatch):
-    """A call that spent tokens and then failed must still account for them."""
+    """A call that spent tokens and then failed must still account for them.
+
+    #13 made a non-zero exit a failure rather than a recovered success, so the
+    account travels on the error now. The guarantee is unchanged — only its
+    address is. If this ever stops holding, a failed delegation becomes free in
+    the caller's books while still costing real quota.
+    """
     agent, role = _codex_agent()
     turn = (
         '{"type":"turn.completed","usage":{"input_tokens":20267,"cached_input_tokens":8960,'
         '"output_tokens":279,"reasoning_output_tokens":200}}'
     )
     process = DummyProcess(stdout=_stdout(turn), returncode=124)
-    result = await _run(monkeypatch, agent, role, process, model="gpt-5.6-luna", reasoning_effort="xhigh")
 
-    assert result.returncode == 124
-    assert result.token_usage == TokenUsage(
+    with pytest.raises(CLIAgentError) as excinfo:
+        await _run(monkeypatch, agent, role, process, model="gpt-5.6-luna", reasoning_effort="xhigh")
+
+    assert excinfo.value.returncode == 124
+    assert excinfo.value.token_usage == TokenUsage(
         input_tokens=20267, cached_input_tokens=8960, output_tokens=279, reasoning_output_tokens=200
     )
-    assert (result.resolved_model, result.resolved_effort) == ("gpt-5.6-luna", "xhigh")
+    assert excinfo.value.parsed is not None
 
 
 @pytest.mark.asyncio
@@ -241,6 +249,52 @@ async def test_a_timeout_keeps_only_the_tail_of_a_large_transcript(monkeypatch):
 
     assert len(excinfo.value.stdout) <= MAX_DRAINED_OUTPUT_CHARS
     assert "LAST-THING-IT-SAID" in excinfo.value.stdout
+
+
+def test_error_metadata_caps_every_diagnostic_it_carries():
+    """The cap belongs to the *class* of diagnostic, not to the fields we happened to name.
+
+    The timeout path was bounded first (`MAX_DRAINED_OUTPUT_CHARS`) and the
+    non-zero-exit path was left open — fixing the instance rather than the kind.
+    So this pins all three strings a failed run carries, and any fourth added
+    later has to join them or this test is the wrong shape.
+    """
+    agent, _role = _codex_agent()
+    error = CLIAgentError(
+        "CLI failed",
+        returncode=1,
+        stdout="S" * (MAX_RESPONSE_CHARS + 1),
+        stderr="E" * (MAX_RESPONSE_CHARS + 1),
+        parsed=ParsedCLIResponse(content="P" * (MAX_RESPONSE_CHARS + 1), metadata={}),
+    )
+
+    metadata = CLinkTool()._build_error_metadata(agent.client, error)
+
+    assert metadata["salvaged_content"] == "P" * MAX_RESPONSE_CHARS
+    assert metadata["stdout"] == "S" * MAX_RESPONSE_CHARS
+    assert metadata["stderr"] == "E" * MAX_RESPONSE_CHARS
+    assert metadata["truncated_fields"] == ["salvaged_content", "stderr", "stdout"]
+
+
+def test_the_bounded_diagnostic_wins_over_parser_metadata_of_the_same_name():
+    """Parser metadata is merged wholesale, so it must not be able to unbound a bounded field.
+
+    No parser writes `salvaged_content` today. That is the reason to pin it now:
+    the cap is only worth anything if nothing downstream can quietly replace it.
+    """
+    agent, _role = _codex_agent()
+    error = CLIAgentError(
+        "CLI failed",
+        returncode=1,
+        parsed=ParsedCLIResponse(
+            content="P" * (MAX_RESPONSE_CHARS + 1),
+            metadata={"salvaged_content": "Z" * (MAX_RESPONSE_CHARS + 1)},
+        ),
+    )
+
+    metadata = CLinkTool()._build_error_metadata(agent.client, error)
+
+    assert metadata["salvaged_content"] == "P" * MAX_RESPONSE_CHARS
 
 
 # --- the tool seam: what a caller actually receives -------------------------

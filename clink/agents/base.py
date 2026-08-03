@@ -16,6 +16,7 @@ from pathlib import Path
 from clink.constants import DEFAULT_STREAM_LIMIT
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
 from clink.parsers import BaseParser, ParsedCLIResponse, ParserError, get_parser
+from clink.parsers.base import NO_ANSWER_METADATA_KEY
 
 logger = logging.getLogger("clink.agent")
 
@@ -89,11 +90,26 @@ def _tail(raw: bytes | None) -> str:
 class CLIAgentError(RuntimeError):
     """Raised when a CLI agent fails (non-zero exit, timeout, parse errors)."""
 
-    def __init__(self, message: str, *, returncode: int | None = None, stdout: str = "", stderr: str = "") -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        returncode: int | None = None,
+        stdout: str = "",
+        stderr: str = "",
+        parsed: ParsedCLIResponse | None = None,
+        token_usage: TokenUsage | None = None,
+    ) -> None:
         super().__init__(message)
         self.returncode = returncode
         self.stdout = stdout
         self.stderr = stderr
+        # Whatever the failed run still managed to say. Reporting the outcome
+        # honestly must not cost the caller its diagnosis.
+        self.parsed = parsed
+        # A run that failed still spent the tokens it spent. Making the outcome
+        # honest must not make the call unaccountable.
+        self.token_usage = token_usage
 
 
 class BaseCLIAgent:
@@ -275,14 +291,45 @@ class BaseCLIAgent:
         duration_seconds: float,
         output_file_content: str | None = None,
     ) -> AgentOutput:
-        """Build the result, deriving the call accounting from what is in scope.
+        """Build the result, or raise if the run did not actually succeed.
 
         Every construction site goes through here — including the error-recovery
-        hooks and the runners that override `run` — so a new accounting field is
-        added once rather than at each site, and no path can silently return an
-        unaccounted result.
+        hooks and the runners that override `run` — so this is the one place the
+        outcome is decided, and no path can return a result the run did not earn.
+
+        Two rules, both stated rather than inferred from whether output parsed:
+
+        - A child that exited non-zero **failed**. Parseable output is a
+          diagnosis, not a success; recovery salvages the content and it travels
+          on the error instead of relabelling the run.
+        - A run that produced **no answer** failed even on a clean exit. The
+          parsers flag this with the shared `NO_ANSWER_METADATA_KEY`, declared
+          here because two parsers independently restating one vocabulary was
+          the defect. They fall back to reporting stderr as content, which is
+          how an empty run acquires non-empty text.
         """
         resolved_model, resolved_effort = self._resolve_model_effort(sanitized_command)
+        token_usage = self._extract_token_usage(parsed)
+
+        failure: str | None = None
+        if returncode != 0:
+            failure = f"CLI '{self.client.name}' exited with status {returncode}"
+        elif parsed.metadata.get(NO_ANSWER_METADATA_KEY):
+            failure = (
+                f"CLI '{self.client.name}' exited cleanly without producing an answer; "
+                "the content below is its diagnostic output, not a reply"
+            )
+
+        if failure is not None:
+            raise CLIAgentError(
+                failure,
+                returncode=returncode,
+                stdout=stdout,
+                stderr=stderr,
+                parsed=parsed,
+                token_usage=token_usage,
+            )
+
         return AgentOutput(
             parsed=parsed,
             sanitized_command=sanitized_command,
@@ -294,7 +341,7 @@ class BaseCLIAgent:
             output_file_content=output_file_content,
             resolved_model=resolved_model,
             resolved_effort=resolved_effort,
-            token_usage=self._extract_token_usage(parsed),
+            token_usage=token_usage,
         )
 
     def _extract_token_usage(self, parsed: ParsedCLIResponse) -> TokenUsage | None:

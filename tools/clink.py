@@ -27,6 +27,20 @@ MAX_RESPONSE_CHARS = 20_000
 SUMMARY_PATTERN = re.compile(r"<SUMMARY>(.*?)</SUMMARY>", re.IGNORECASE | re.DOTALL)
 
 
+def _store_diagnostic(metadata: dict[str, Any], truncated: list[str], field: str, value: str) -> None:
+    """Record one failure diagnostic, bounded, and name it if it had to be cut.
+
+    The error path never runs `_apply_output_limit`, so every string a failed run
+    carries has to be bounded here — and through one function, because bounding
+    them one at a time is how the timeout transcript ended up capped while the
+    non-zero-exit path stayed open. A fourth diagnostic added later joins this.
+    """
+    if len(value) > MAX_RESPONSE_CHARS:
+        value = value[:MAX_RESPONSE_CHARS]
+        truncated.append(field)
+    metadata[field] = value
+
+
 class CLinkRequest(BaseModel):
     """Request model for clink tool."""
 
@@ -499,10 +513,26 @@ class CLinkTool(SimpleTool):
             "cli_name": client.name,
             "return_code": exc.returncode,
         }
+        truncated_fields: list[str] = []
+        # A failed run still says something and still spent something. Both have to
+        # reach the caller, or reporting the failure honestly would cost them the
+        # diagnosis and the accounting at the same time.
+        if exc.parsed is not None:
+            # Parser metadata is merged wholesale, so it goes in FIRST: a bounded
+            # field this method owns must not be replaceable by a parser key that
+            # happens to share its name.
+            metadata.update(self._prune_metadata(exc.parsed.metadata, client, reason="error"))
+            _store_diagnostic(metadata, truncated_fields, "salvaged_content", exc.parsed.content)
+        if exc.token_usage is not None:
+            reported = {name: value for name, value in asdict(exc.token_usage).items() if value is not None}
+            if reported:
+                metadata["normalized_usage"] = reported
         if exc.stdout:
-            metadata["stdout"] = exc.stdout.strip()
+            _store_diagnostic(metadata, truncated_fields, "stdout", exc.stdout.strip())
         if exc.stderr:
-            metadata["stderr"] = exc.stderr.strip()
+            _store_diagnostic(metadata, truncated_fields, "stderr", exc.stderr.strip())
+        if truncated_fields:
+            metadata["truncated_fields"] = sorted(truncated_fields)
         return metadata
 
     def _raise_tool_error(self, message: str, metadata: dict[str, Any] | None = None) -> None:

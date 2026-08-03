@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from .base import BaseParser, ParsedCLIResponse, ParserError
+from .base import NO_ANSWER_METADATA_KEY, BaseParser, ParsedCLIResponse, ParserError
 
 
 class ClaudeJSONParser(BaseParser):
@@ -69,6 +69,9 @@ class ClaudeJSONParser(BaseParser):
         stderr_text = stderr.strip()
         if stderr_text:
             metadata.setdefault("stderr", stderr_text)
+            # The sentence below is a diagnosis, not a reply — say so, or a clean
+            # exit that answered nothing is indistinguishable from one that did.
+            metadata[NO_ANSWER_METADATA_KEY] = True
             return ParsedCLIResponse(
                 content="Claude CLI returned no textual result. Raw stderr was preserved for troubleshooting.",
                 metadata=metadata,
