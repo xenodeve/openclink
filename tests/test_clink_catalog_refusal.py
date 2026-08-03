@@ -20,14 +20,14 @@ from clink.models import ResolvedCLIClient, ResolvedCLIRole
 CATALOG = {"gpt-5.6-sol": ["low", "medium", "high"], "composer-2.5": []}
 
 
-def _agent(catalog):
+def _agent(catalog, config_args=None):
     prompt_path = Path("systemprompts/clink/codex_default.txt").resolve()
     role = ResolvedCLIRole(name="default", prompt_path=prompt_path, role_args=[])
     client = ResolvedCLIClient(
         name="codex",
         executable=["codex"],
         internal_args=["exec"],
-        config_args=["--json"],
+        config_args=["--json", *(config_args or [])],
         env={},
         timeout_seconds=30,
         parser="codex_jsonl",
@@ -105,3 +105,43 @@ async def test_a_servable_tuple_still_spawns(spawn_spy):
         await agent.run(role=role, prompt="hi", files=[], images=[], model="gpt-5.6-sol", reasoning_effort="high")
 
     assert spawn_spy.called is True
+
+
+@pytest.mark.asyncio
+async def test_codex_config_model_not_in_catalog_is_refused(spawn_spy):
+    agent, role = _agent(CATALOG, ["-c", "model=unlisted-model"])
+
+    with pytest.raises(CLIAgentError) as excinfo:
+        await agent.run(role=role, prompt="hi", files=[], images=[])
+
+    assert spawn_spy.called is False
+    assert "unlisted-model" in str(excinfo.value)
+
+
+@pytest.mark.asyncio
+async def test_codex_two_token_model_wins_over_config_model(spawn_spy):
+    # The measured Codex 0.144.4 probe showed -m overrides -c model= even when
+    # the -c spelling appears later on the command line.
+    agent, role = _agent(CATALOG, ["-m", "gpt-5.6-sol", "-c", "model=unlisted-model"])
+
+    with pytest.raises(AssertionError, match="a process was spawned"):
+        await agent.run(role=role, prompt="hi", files=[], images=[])
+
+    assert spawn_spy.called is True
+
+
+@pytest.mark.asyncio
+async def test_codex_config_model_in_catalog_is_allowed(spawn_spy):
+    agent, role = _agent(CATALOG, ["-c", "model=gpt-5.6-sol"])
+
+    with pytest.raises(AssertionError, match="a process was spawned"):
+        await agent.run(role=role, prompt="hi", files=[], images=[])
+
+    assert spawn_spy.called is True
+
+
+def test_codex_config_model_and_effort_resolve_independently():
+    agent, role = _agent(CATALOG, ["-c", "model=gpt-5.6-sol", "-c", "model_reasoning_effort=high"])
+    command = agent._build_command(role=role)
+
+    assert agent._resolve_model_effort(command) == ("gpt-5.6-sol", "high")

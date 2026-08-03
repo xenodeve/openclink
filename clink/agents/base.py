@@ -121,6 +121,9 @@ class BaseCLIAgent:
     # (`_resolve_model_effort`) cannot drift apart — this fork already has a scar
     # from a CLI silently ignoring a correctly-constructed `--model`.
     MODEL_FLAGS: tuple[str, ...] = ("--model",)
+    # Some CLIs also spell the model as a prefixed config value; the two-token
+    # MODEL_FLAGS spelling wins over any prefixed one, regardless of token order.
+    MODEL_PREFIX_FLAGS: tuple[tuple[str, str], ...] = ()
     EFFORT_FLAG: str | None = None
     EFFORT_PREFIX: str | None = None
 
@@ -394,6 +397,11 @@ class BaseCLIAgent:
         complied — that is the observed value, which most CLIs do not report.
         """
         model = last_flag_value(command, *self.MODEL_FLAGS)
+        if model is None:
+            for flag, prefix in self.MODEL_PREFIX_FLAGS:
+                prefixed_model = last_flag_value(command, flag, prefix=prefix)
+                if prefixed_model is not None:
+                    model = prefixed_model
         if self.EFFORT_FLAG is None:
             return model, None
         return model, last_flag_value(command, self.EFFORT_FLAG, prefix=self.EFFORT_PREFIX)

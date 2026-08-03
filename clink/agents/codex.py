@@ -12,6 +12,7 @@ class CodexAgent(BaseCLIAgent):
     """Codex CLI agent with JSONL recovery support."""
 
     MODEL_FLAGS = ("-m", "--model")
+    MODEL_PREFIX_FLAGS = (("-c", "model="),)
     # Effort is one `-c key=value` setting among possibly several, so the key —
     # not the flag alone — identifies it.
     EFFORT_FLAG = "-c"
