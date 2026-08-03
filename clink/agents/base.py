@@ -48,7 +48,9 @@ class AgentOutput:
     duration_seconds: float
     parser_name: str
     output_file_content: str | None = None
+    requested_model: str | None = None
     resolved_model: str | None = None
+    observed_model: str | None = None
     resolved_effort: str | None = None
     token_usage: TokenUsage | None = None
     # Filled in by the rate-card slice; absent until then.
@@ -304,6 +306,7 @@ class BaseCLIAgent:
             stderr=stderr_text,
             duration_seconds=duration,
             output_file_content=output_file_content,
+            requested_model=model,
         )
 
     def finalize_output(
@@ -316,6 +319,7 @@ class BaseCLIAgent:
         stderr: str,
         duration_seconds: float,
         output_file_content: str | None = None,
+        requested_model: str | None = None,
     ) -> AgentOutput:
         """Build the result, or raise if the run did not actually succeed.
 
@@ -365,7 +369,9 @@ class BaseCLIAgent:
             duration_seconds=duration_seconds,
             parser_name=self._parser.name,
             output_file_content=output_file_content,
+            requested_model=requested_model,
             resolved_model=resolved_model,
+            observed_model=parsed.metadata.get("model_used"),
             resolved_effort=resolved_effort,
             token_usage=token_usage,
         )

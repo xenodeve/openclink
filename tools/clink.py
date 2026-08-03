@@ -395,8 +395,17 @@ class CLinkTool(SimpleTool):
         tell "not reported" from a reported zero.
         """
         accounting: dict[str, Any] = {}
+        if result.requested_model is not None:
+            accounting["requested_model"] = result.requested_model
         if result.resolved_model is not None:
             accounting["resolved_model"] = result.resolved_model
+        accounting["observed_model"] = result.observed_model if result.observed_model is not None else "unknown"
+        if (
+            result.resolved_model is not None
+            and result.observed_model is not None
+            and result.resolved_model != result.observed_model
+        ):
+            accounting["model_substituted"] = True
         if result.resolved_effort is not None:
             accounting["resolved_effort"] = result.resolved_effort
         if result.token_usage is not None:
