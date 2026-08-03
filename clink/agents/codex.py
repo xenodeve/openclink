@@ -11,6 +11,22 @@ from .base import AgentOutput, BaseCLIAgent
 class CodexAgent(BaseCLIAgent):
     """Codex CLI agent with JSONL recovery support."""
 
+    MODEL_FLAGS = ("-m", "--model")
+    # Effort is one `-c key=value` setting among possibly several, so the key —
+    # not the flag alone — identifies it.
+    EFFORT_FLAG = "-c"
+    EFFORT_PREFIX = "model_reasoning_effort="
+
+    # Codex reports these on `turn.completed`. Its wire names happen to match the
+    # normalised ones, so this map is an identity — that is a fact about codex,
+    # not a rule other adapters can assume.
+    USAGE_FIELD_MAP = {
+        "input_tokens": "input_tokens",
+        "cached_input_tokens": "cached_input_tokens",
+        "output_tokens": "output_tokens",
+        "reasoning_output_tokens": "reasoning_output_tokens",
+    }
+
     def __init__(self, client: ResolvedCLIClient):
         super().__init__(client)
 
@@ -39,13 +55,12 @@ class CodexAgent(BaseCLIAgent):
         except ParserError:
             return None
 
-        return AgentOutput(
+        return self.finalize_output(
             parsed=parsed,
             sanitized_command=sanitized_command,
             returncode=returncode,
             stdout=stdout,
             stderr=stderr,
             duration_seconds=duration_seconds,
-            parser_name=self._parser.name,
             output_file_content=output_file_content,
         )

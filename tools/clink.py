@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -274,7 +275,10 @@ class CLinkTool(SimpleTool):
 
         model_info = {
             "provider": client_config.name,
-            "model_name": result.parsed.metadata.get("model_used"),
+            # Prefer what the CLI reported it ran; fall back to what the command
+            # asked for. Without the fallback, codex and antigravity record a
+            # null model on every stored turn while the response names one.
+            "model_name": result.parsed.metadata.get("model_used") or result.resolved_model,
         }
 
         if continuation_id:
@@ -362,12 +366,35 @@ class CLinkTool(SimpleTool):
             "return_code": result.returncode,
         }
         metadata.update(result.parsed.metadata)
+        metadata.update(self._call_accounting(result))
 
         if result.stderr.strip():
             metadata.setdefault("stderr", result.stderr.strip())
         if result.output_file_content and "raw" not in metadata:
             metadata["raw_output_file"] = result.output_file_content
         return metadata
+
+    def _call_accounting(self, result: AgentOutput) -> dict[str, Any]:
+        """What the call requested and what it consumed, omitting what is unknown.
+
+        A key is absent when the client reported nothing for it, so a caller can
+        tell "not reported" from a reported zero.
+        """
+        accounting: dict[str, Any] = {}
+        if result.resolved_model is not None:
+            accounting["resolved_model"] = result.resolved_model
+        if result.resolved_effort is not None:
+            accounting["resolved_effort"] = result.resolved_effort
+        if result.token_usage is not None:
+            # `normalized_usage`, not `token_usage`: the gemini parser already
+            # publishes `token_usage` in that CLI's own raw shape, and one key
+            # carrying two schemas would force every consumer to sniff.
+            accounting["normalized_usage"] = {
+                name: value for name, value in asdict(result.token_usage).items() if value is not None
+            }
+        if result.cost is not None:
+            accounting["cost"] = result.cost
+        return accounting
 
     def _merge_metadata(self, base: dict[str, Any] | None, extra: dict[str, Any]) -> dict[str, Any]:
         merged = dict(base or {})
