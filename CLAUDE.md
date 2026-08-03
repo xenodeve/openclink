@@ -7,6 +7,9 @@ This file contains essential commands and workflows for developing and maintaini
 This fork is run **agent-primary** under the T4 operating standard. **At session start, before picking up work:**
 
 1. Invoke **`karpathy-guidelines`** (surgical, simple, verify) and **`using-t4`** (the entry map).
+   **`using-t4` is a standing default, not a one-off** — re-route through its map at every phase
+   boundary (after writing code → `simplify`; before merge → `code-review` + `scrutinize`; touched a
+   security boundary → `security-review`). A check at task start does not discharge a later trigger.
 2. Read **`Obsidian-Pal_MCP/Home.md`** (memory vault index — open only the notes your task touches), **`docs/OPEN-WORK-LEDGER.md`** (open work), and **`DONE.md`** (what shipped + how it was validated).
 3. Then the specific GitHub issue you're picking up (`gh issue view <n> --repo xenodeve/pal-mcp-server`).
 
@@ -17,6 +20,25 @@ the flags — cf. the antigravity `--model` bug); **ADR** for hard-to-reverse de
 **post-mortem/investigation** in `docs/reports/` for a fixed+validated bug; append `DONE.md` + keep the
 ledger current. **Package manager is Python/`uv` + `pytest`/`ruff` (NOT Bun).** Fork-specific additions:
 `CHANGES-FORK.md`. Map: `docs/agents/domain.md` · `workflow.md` · `issue-tracker.md` · `triage-labels.md`.
+
+### Delegate by default (`clink-subagents`)
+
+**The orchestrator's context window is the scarce resource here** — the clink back-ends bill against
+flat subscriptions, the master agent does not. So **delegation is the default, not the optimisation**:
+hand every self-contained, verifiable leaf to `clink-subagents` and keep decomposition, integration,
+and final verification. Follow that skill's routing table (`gpt-5.6-luna` at `high` clears routine
+leaves; judgment goes to `clink-brainstorm`, never to the small model).
+
+Two rules that do **not** relax when you delegate:
+
+- **Verify everything that comes back.** A subagent's report is a hypothesis until you check it —
+  a worker has invented repo facts here (claimed a merged PR that did not exist), and a delegated
+  green has hidden a test that pinned wording rather than behaviour. Mutation-test a delegated core.
+- **Never delegate what you cannot check**, the final verification, or a security-boundary change.
+
+Ask for the **RED first** and require the failing output back before the implementation is written —
+a prompt that says "write the function and its tests" returns a suite in which no test has ever
+been observed to fail.
 
 ## Quick Reference Commands
 
