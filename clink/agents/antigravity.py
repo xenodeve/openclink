@@ -117,6 +117,7 @@ class AntigravityAgent(BaseCLIAgent):
             stdout=raw_output,
             stderr="",
             duration_seconds=duration,
+            requested_model=model,
         )
 
     def _run_in_pty(self, command: list[str], env: dict[str, str], cwd: str | None, timeout: int) -> tuple[int, str]:
