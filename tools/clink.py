@@ -27,6 +27,28 @@ MAX_RESPONSE_CHARS = 20_000
 SUMMARY_PATTERN = re.compile(r"<SUMMARY>(.*?)</SUMMARY>", re.IGNORECASE | re.DOTALL)
 
 
+def _names_one_model(resolved: str, observed: str) -> bool:
+    """Whether two model names plausibly denote the same model.
+
+    A client asks for an alias and the CLI reports a canonical id — the shipped
+    claude config asks for `sonnet` and gets back `claude-sonnet-4-5-20250929`.
+    Those are one model written in two naming systems, and nothing here maps
+    between them, so comparing the raw strings calls **every ordinary run** of
+    that client a substitution.
+
+    Deliberately biased toward silence: after casefolding and dropping
+    punctuation, containment either way counts as agreement. A missed
+    substitution costs nothing beyond the status quo — the caller still receives
+    both names and can compare them itself — whereas a false one on every
+    default run leaves the flag unable to carry the single signal it exists for.
+    """
+    left = re.sub(r"[^a-z0-9]", "", resolved.casefold())
+    right = re.sub(r"[^a-z0-9]", "", observed.casefold())
+    if not left or not right:
+        return resolved == observed
+    return left in right or right in left
+
+
 def _store_diagnostic(metadata: dict[str, Any], truncated: list[str], field: str, value: str) -> None:
     """Record one failure diagnostic, bounded, and name it if it had to be cut.
 
@@ -403,7 +425,7 @@ class CLinkTool(SimpleTool):
         if (
             result.resolved_model is not None
             and result.observed_model is not None
-            and result.resolved_model != result.observed_model
+            and not _names_one_model(result.resolved_model, result.observed_model)
         ):
             accounting["model_substituted"] = True
         if result.resolved_effort is not None:

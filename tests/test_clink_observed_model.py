@@ -9,7 +9,27 @@ from clink.agents.claude import ClaudeAgent
 from clink.agents.codex import CodexAgent
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
 from clink.parsers.claude import ClaudeJSONParser
-from tools.clink import MAX_RESPONSE_CHARS, CLinkTool
+from tools.clink import MAX_RESPONSE_CHARS, CLinkTool, _names_one_model
+
+
+@pytest.mark.parametrize(
+    ("resolved", "observed", "same"),
+    [
+        # An alias against the dated canonical id — the shipped claude config.
+        ("sonnet", "claude-sonnet-4-5-20250929", True),
+        # antigravity names a model with spaces, dots and a parenthesised tier,
+        # while a backend reports a hyphenated id. Punctuation is the only
+        # difference, and without normalising it this reads as a substitution.
+        ("Gemini 3.1 Pro (High)", "gemini-3.1-pro", True),
+        ("GPT-5.6-Sol", "gpt_5_6_sol", True),
+        # Two real models must stay distinguishable — the normalisation must not
+        # be so loose that the flag can never fire.
+        ("sonnet", "claude-opus-4-6-20260112", False),
+        ("gemini-3.1-pro", "gemini-3.5-flash", False),
+    ],
+)
+def test_which_name_pairs_denote_one_model(resolved, observed, same):
+    assert _names_one_model(resolved, observed) is same
 
 
 class DummyProcess:
@@ -144,6 +164,69 @@ async def test_backend_agreement_does_not_emit_model_substituted(monkeypatch):
     assert metadata["resolved_model"] == "requested-model"
     assert metadata["observed_model"] == "requested-model"
     assert "model_substituted" not in metadata
+
+
+@pytest.mark.asyncio
+async def test_an_alias_and_its_canonical_id_are_not_a_substitution(monkeypatch):
+    """The shipped claude config asks for `sonnet`; the CLI reports the dated id.
+
+    Those are the same model written in two naming systems, and a raw `!=`
+    calls it a substitution on **every ordinary run** of that client. A flag
+    that fires constantly cannot carry the signal it exists for, so this is
+    worse than not flagging: the one real substitution is lost in the noise.
+    """
+    agent, _ = _claude_agent()
+
+    async def fake_create_subprocess_exec(*_args, **_kwargs):
+        return DummyProcess(stdout=_claude_payload("Hello", "claude-sonnet-4-5-20250929"))
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr("tools.clink.create_agent", lambda _client: agent)
+
+    results = await CLinkTool().execute(
+        {
+            "prompt": "Summarize the project",
+            "cli_name": "claude",
+            "role": "default",
+            "absolute_file_paths": [],
+            "images": [],
+            "model": "sonnet",
+        }
+    )
+    metadata = json.loads(results[0].text)["metadata"]
+
+    # Both values still reach the caller unchanged — only the verdict is withheld.
+    assert metadata["resolved_model"] == "sonnet"
+    assert metadata["observed_model"] == "claude-sonnet-4-5-20250929"
+    assert "model_substituted" not in metadata
+
+
+@pytest.mark.asyncio
+async def test_two_genuinely_different_models_are_still_a_substitution(monkeypatch):
+    """The guard above must not swallow the case the flag exists for."""
+    agent, _ = _claude_agent()
+
+    async def fake_create_subprocess_exec(*_args, **_kwargs):
+        return DummyProcess(stdout=_claude_payload("Hello", "claude-opus-4-6-20260112"))
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr("tools.clink.create_agent", lambda _client: agent)
+
+    results = await CLinkTool().execute(
+        {
+            "prompt": "Summarize the project",
+            "cli_name": "claude",
+            "role": "default",
+            "absolute_file_paths": [],
+            "images": [],
+            "model": "sonnet",
+        }
+    )
+    metadata = json.loads(results[0].text)["metadata"]
+
+    assert metadata["model_substituted"] is True
 
 
 @pytest.mark.asyncio
