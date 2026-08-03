@@ -15,12 +15,12 @@ import pytest
 
 from clink.agents.base import CLIAgentError
 from clink.agents.codex import CodexAgent
-from clink.models import ResolvedCLIClient, ResolvedCLIRole
+from clink.models import OutputCaptureConfig, ResolvedCLIClient, ResolvedCLIRole
 
 CATALOG = {"gpt-5.6-sol": ["low", "medium", "high"], "composer-2.5": []}
 
 
-def _agent(catalog, config_args=None):
+def _agent(catalog, config_args=None, output_to_file=None):
     prompt_path = Path("systemprompts/clink/codex_default.txt").resolve()
     role = ResolvedCLIRole(name="default", prompt_path=prompt_path, role_args=[])
     client = ResolvedCLIClient(
@@ -32,7 +32,7 @@ def _agent(catalog, config_args=None):
         timeout_seconds=30,
         parser="codex_jsonl",
         roles={"default": role},
-        output_to_file=None,
+        output_to_file=output_to_file,
         working_dir=None,
         model_catalog=catalog,
     )
@@ -138,6 +138,106 @@ async def test_codex_config_model_in_catalog_is_allowed(spawn_spy):
         await agent.run(role=role, prompt="hi", files=[], images=[])
 
     assert spawn_spy.called is True
+
+
+@pytest.mark.asyncio
+async def test_codex_attached_short_model_is_refused(spawn_spy):
+    model = "definitely-not-a-real-model-zk79"
+    agent, role = _agent(CATALOG, [f"-m{model}"])
+
+    with pytest.raises(CLIAgentError) as excinfo:
+        await agent.run(role=role, prompt="hi", files=[], images=[])
+
+    assert spawn_spy.called is False
+    assert model in str(excinfo.value)
+
+
+@pytest.mark.asyncio
+async def test_codex_attached_long_model_is_refused(spawn_spy):
+    model = "definitely-not-a-real-model-zk79"
+    agent, role = _agent(CATALOG, [f"--model={model}"])
+
+    with pytest.raises(CLIAgentError) as excinfo:
+        await agent.run(role=role, prompt="hi", files=[], images=[])
+
+    assert spawn_spy.called is False
+    assert model in str(excinfo.value)
+
+
+@pytest.mark.asyncio
+async def test_codex_attached_short_config_model_is_refused(spawn_spy):
+    model = "definitely-not-a-real-model-zk79"
+    agent, role = _agent(CATALOG, [f"-cmodel={model}"])
+
+    with pytest.raises(CLIAgentError) as excinfo:
+        await agent.run(role=role, prompt="hi", files=[], images=[])
+
+    assert spawn_spy.called is False
+    assert model in str(excinfo.value)
+
+
+@pytest.mark.asyncio
+async def test_codex_two_token_long_config_model_is_refused(spawn_spy):
+    model = "definitely-not-a-real-model-zk79"
+    agent, role = _agent(CATALOG, ["--config", f"model={model}"])
+
+    with pytest.raises(CLIAgentError) as excinfo:
+        await agent.run(role=role, prompt="hi", files=[], images=[])
+
+    assert spawn_spy.called is False
+    assert model in str(excinfo.value)
+
+
+@pytest.mark.asyncio
+async def test_codex_attached_long_config_model_is_refused(spawn_spy):
+    model = "definitely-not-a-real-model-zk79"
+    agent, role = _agent(CATALOG, [f"--config=model={model}"])
+
+    with pytest.raises(CLIAgentError) as excinfo:
+        await agent.run(role=role, prompt="hi", files=[], images=[])
+
+    assert spawn_spy.called is False
+    assert model in str(excinfo.value)
+
+
+def test_config_attached_to_long_flag_does_not_match_short_config_flag():
+    from clink.agents.base import flag_values
+
+    assert flag_values(["codex", "--config=model=X"], ("-c", "--config"), prefix="model=") == ["X"]
+    assert flag_values(["codex", "--config=model=X"], ("-c",), prefix="model=") == []
+
+
+@pytest.mark.parametrize(
+    "config_args",
+    [
+        pytest.param(["--config", "model_reasoning_effort=high"], id="two-token-long-config"),
+        pytest.param(["-cmodel_reasoning_effort=high"], id="attached-short-config"),
+    ],
+)
+def test_codex_config_effort_spellings_resolve(config_args):
+    agent, role = _agent(CATALOG, config_args)
+    command = agent._build_command(role=role)
+
+    assert agent._resolve_model_effort(command) == (None, "high")
+
+
+def test_model_prefix_does_not_match_model_reasoning_effort():
+    from clink.agents.base import flag_values
+
+    assert flag_values(["codex", "-c", "model_reasoning_effort=high"], ("-c",), prefix="model=") == []
+
+
+@pytest.mark.asyncio
+async def test_model_injected_by_output_flag_template_is_refused(spawn_spy):
+    model = "definitely-not-a-real-model-zk79"
+    output_to_file = OutputCaptureConfig(flag_template=f"--model={model} {{path}}")
+    agent, role = _agent(CATALOG, output_to_file=output_to_file)
+
+    with pytest.raises(CLIAgentError) as excinfo:
+        await agent.run(role=role, prompt="hi", files=[], images=[])
+
+    assert spawn_spy.called is False
+    assert model in str(excinfo.value)
 
 
 def test_codex_config_model_and_effort_resolve_independently():

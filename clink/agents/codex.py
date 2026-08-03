@@ -12,10 +12,8 @@ class CodexAgent(BaseCLIAgent):
     """Codex CLI agent with JSONL recovery support."""
 
     MODEL_FLAGS = ("-m", "--model")
-    MODEL_PREFIX_FLAGS = (("-c", "model="),)
-    # Effort is one `-c key=value` setting among possibly several, so the key —
-    # not the flag alone — identifies it.
-    EFFORT_FLAG = "-c"
+    MODEL_CONFIG_FLAGS = ("-c", "--config")
+    EFFORT_FLAGS = ("-c", "--config")
     EFFORT_PREFIX = "model_reasoning_effort="
 
     # Codex reports these on `turn.completed`. Its wire names happen to match the
