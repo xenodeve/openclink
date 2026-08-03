@@ -17,6 +17,7 @@ from clink.constants import DEFAULT_STREAM_LIMIT
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
 from clink.parsers import BaseParser, ParsedCLIResponse, ParserError, get_parser
 from clink.parsers.base import NO_ANSWER_METADATA_KEY
+from clink.validation import validate_model_request
 
 logger = logging.getLogger("clink.agent")
 
@@ -153,6 +154,7 @@ class BaseCLIAgent:
             model=model,
             reasoning_effort=reasoning_effort,
         )
+        self.refuse_unservable(command)
         env = self._build_environment()
 
         # Resolve executable path for cross-platform compatibility (especially Windows)
@@ -343,6 +345,30 @@ class BaseCLIAgent:
             resolved_effort=resolved_effort,
             token_usage=token_usage,
         )
+
+    def refuse_unservable(self, command: Sequence[str]) -> None:
+        """Raise if this client cannot serve the tuple the command asks for.
+
+        Called before anything is spawned — earlier even than resolving the
+        executable, because refusing a model the client cannot serve should not
+        depend on whether the CLI happens to be installed.
+
+        Every runner has to call this, including one that overrides `run`.
+        `_build_command` would have been the tidier single choke point, but
+        `AntigravityAgent` overrides that too, so putting it there would silently
+        exempt exactly the client this fork already has a wrong-model scar from.
+        """
+        if not self.client.model_catalog:
+            return
+        model, effort = self._resolve_model_effort(command)
+        refusal = validate_model_request(
+            client_name=self.client.name,
+            model=model,
+            effort=effort,
+            catalog=self.client.model_catalog,
+        )
+        if refusal is not None:
+            raise CLIAgentError(refusal, returncode=None)
 
     def _extract_token_usage(self, parsed: ParsedCLIResponse) -> TokenUsage | None:
         """Map this CLI's raw usage report onto the normalised account.

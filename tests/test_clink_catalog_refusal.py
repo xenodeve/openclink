@@ -1,0 +1,107 @@
+"""A refused tuple must be refused *before* anything is spawned (#27).
+
+The point of validating at all is that the process never starts. An exception
+reaching the caller does not establish that: it is also what you get from a
+process that started, ran, and failed. So these tests spy on the spawn itself
+and assert it was never reached — the acceptance criterion asks for that
+directly rather than inferred from a raise.
+"""
+
+import asyncio
+import shutil
+from pathlib import Path
+
+import pytest
+
+from clink.agents.base import CLIAgentError
+from clink.agents.codex import CodexAgent
+from clink.models import ResolvedCLIClient, ResolvedCLIRole
+
+CATALOG = {"gpt-5.6-sol": ["low", "medium", "high"], "composer-2.5": []}
+
+
+def _agent(catalog):
+    prompt_path = Path("systemprompts/clink/codex_default.txt").resolve()
+    role = ResolvedCLIRole(name="default", prompt_path=prompt_path, role_args=[])
+    client = ResolvedCLIClient(
+        name="codex",
+        executable=["codex"],
+        internal_args=["exec"],
+        config_args=["--json"],
+        env={},
+        timeout_seconds=30,
+        parser="codex_jsonl",
+        roles={"default": role},
+        output_to_file=None,
+        working_dir=None,
+        model_catalog=catalog,
+    )
+    return CodexAgent(client), role
+
+
+class SpawnSpy:
+    """Records whether a subprocess was ever created."""
+
+    def __init__(self):
+        self.called = False
+
+    async def __call__(self, *_args, **_kwargs):
+        self.called = True
+        raise AssertionError("a process was spawned for a request that should have been refused")
+
+
+@pytest.fixture()
+def spawn_spy(monkeypatch):
+    spy = SpawnSpy()
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", spy)
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    return spy
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "model,effort",
+    [
+        pytest.param("no-such-model", "high", id="unknown-model"),
+        pytest.param("gpt-5.6-sol", "max", id="tier-the-model-does-not-serve"),
+        pytest.param("composer-2.5", "high", id="tier-on-a-model-with-no-tiers"),
+    ],
+)
+async def test_an_unserviceable_tuple_never_reaches_a_process(spawn_spy, model, effort):
+    agent, role = _agent(CATALOG)
+
+    with pytest.raises(CLIAgentError) as excinfo:
+        await agent.run(role=role, prompt="hi", files=[], images=[], model=model, reasoning_effort=effort)
+
+    assert spawn_spy.called is False
+    # The refusal has to be actionable: it names what was asked for and what the
+    # client can serve, so an agent can correct the call without hunting a catalog.
+    message = str(excinfo.value)
+    assert model in message
+    assert "codex" in message
+
+
+@pytest.mark.asyncio
+async def test_a_client_with_no_catalog_still_spawns(spawn_spy):
+    """The opt-in property, asserted from the spawn side.
+
+    A client that declared no catalog must reach the process exactly as before —
+    otherwise adding validation would silently break every client that has not
+    declared one yet.
+    """
+    agent, role = _agent(None)
+
+    with pytest.raises(AssertionError, match="a process was spawned"):
+        await agent.run(role=role, prompt="hi", files=[], images=[], model="anything-at-all")
+
+    assert spawn_spy.called is True
+
+
+@pytest.mark.asyncio
+async def test_a_servable_tuple_still_spawns(spawn_spy):
+    agent, role = _agent(CATALOG)
+
+    with pytest.raises(AssertionError, match="a process was spawned"):
+        await agent.run(role=role, prompt="hi", files=[], images=[], model="gpt-5.6-sol", reasoning_effort="high")
+
+    assert spawn_spy.called is True

@@ -173,6 +173,7 @@ class ClinkRegistry:
             roles=roles,
             output_to_file=output_to_file,
             working_dir=working_dir,
+            model_catalog=raw.model_catalog,
         )
 
     def _resolve_executable(
