@@ -147,20 +147,28 @@ async def test_codex_run_reports_the_resolved_tuple(monkeypatch, config_args, ov
 
 @pytest.mark.asyncio
 async def test_a_non_zero_exit_still_reports_what_it_consumed(monkeypatch):
-    """A call that spent tokens and then failed must still account for them."""
+    """A call that spent tokens and then failed must still account for them.
+
+    #13 made a non-zero exit a failure rather than a recovered success, so the
+    account travels on the error now. The guarantee is unchanged — only its
+    address is. If this ever stops holding, a failed delegation becomes free in
+    the caller's books while still costing real quota.
+    """
     agent, role = _codex_agent()
     turn = (
         '{"type":"turn.completed","usage":{"input_tokens":20267,"cached_input_tokens":8960,'
         '"output_tokens":279,"reasoning_output_tokens":200}}'
     )
     process = DummyProcess(stdout=_stdout(turn), returncode=124)
-    result = await _run(monkeypatch, agent, role, process, model="gpt-5.6-luna", reasoning_effort="xhigh")
 
-    assert result.returncode == 124
-    assert result.token_usage == TokenUsage(
+    with pytest.raises(CLIAgentError) as excinfo:
+        await _run(monkeypatch, agent, role, process, model="gpt-5.6-luna", reasoning_effort="xhigh")
+
+    assert excinfo.value.returncode == 124
+    assert excinfo.value.token_usage == TokenUsage(
         input_tokens=20267, cached_input_tokens=8960, output_tokens=279, reasoning_output_tokens=200
     )
-    assert (result.resolved_model, result.resolved_effort) == ("gpt-5.6-luna", "xhigh")
+    assert excinfo.value.parsed is not None
 
 
 @pytest.mark.asyncio

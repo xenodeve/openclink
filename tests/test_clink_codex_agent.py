@@ -58,11 +58,17 @@ async def test_codex_agent_recovers_jsonl(monkeypatch, codex_agent):
 {"type":"turn.completed","usage":{"input_tokens":10,"output_tokens":5}}
 """
     process = DummyProcess(stdout=stdout, returncode=124)
-    result = await _run_agent_with_process(monkeypatch, agent, role, process)
 
-    assert result.returncode == 124
-    assert "Hello from Codex" in result.parsed.content
-    assert result.parsed.metadata["usage"]["output_tokens"] == 5
+    # Recovered JSONL is still a failed run (#13) — the salvaged message and its
+    # usage travel on the error so a caller can diagnose what it spent and why.
+    with pytest.raises(CLIAgentError) as excinfo:
+        await _run_agent_with_process(monkeypatch, agent, role, process)
+
+    assert excinfo.value.returncode == 124
+    parsed = excinfo.value.parsed
+    assert parsed is not None
+    assert "Hello from Codex" in parsed.content
+    assert parsed.metadata["usage"]["output_tokens"] == 5
 
 
 @pytest.mark.asyncio

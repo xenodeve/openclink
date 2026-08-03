@@ -8,6 +8,7 @@ import pytest
 from clink.agents.base import CLIAgentError
 from clink.agents.claude import ClaudeAgent
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
+from clink.parsers.base import ParsedCLIResponse
 
 
 class DummyProcess:
@@ -82,24 +83,12 @@ async def test_claude_agent_injects_system_prompt(monkeypatch, claude_agent):
     assert process.stdin_data.decode().startswith("Respond with 42")
 
 
-@pytest.mark.asyncio
-async def test_claude_agent_recovers_error_payload(monkeypatch, claude_agent):
-    agent, role = claude_agent
-    stdout_payload = json.dumps(
-        {
-            "type": "result",
-            "subtype": "success",
-            "is_error": True,
-            "result": "API Error",
-        }
-    ).encode()
-    process = DummyProcess(stdout=stdout_payload, returncode=2)
-
-    result = await _run_agent_with_process(monkeypatch, agent, role, process)
-
-    assert result.returncode == 2
-    assert result.parsed.content == "API Error"
-    assert result.parsed.metadata["is_error"] is True
+# `test_claude_agent_recovers_error_payload` used to live here. It asserted that a
+# returncode of 2 produced a *successful* AgentOutput — the exact behaviour #13
+# removes — and its replacement is
+# `test_the_failure_still_carries_the_salvaged_content` below, which pins the same
+# salvaged payload on the error instead. Removed rather than rewritten because a
+# rewrite would have been a verbatim duplicate of that test.
 
 
 @pytest.mark.asyncio
@@ -109,3 +98,82 @@ async def test_claude_agent_propagates_unparseable_output(monkeypatch, claude_ag
 
     with pytest.raises(CLIAgentError):
         await _run_agent_with_process(monkeypatch, agent, role, process)
+
+
+# --- honest outcome semantics (#13) ----------------------------------------
+#
+# The outcome is what the child's exit code says, not what its output happens to
+# parse into. Recovery keeps its real job — salvaging content from a failed run
+# so a caller can diagnose it — but it no longer relabels the run a success.
+
+
+@pytest.mark.asyncio
+async def test_a_non_zero_exit_is_a_failure_even_when_the_output_parses(monkeypatch, claude_agent):
+    """Parseability is not success. A child that exited non-zero failed."""
+    agent, role = claude_agent
+    stdout_payload = json.dumps(
+        {"type": "result", "subtype": "success", "is_error": True, "result": "API Error"}
+    ).encode()
+    process = DummyProcess(stdout=stdout_payload, returncode=2)
+
+    with pytest.raises(CLIAgentError) as excinfo:
+        await _run_agent_with_process(monkeypatch, agent, role, process)
+
+    assert excinfo.value.returncode == 2
+
+
+@pytest.mark.asyncio
+async def test_the_failure_still_carries_the_salvaged_content(monkeypatch, claude_agent):
+    """Reporting the truth must not cost the caller its diagnosis.
+
+    The recovery hook exists so a failed run still yields whatever the child
+    managed to say. That content has to survive onto the error, or making the
+    outcome honest would make it useless.
+    """
+    agent, role = claude_agent
+    stdout_payload = json.dumps(
+        {"type": "result", "subtype": "success", "is_error": True, "result": "API Error"}
+    ).encode()
+    process = DummyProcess(stdout=stdout_payload, returncode=2)
+
+    with pytest.raises(CLIAgentError) as excinfo:
+        await _run_agent_with_process(monkeypatch, agent, role, process)
+
+    assert excinfo.value.parsed is not None
+    assert excinfo.value.parsed.content == "API Error"
+    assert excinfo.value.parsed.metadata["is_error"] is True
+
+
+@pytest.mark.asyncio
+async def test_a_run_that_produced_no_answer_is_a_failure_despite_exiting_zero(claude_agent):
+    """The live shape: a clean exit that answered nothing.
+
+    The issue describes this as "exit 0 with empty output", but no parser in the
+    tree can produce that — all four raise on empty content. The real mechanism
+    is narrower and is already labelled: `clink/parsers/antigravity.py` returns
+    **stderr as the content** when stdout is empty, tagging it `empty_stdout`.
+    An empty run therefore arrives with non-empty content, and the tag that says
+    so is the only thing distinguishing it from a real answer.
+
+    Nothing acted on that tag. This asserts the outcome seam does.
+    """
+    agent, _role = claude_agent
+    parsed = ParsedCLIResponse(
+        content="a tool required a permission headless mode cannot prompt for",
+        metadata={"empty_stdout": True},
+    )
+
+    with pytest.raises(CLIAgentError) as excinfo:
+        agent.finalize_output(
+            parsed=parsed,
+            sanitized_command=["claude"],
+            returncode=0,
+            stdout="",
+            stderr="a tool required a permission headless mode cannot prompt for",
+            duration_seconds=0.1,
+        )
+
+    assert excinfo.value.returncode == 0
+    # The diagnostic still has to reach the caller — that is the whole point of it.
+    assert excinfo.value.parsed is not None
+    assert "permission" in excinfo.value.parsed.content

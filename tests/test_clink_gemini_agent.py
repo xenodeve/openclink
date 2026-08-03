@@ -63,12 +63,18 @@ async def test_gemini_agent_recovers_tool_error(monkeypatch, gemini_agent):
     stderr = ("Error: Failed to edit, expected 1 occurrence but found 2.\n" + error_json).encode()
     process = DummyProcess(stderr=stderr, returncode=54)
 
-    result = await _run_agent_with_process(monkeypatch, agent, role, process)
+    # A recovered tool error is still a failure (#13). Recovery's job is to salvage
+    # the diagnosis, not to relabel the run; the structured payload therefore has
+    # to arrive on the error rather than on a successful result.
+    with pytest.raises(CLIAgentError) as excinfo:
+        await _run_agent_with_process(monkeypatch, agent, role, process)
 
-    assert result.returncode == 54
-    assert result.parsed.metadata["cli_error_recovered"] is True
-    assert result.parsed.metadata["cli_error_code"] == "edit_expected_occurrence_mismatch"
-    assert "Gemini CLI reported a tool failure" in result.parsed.content
+    assert excinfo.value.returncode == 54
+    parsed = excinfo.value.parsed
+    assert parsed is not None
+    assert parsed.metadata["cli_error_recovered"] is True
+    assert parsed.metadata["cli_error_code"] == "edit_expected_occurrence_mismatch"
+    assert "Gemini CLI reported a tool failure" in parsed.content
 
 
 @pytest.mark.asyncio

@@ -499,6 +499,16 @@ class CLinkTool(SimpleTool):
             "cli_name": client.name,
             "return_code": exc.returncode,
         }
+        # A failed run still says something and still spent something. Both have to
+        # reach the caller, or reporting the failure honestly would cost them the
+        # diagnosis and the accounting at the same time.
+        if exc.parsed is not None:
+            metadata["salvaged_content"] = exc.parsed.content
+            metadata.update(self._prune_metadata(exc.parsed.metadata, client, reason="error"))
+        if exc.token_usage is not None:
+            reported = {name: value for name, value in asdict(exc.token_usage).items() if value is not None}
+            if reported:
+                metadata["normalized_usage"] = reported
         if exc.stdout:
             metadata["stdout"] = exc.stdout.strip()
         if exc.stderr:
