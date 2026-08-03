@@ -17,6 +17,7 @@ from clink.constants import DEFAULT_STREAM_LIMIT
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
 from clink.parsers import BaseParser, ParsedCLIResponse, ParserError, get_parser
 from clink.parsers.base import NO_ANSWER_METADATA_KEY
+from clink.validation import validate_model_request
 
 logger = logging.getLogger("clink.agent")
 
@@ -60,24 +61,44 @@ class AgentOutput:
 MAX_DRAINED_OUTPUT_CHARS = 10_000
 
 
-def last_flag_value(command: Sequence[str], *flags: str, prefix: str | None = None) -> str | None:
-    """Value following the last occurrence of any of `flags`.
+def flag_values(command: Sequence[str], flags: Sequence[str], *, prefix: str | None = None) -> list[str]:
+    """Return values read for `flags`, in command order.
 
-    Per-call overrides are appended last, so the last occurrence is the one the
-    CLI will honour. With `prefix`, only values carrying it match and the prefix
-    is stripped — that is the `-c key=value` shape, where the flag alone does not
-    identify the setting.
+    A CLI accepts several spellings of one setting, and reading back only one
+    of them is how a validated command turns into a spawn of something else.
+    This handles `flag value`, `flag=value`, and short attached values such as
+    `-fvalue`. With `prefix`, only values carrying the prefix match and the
+    prefix is stripped â€” that is the `-c key=value` shape, where the flag alone
+    does not identify the setting.
     """
-    found: str | None = None
-    for index, token in enumerate(command[:-1]):
-        if token not in flags:
+    flag_set = set(flags)
+    values: list[str] = []
+    for index, token in enumerate(command):
+        value: str | None = None
+        if token in flag_set and index + 1 < len(command):
+            value = command[index + 1]
+        else:
+            for flag in flags:
+                if token.startswith(f"{flag}=") and flag.startswith("--"):
+                    value = token[len(flag) + 1 :]
+                    break
+                if (
+                    len(flag) == 2
+                    and flag.startswith("-")
+                    and not flag.startswith("--")
+                    and token.startswith(flag)
+                    and token != flag
+                ):
+                    value = token[len(flag) :]
+                    break
+        if value is None:
             continue
-        value = command[index + 1]
-        if prefix is None:
-            found = value
-        elif value.startswith(prefix):
-            found = value[len(prefix) :]
-    return found
+        if prefix is not None:
+            if not value.startswith(prefix):
+                continue
+            value = value[len(prefix) :]
+        values.append(value)
+    return values
 
 
 def _tail(raw: bytes | None) -> str:
@@ -120,7 +141,10 @@ class BaseCLIAgent:
     # (`_resolve_model_effort`) cannot drift apart — this fork already has a scar
     # from a CLI silently ignoring a correctly-constructed `--model`.
     MODEL_FLAGS: tuple[str, ...] = ("--model",)
-    EFFORT_FLAG: str | None = None
+    # Flags whose value is a `key=value` config setting; the model is the one keyed below.
+    MODEL_CONFIG_FLAGS: tuple[str, ...] = ()
+    MODEL_CONFIG_PREFIX: str = "model="
+    EFFORT_FLAGS: tuple[str, ...] = ()
     EFFORT_PREFIX: str | None = None
 
     # CLI usage key -> normalised TokenUsage field. Empty means this client has no
@@ -153,6 +177,7 @@ class BaseCLIAgent:
             model=model,
             reasoning_effort=reasoning_effort,
         )
+        self.refuse_unservable(command)
         env = self._build_environment()
 
         # Resolve executable path for cross-platform compatibility (especially Windows)
@@ -194,6 +219,7 @@ class BaseCLIAgent:
         if cwd:
             self._logger.debug("Working directory: %s", cwd)
 
+        self.refuse_unservable(command_with_output_flag)
         try:
             process = await asyncio.create_subprocess_exec(
                 *command_with_output_flag,
@@ -344,6 +370,35 @@ class BaseCLIAgent:
             token_usage=token_usage,
         )
 
+    def refuse_unservable(self, command: Sequence[str]) -> None:
+        """Raise if this client cannot serve the tuple the command asks for.
+
+        Called before anything is spawned — earlier even than resolving the
+        executable, because refusing a model the client cannot serve should not
+        depend on whether the CLI happens to be installed.
+
+        This reads the command, so it can only refuse a model the command names. A CLI that also takes a
+        model from its own config file or a profile can still spawn one the catalog excludes, with nothing
+        on the argv to see. The check is a guard over what PAL builds, not a guarantee about what the CLI
+        ultimately runs.
+
+        Every runner has to call this, including one that overrides `run`.
+        `_build_command` would have been the tidier single choke point, but
+        `AntigravityAgent` overrides that too, so putting it there would silently
+        exempt exactly the client this fork already has a wrong-model scar from.
+        """
+        if not self.client.model_catalog:
+            return
+        model, effort = self._resolve_model_effort(command)
+        refusal = validate_model_request(
+            client_name=self.client.name,
+            model=model,
+            effort=effort,
+            catalog=self.client.model_catalog,
+        )
+        if refusal is not None:
+            raise CLIAgentError(refusal, returncode=None)
+
     def _extract_token_usage(self, parsed: ParsedCLIResponse) -> TokenUsage | None:
         """Map this CLI's raw usage report onto the normalised account.
 
@@ -367,10 +422,19 @@ class BaseCLIAgent:
         `_model_args`. This is the *resolved* request, not proof the backend
         complied — that is the observed value, which most CLIs do not report.
         """
-        model = last_flag_value(command, *self.MODEL_FLAGS)
-        if self.EFFORT_FLAG is None:
-            return model, None
-        return model, last_flag_value(command, self.EFFORT_FLAG, prefix=self.EFFORT_PREFIX)
+        model_values = flag_values(command, self.MODEL_FLAGS)
+        model = model_values[-1] if model_values else None
+        if model is None:
+            config_model_values = flag_values(
+                command,
+                self.MODEL_CONFIG_FLAGS,
+                prefix=self.MODEL_CONFIG_PREFIX,
+            )
+            model = config_model_values[-1] if config_model_values else None
+
+        effort_values = flag_values(command, self.EFFORT_FLAGS, prefix=self.EFFORT_PREFIX)
+        effort = effort_values[-1] if effort_values else None
+        return model, effort
 
     def _build_command(
         self,

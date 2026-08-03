@@ -66,6 +66,10 @@ class AntigravityAgent(BaseCLIAgent):
             model=model,
             reasoning_effort=reasoning_effort,
         )
+        # This runner overrides `run` wholesale, so it inherits nothing from the
+        # base loop — the refusal has to be called here too or agy is the one
+        # client that spawns an unservable model.
+        self.refuse_unservable(command)
 
         resolved = shutil.which(command[0])
         if resolved is None:
