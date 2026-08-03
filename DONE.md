@@ -3,6 +3,44 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-03 — the clink model is read back from every spelling, and reported three ways (#27 PR #35, #28 PR #40)
+
+Two slices that only make sense together: #27 refuses a model the client cannot serve *before* spawning,
+and #28 reports `requested` / `resolved` / `observed` so a backend that ran something else is visible
+*after*. Both merged onto a `main` that already had #13.
+
+**The lesson worth keeping is that both were fixed twice.** Each shipped a first version that closed the
+case in front of it, and a pre-merge review found the same defect one layer out:
+
+- #27's first fix handled `-c model=X`. Probing the real binary found **five more spellings that all
+  reached the API** — `-mX`, `--model=X`, `-cmodel=X`, `--config model=X`, `--config=model=X`. The fix
+  covered three of eight while its own commit message argued against enumerating spellings. Parsing is
+  now one function, `flag_values`, and *both* the model and effort knobs derive from it; the effort knob
+  had the identical hole.
+- #28's `model_substituted` compared names with `!=`. The shipped claude config asks for `sonnet` and
+  the parser reports `claude-sonnet-4-5-20250929`, so the flag fired on **every ordinary run of that
+  client** — worse than absent, because a flag that fires constantly cannot carry the one signal it
+  exists for.
+
+**Verified against the real CLI, and that phrase needed care.** Two codex binaries are installed:
+`which codex` gives **0.142.4**, while clink spawns `codex.CMD` **0.144.4**, and they disagree — the
+older one 400s on a model the newer serves. A shell probe silently tests the wrong one. Precedence was
+measured, not assumed: a two-token model flag beats a config-key spelling regardless of token order.
+
+**Stated rather than overstated.** `refuse_unservable` reads the command, and codex also takes a model
+from `~/.codex/config.toml` (line 1 here is `model = "gpt-5.6-luna"`) and from `--profile`. The catalog
+therefore cannot be enforced from argv at all. Closing that is a public-contract change, so it is #39,
+and the docstring now says plainly that the check guards what PAL builds and does not guarantee what the
+CLI runs.
+
+**Validated:** `960 passed, 4 skipped` on `main`. Red was genuine throughout — the refusal tests failed
+with `a process was spawned for a request that should have been refused`, each logging the command that
+actually spawned. Ten mutants across the two slices, all killed. Two survived on first run and both
+pointed at real coverage gaps rather than dead code: the antigravity parser had no test at all, and the
+punctuation-normalisation step in the name comparison was unexercised.
+
+Follow-ups filed rather than absorbed: #37, #39, #41 · and #36 for the missing enforcement layer.
+
 ## 2026-08-03 — a clink run that failed is now reported as failed (#13, `e3c7c5b`)
 
 A non-zero exit used to be re-parsed by the recovery hook and, if the output parsed, returned as a
@@ -21,7 +59,9 @@ only its address moved from the result to the error.
 **The issue's second case was mis-specified and the correction is the durable part.** It described
 "exit 0 with empty output"; no parser in the tree can produce that, since all four raise on empty
 content. The real mechanism is that `clink/parsers/antigravity.py` returns *stderr as the content*
-when stdout is empty, tagging it `empty_stdout` — so an empty run arrives with non-empty text and
+when stdout is empty, tagging it `empty_stdout` (**renamed later the same day** — the tag is now the
+shared `NO_ANSWER_METADATA_KEY`, because the gemini parser spelled the same concept `empty_response`
+and `finalize_output` checked only one of them) — so an empty run arrives with non-empty text and
 that tag is the only thing separating a diagnostic from a reply. The parser had been labelling it all
 along and nothing read the label.
 

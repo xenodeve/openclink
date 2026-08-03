@@ -68,10 +68,31 @@ possible again. Start order: #13 → #14, with #12 runnable in parallel througho
 | # | Deliverable | State |
 |---|---|---|
 | #12 | Phase 0 — spike: does the host issue a follow-up call? which CLIs have a pre-tool hook + resumable session? | ready-for-agent (no production code) |
-| #13 | Phase 1 — honest outcome semantics (non-zero exit ≠ success) | ready-for-agent · lands red first |
+| #13 | Phase 1 — honest outcome semantics (non-zero exit ≠ success) | ✅ shipped 2026-08-03 (PR #34, `2823072`) |
 | #14 | Phase 2 — per-client trust level applied at spawn | ready-for-agent · needs live per-client verification |
 | #15 | Phase 3 — supervised session: non-blocking call, registry, evidence-based status | 🚧 gated on #12 Q1 + #13 |
 | #16 | Phase 4 — interrupt-and-resume per-action approval | 🚧 gated on #12 (both Qs) + #15 |
+
+**Accounting/routing slices shipped 2026-08-03**, all on `main` and all mutation-verified:
+
+| # | Deliverable | State |
+|---|---|---|
+| #23 | normalised token account + one output factory + declared flag vocabulary | ✅ PR #32 |
+| #27 | refuse a model the client cannot serve, before spawn | ✅ PR #35 (`d4862b1`) |
+| #28 | report requested / resolved / observed model, flag a substitution | ✅ PR #40 (`8de2023`) |
+| #30 | unit suite green on Windows | ✅ PR #31 |
+
+**The suite baseline changed with #30: it is now 0 failed, not "25 failed is normal".** On `main` at
+`b608f2f` it is **960 passed, 4 skipped, 16 deselected**. Any red is yours.
+
+Opened by this batch, none of it started:
+
+| # | What | Why it is not a commit |
+|---|---|---|
+| #36 | retrofit the T4 enforcement layer — this repo has the docs but **no `.claude/hooks/`, no `t4.json`, no `hooks` key** | slice 1 (CLAUDE.md standing defaults) shipped as PR #38; slice 2 open |
+| #37 | parser `raw` / `raw_events` metadata reaches the caller uncapped on both paths | predates #13, outside its finding |
+| #39 | **the model catalog cannot be enforced from argv** — codex takes a model from `~/.codex/config.toml` and `--profile` | closing it is a public-contract change; `ready-for-human` |
+| #41 | a failed run reports no model accounting; `"unknown"` is truthy and unlike its neighbour's absence convention | two small contract questions |
 
 Records this epic owes: an **ADR** for the blocking→handle call-shape change (#15), and a
 **report** in `docs/reports/` for the transport-timeout diagnosis. Neither is written yet — the
@@ -116,7 +137,9 @@ Source: `docs/reports/2026-07-16-clink-brainstorm-gap-analysis.md` (codex + clau
   accounting. Verified against the real codex binary, not only in unit tests. **The issue's second
   case was mis-specified:** "exit 0 with empty output" cannot occur — all four parsers raise on empty
   content. The real mechanism is `clink/parsers/antigravity.py` returning *stderr as content* when
-  stdout is empty and tagging it `empty_stdout`; the tag existed and nothing read it. See `DONE.md`.
+  stdout is empty and tagging it — the tag existed and nothing read it. It is now the shared
+  `NO_ANSWER_METADATA_KEY` set by **all four** parsers, not the per-parser spelling this line
+  originally cited (`empty_stdout` / `empty_response`). See `DONE.md`.
 - 🔴 **No CI runs at all — and it cannot be switched on.** Superseding the "no *Windows* CI" framing:
   `gh workflow list --all` shows every workflow `active`, but `gh run list` returns **one run in the
   repo's entire history** (a Copilot review), so `test.yml` has **never executed** — PR #5 merged and
