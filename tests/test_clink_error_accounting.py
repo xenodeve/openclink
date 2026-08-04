@@ -31,6 +31,11 @@ def _args(cli_name: str = "gemini") -> dict:
         "role": "default",
         "absolute_file_paths": [],
         "images": [],
+        # #29 landed after this file and makes an omitted model a refusal, so every
+        # call through the tool now carries one. Irrelevant to what these tests
+        # assert — the model accounting they check comes from the raised
+        # CLIAgentError, not from the request.
+        "model": "gemini-3.1-pro",
     }
 
 

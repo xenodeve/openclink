@@ -104,7 +104,10 @@ def _codex_payload() -> bytes:
     )
 
 
-async def _execute_with_agent(monkeypatch, agent, *, cli_name: str, model: str | None = None):
+# #29: an omitted model is refused, so every call through the tool now carries one.
+# "configured-model" matches what these clients already pin in config_args, so the
+# resolved value — and therefore every assertion below — is unchanged by passing it.
+async def _execute_with_agent(monkeypatch, agent, *, cli_name: str, model: str = "configured-model"):
     async def fake_create_subprocess_exec(*_args, **_kwargs):
         stdout = _claude_payload("Hello", "backend-model") if cli_name == "claude" else _codex_payload()
         return DummyProcess(stdout=stdout)
@@ -241,9 +244,16 @@ async def test_codex_payload_without_observed_model_omits_it_without_substitutio
 
     metadata = await _execute_with_agent(monkeypatch, agent, cli_name="codex")
 
+    # #29 removed the scenario this test used to describe. `requested_model` could
+    # only be absent when the caller omitted the model, and an omitted model is now
+    # refused before an agent exists — so "the caller did not choose a model" is no
+    # longer a reachable state through the tool. The test is rewritten to the state
+    # that replaced it: the caller named the same model the client had configured,
+    # which is what an existing caller must now do explicitly, and no substitution
+    # is reported for it.
+    assert metadata["requested_model"] == "configured-model"
     assert metadata["resolved_model"] == "configured-model"
     assert "observed_model" not in metadata
-    assert "requested_model" not in metadata
     # Absence must not be inferable from a substitution flag either.
     assert "model_substituted" not in metadata
 
@@ -275,6 +285,7 @@ async def test_all_model_values_survive_the_output_limiter(monkeypatch):
             "role": "default",
             "absolute_file_paths": [],
             "images": [],
+            "model": "requested-model",
         }
     )
     payload = json.loads(results[0].text)
@@ -313,6 +324,7 @@ async def test_requested_model_is_reported_when_different_from_resolved(monkeypa
             "role": "default",
             "absolute_file_paths": [],
             "images": [],
+            "model": "caller-model",
         }
     )
     metadata = json.loads(results[0].text)["metadata"]

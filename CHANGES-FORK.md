@@ -1,6 +1,22 @@
 # Fork changes
 
-This is a fork of [BeehiveInnovations/pal-mcp-server](https://github.com/BeehiveInnovations/pal-mcp-server) (Apache-2.0), which has been **unmaintained since ~mid-2026**. Everything from upstream is unchanged except for the additive `clink` changes described below: three new agents (`antigravity`, `claude-9arm`, `cursor`) plus an optional **per-call `model` / `reasoning_effort` override**. Existing CLI (`gemini`, `claude`, `codex`) behavior is unchanged whenever the new params are omitted — they default to off.
+This is a fork of [BeehiveInnovations/pal-mcp-server](https://github.com/BeehiveInnovations/pal-mcp-server) (Apache-2.0), which has been **unmaintained since ~mid-2026**. Everything from upstream is unchanged except for the `clink` changes described below: three new agents (`antigravity`, `claude-9arm`, `cursor`) plus a per-call `model` / `reasoning_effort` override.
+
+**One of those changes is not additive — see [Breaking changes](#breaking-changes) below.** `model` is now **required**; it used to be optional and fall through to the client's configured default.
+
+## Breaking changes
+
+### `model` is required — an omitted model is refused, not resolved to the client's default (#29)
+
+`clink`'s `model` field used to advertise *"Omit to use the CLI's configured default."* That fallback is what made **a model nobody chose indistinguishable from a model someone did** — the caller received a `resolved_model` either way, with nothing to say whether a human or a config file picked it. It is the same defect class as refusing a model the client cannot serve (#27) and flagging a silent substitution (#28), one step earlier in the chain.
+
+An omitted (or explicitly `null`) `model` is now refused before an agent is created, with an error naming the field. It is also declared in the tool schema's `required` list, so a validating MCP client rejects the call before it is ever sent — a description that says "required" is not a contract, and the enforced one has to match the advertised one.
+
+**No grace period.** The decision is recorded on #29 with its reasoning: a warning window keeps serving the unchosen model, which is the defect being removed; the caller is an agent with no habit of reading deprecation metadata; and every caller is one of this developer's own repos, so a one-step break is a same-day fix. **Reverse this if that premise is wrong** — the whole argument rests on no caller outside these repos omitting the model.
+
+**To migrate:** pass the model you were relying on explicitly. It is the one named in that client's `conf/cli_clients/<name>.json` `additional_args` (`-m` for codex, `--model` for the rest). Passing it changes nothing about the run — only about whether the choice is attributable.
+
+A consequence worth knowing: `requested_model` is now always present in a response's metadata from a call made through the tool, because the state in which it could be absent no longer exists.
 
 ## What was added
 

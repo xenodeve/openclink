@@ -333,6 +333,7 @@ async def _execute_with_content(monkeypatch, content: str):
             "role": "default",
             "absolute_file_paths": [],
             "images": [],
+            "model": "gpt-5.6-luna",
         }
     )
     return json.loads(results[0].text).get("metadata", {})
@@ -390,6 +391,7 @@ async def test_end_to_end_a_real_codex_payload_reaches_the_caller(monkeypatch):
             "role": "default",
             "absolute_file_paths": [],
             "images": [],
+            "model": "gpt-5.6-luna",
         }
     )
     metadata = json.loads(results[0].text).get("metadata", {})
@@ -434,7 +436,14 @@ async def test_the_account_does_not_squat_on_the_gemini_parsers_token_usage_key(
     monkeypatch.setattr("tools.clink.create_agent", lambda client: DummyAgent())
 
     results = await tool.execute(
-        {"prompt": "hi", "cli_name": "gemini", "role": "default", "absolute_file_paths": [], "images": []}
+        {
+            "prompt": "hi",
+            "cli_name": "gemini",
+            "role": "default",
+            "absolute_file_paths": [],
+            "images": [],
+            "model": "gemini-3.6-flash",
+        }
     )
     metadata = json.loads(results[0].text).get("metadata", {})
 
@@ -469,6 +478,7 @@ async def test_absent_fields_are_omitted_rather_than_reported_as_null(monkeypatc
             "role": "default",
             "absolute_file_paths": [],
             "images": [],
+            "model": "gpt-5.6-luna",
         }
     )
     metadata = json.loads(results[0].text).get("metadata", {})

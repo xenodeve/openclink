@@ -33,6 +33,10 @@ def _args(cli_name: str) -> dict:
         "role": "default",
         "absolute_file_paths": [],
         "images": [],
+        # #29 landed after this file and makes an omitted model a refusal, so every
+        # call through the tool now carries one. Irrelevant to the bound under test —
+        # the payload these assert on comes from the parser, not the request.
+        "model": "test-model",
     }
 
 
