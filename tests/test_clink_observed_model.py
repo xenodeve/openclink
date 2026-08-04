@@ -249,7 +249,6 @@ async def test_codex_payload_without_observed_model_is_unknown_without_substitut
     assert metadata["resolved_model"] == "configured-model"
     assert metadata["observed_model"] == "unknown"
     assert "model_substituted" not in metadata
-    assert "model_substituted" not in metadata
 
 
 @pytest.mark.asyncio

@@ -56,6 +56,15 @@ async def test_an_explicitly_null_model_is_refused_the_same_way():
     assert "model" in json.loads(excinfo.value.payload)["content"].lower()
 
 
+def test_the_schema_declares_model_required_rather_than_only_saying_so_in_prose():
+    # The description asserted below says "Required", but a description is not a
+    # contract — an MCP client validates against `required`, so a schema that only
+    # says it in prose lets a caller omit the field, pass validation, and discover
+    # the refusal at execution time instead. The declared contract has to be the
+    # one actually enforced, or #29 is only half-shipped.
+    assert "model" in CLinkTool().get_input_schema()["required"]
+
+
 def test_the_schema_no_longer_advertises_a_fallback_that_does_not_exist():
     # "no longer advertises" is the AC, not "no longer mentions": the replacement
     # names the fallback in order to say it is gone, which is the useful thing to

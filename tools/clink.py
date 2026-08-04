@@ -214,7 +214,11 @@ class CLinkTool(SimpleTool):
         schema = {
             "type": "object",
             "properties": properties,
-            "required": ["prompt"],
+            # `model` is declared required, not merely described as required: an MCP
+            # client validates against this list, so a schema that says it only in
+            # prose lets a caller omit the field, pass validation, and meet the
+            # refusal at execution time instead (#29).
+            "required": ["prompt", "model"],
             "additionalProperties": False,
         }
 
