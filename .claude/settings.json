@@ -3,9 +3,5 @@
     "allow": [
     ],
     "deny": []
-  },
-  "env": {
-    "_comment_CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS": "Claude Code moves a main-conversation MCP call to a background task once it passes this threshold (default 120000). There is NO per-server form of the setting, so it is scoped by living in PROJECT settings, which override user settings. 15000 separates clink from everything else: a clink call cannot finish faster than its CLI bootstrap (~20-35s per clink-subagents; measured 2026-08-04 at 45.2s antigravity and 65.2s / 91.8s / 188s codex), while an ordinary MCP round-trip is far below that. A clink refusal returns in ~0s and so stays in the foreground, which is what you want. 0 DISABLES backgrounding rather than making it immediate. Putting this in an mcp server entry's own env block does nothing: that env goes to the server process, and the backgrounding decision is Claude Code's.",
-    "CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS": "15000"
   }
 }
