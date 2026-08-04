@@ -11,6 +11,23 @@ from .base import AgentOutput, BaseCLIAgent
 class ClaudeAgent(BaseCLIAgent):
     """Claude CLI agent with system-prompt injection support."""
 
+    # claude publishes usage twice: a flat `usage` block and a per-model
+    # `modelUsage` breakdown. This reads the flat one — it needs no summation
+    # across models, and re-deriving a total the CLI already computed is a way
+    # for the two to disagree. Recorded 2026-08-05 from a real
+    # `--output-format json` run: on a single-model call the two agree exactly.
+    #
+    # `cache_creation_input_tokens` is deliberately unmapped. It is billed, and
+    # in that recorded run it was 24477 against 2 input tokens — but the
+    # normalised account has no field for it, and `cached_input_tokens` means
+    # cache *reads* for every other client. Folding it in would make the account
+    # wrong rather than incomplete.
+    USAGE_FIELD_MAP = {
+        "input_tokens": "input_tokens",
+        "cache_read_input_tokens": "cached_input_tokens",
+        "output_tokens": "output_tokens",
+    }
+
     def _build_command(
         self,
         *,

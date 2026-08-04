@@ -30,6 +30,7 @@ from pathlib import Path
 import pytest
 
 from clink.agents.base import BaseCLIAgent, TokenUsage
+from clink.agents.claude import ClaudeAgent
 from clink.agents.gemini import GeminiAgent
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
 from clink.parsers.base import ParsedCLIResponse
@@ -110,3 +111,86 @@ def test_gemini_reads_its_own_key_not_usage():
     # force this would report nothing, which is the bug slice 1 exists to stop.
     agent = _agent(GeminiAgent, "gemini", "gemini_json")
     assert _account(agent, {"usage": {"prompt": 1, "candidates": 2}}) is None
+
+
+# Recorded verbatim from `claude -p "Reply with exactly: OK" --output-format json`
+# on 2026-08-05. Both blocks come from the SAME run, which is the point of
+# keeping them together: for a single-model call they agree exactly, so no
+# fixture taken from such a run can tell the two sources apart. The choice
+# between them is pinned by its own test below, not by this payload.
+CLAUDE_RECORDED_USAGE = {
+    "input_tokens": 2,
+    "cache_creation_input_tokens": 24477,
+    "cache_read_input_tokens": 20327,
+    "output_tokens": 4,
+    "server_tool_use": {"web_search_requests": 0, "web_fetch_requests": 0},
+    "service_tier": "standard",
+    "cache_creation": {"ephemeral_1h_input_tokens": 24477, "ephemeral_5m_input_tokens": 0},
+}
+CLAUDE_RECORDED_MODEL_USAGE = {
+    "claude-opus-5[1m]": {
+        "inputTokens": 2,
+        "outputTokens": 4,
+        "cacheReadInputTokens": 20327,
+        "cacheCreationInputTokens": 24477,
+        "webSearchRequests": 0,
+        "costUSD": 0.2550435,
+        "contextWindow": 1000000,
+    }
+}
+
+CLAUDE_CASES = [
+    pytest.param(
+        CLAUDE_RECORDED_USAGE,
+        TokenUsage(input_tokens=2, cached_input_tokens=20327, output_tokens=4, reasoning_output_tokens=None),
+        id="recorded-real-run",
+    ),
+    pytest.param(
+        # A run with nothing read from cache. Zero is a reported fact here and
+        # must survive as zero.
+        {"input_tokens": 1500, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0, "output_tokens": 88},
+        TokenUsage(input_tokens=1500, cached_input_tokens=0, output_tokens=88, reasoning_output_tokens=None),
+        id="no-cache-read",
+    ),
+]
+
+
+@pytest.mark.parametrize("usage,expected", CLAUDE_CASES)
+def test_claude_usage_maps_onto_the_normalised_account(usage, expected):
+    agent = _agent(ClaudeAgent, "claude", "claude_json")
+    assert _account(agent, {"usage": usage}) == expected
+
+
+def test_claude_reads_the_flat_usage_block_not_the_per_model_one():
+    # claude publishes both. They agree on a single-model run, so this case
+    # makes them disagree on purpose - otherwise the design choice would be
+    # untested and slice 4 would inherit it as an assumption.
+    agent = _agent(ClaudeAgent, "claude", "claude_json")
+    metadata = {
+        "usage": {"input_tokens": 2, "cache_read_input_tokens": 20327, "output_tokens": 4},
+        "model_usage": {"claude-opus-5[1m]": {"inputTokens": 999, "outputTokens": 999}},
+    }
+    account = _account(agent, metadata)
+    assert account == TokenUsage(input_tokens=2, cached_input_tokens=20327, output_tokens=4)
+
+
+def test_claude_cache_creation_tokens_are_not_folded_into_cache_reads():
+    # A KNOWN GAP, pinned so it cannot be closed by accident and cannot be
+    # mistaken for an oversight. `cache_creation_input_tokens` is billed and the
+    # normalised account has no field for it - in the recorded run it was 24477
+    # against 2 input tokens, so dropping it under-reports by four orders of
+    # magnitude. Folding it into `cached_input_tokens` would be worse than
+    # dropping it: that field means cache *reads* everywhere else, so the
+    # account would be wrong rather than incomplete. Adding a field changes the
+    # account #23 shipped, so it is parked as its own decision.
+    agent = _agent(ClaudeAgent, "claude", "claude_json")
+    account = _account(agent, {"usage": CLAUDE_RECORDED_USAGE})
+    assert account.cached_input_tokens == 20327
+
+
+def test_claude_ignores_non_integer_members_of_the_usage_block():
+    # The recorded block carries nested dicts and a string. A mapper that
+    # forwarded them would produce a TokenUsage whose fields are not numbers.
+    agent = _agent(ClaudeAgent, "claude", "claude_json")
+    account = _account(agent, {"usage": CLAUDE_RECORDED_USAGE})
+    assert all(v is None or isinstance(v, int) for v in vars(account).values())
