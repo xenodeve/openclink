@@ -10,6 +10,38 @@ protocol in `docs/agents/` and the entry map (`using-t4`).
 
 ## Active
 
+### AFK batch 2026-08-04 — five PRs open, awaiting merge; the owed gates are paid
+
+| PR | Issue | State |
+|---|---|---|
+| #44 | #12 | Phase 0 spike. **Q1 unanswered** — the stub probe needs a PAL restart, which drops the observing session's MCP connection |
+| #45 | #43 | agy `--effort`, measured against the real binary |
+| #46 | #37 | parser `raw` payload dropped in `_prune_metadata` |
+| #47 | #41 | model accounting on the error path |
+| #48 | #29 | **Breaking** — `model` required. **Must merge last**: #46 and #47 add tests that omit it |
+
+✅ **The owed gates are paid** (2026-08-04, before any merge). `/simplify`, `/code-review` and
+`/scrutinize` had run zero times during the batch, against `t4-afk`'s gate list. Run afterwards over all
+ten open PRs they found a real defect in **seven**, each fixed on its own branch — see `DONE.md` for the
+list. `/security-review` did not trigger; the exemption's checkable fact is recorded there too.
+
+**The one to carry forward:** on both documentation PRs (#44 and xeno #100) the defect was identical —
+a correction written into the body while the summary above it kept the withdrawn claim. Correcting a
+document means correcting what a reader skims, not only what the correction section says.
+
+**New, unstarted:** #49 — `agy --print-timeout` defaults to 5m0s, a client-side deadline sitting *inside*
+clink's 1800s child timeout that PAL does not model. A run cut by the CLI is attributed to whatever its
+output happens to look like. Needs a measurement (what agy emits at 300s) before a shape is chosen.
+
+**Still open in the #21 cost line:** #24 → #25 → #26, sequential. Unblocked, untouched.
+
+**#22 is likely closeable** — its three slices (#27, #28, #29) are merged or have PRs open. Confirm
+after #48 lands.
+
+**Masteragent (#11) — nothing AFK-able.** #14 and #16 are security-boundary; #15 and #20 are
+architecture/seam; #12's remainder needs a PAL restart and three other hosts. All park by the boundary
+test, not by preference.
+
 ### Validate the (client, model, effort) tuple + report requested/resolved/observed — PRD (#22)
 
 `clink` accepts any model string or none at all, and reports nothing about what actually ran.

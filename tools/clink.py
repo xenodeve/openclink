@@ -427,18 +427,29 @@ class CLinkTool(SimpleTool):
             metadata["raw_output_file"] = result.output_file_content
         return metadata
 
-    def _call_accounting(self, result: AgentOutput) -> dict[str, Any]:
+    def _call_accounting(self, result: AgentOutput | CLIAgentError) -> dict[str, Any]:
         """What the call requested and what it consumed, omitting what is unknown.
 
         A key is absent when the client reported nothing for it, so a caller can
         tell "not reported" from a reported zero.
+
+        Takes either outcome. `CLIAgentError` carries these fields under the same
+        names as `AgentOutput` so one projection serves both paths (#41) — the
+        annotation has to say so, or the next reader reasonably assumes the error
+        path has its own copy, which is the duplication this replaced.
         """
         accounting: dict[str, Any] = {}
         if result.requested_model is not None:
             accounting["requested_model"] = result.requested_model
         if result.resolved_model is not None:
             accounting["resolved_model"] = result.resolved_model
-        accounting["observed_model"] = result.observed_model if result.observed_model is not None else "unknown"
+        # Omitted when unobserved, not reported as the literal "unknown": that string
+        # is truthy and string-typed, so a caller could not tell "not observed" from
+        # "a model actually named unknown" — and it contradicted this function's own
+        # docstring two lines up. Absence is now expressed the same way twice in one
+        # object, matching `normalized_usage` (#41).
+        if result.observed_model is not None:
+            accounting["observed_model"] = result.observed_model
         if (
             result.resolved_model is not None
             and result.observed_model is not None
@@ -543,16 +554,25 @@ class CLinkTool(SimpleTool):
         *,
         reason: str,
     ) -> dict[str, Any]:
+        # Everything a parser stores beside the answer for its own diagnostics, none of
+        # which the tool reads: `events`, plus the parsers' whole decoded payload —
+        # gemini as `raw`, claude as `raw` and `raw_events`. `raw`/`raw_events` passed
+        # through no bound at all, so a large CLI response was capped in the field a
+        # caller reads and unbounded in the field next to it (#37). Dropped rather than
+        # capped, and dropped here, the one place both the success and the error path
+        # already pass through, so the bound cannot be stated per-parser and drift.
         cleaned = dict(metadata)
-        events = cleaned.pop("events", None)
-        if events is not None:
-            cleaned[f"events_removed_for_{reason}"] = True
-            logger.debug(
-                "Clink dropped %s events metadata for %s response (%s)",
-                client.name,
-                reason,
-                type(events).__name__,
-            )
+        for key in ("events", "raw", "raw_events"):
+            payload = cleaned.pop(key, None)
+            if payload is not None:
+                cleaned[f"{key}_removed_for_{reason}"] = True
+                logger.debug(
+                    "Clink dropped %s %s metadata for %s response (%s)",
+                    client.name,
+                    key,
+                    reason,
+                    type(payload).__name__,
+                )
         return cleaned
 
     def _build_error_metadata(self, client: ResolvedCLIClient, exc: CLIAgentError) -> dict[str, Any]:
@@ -571,10 +591,11 @@ class CLinkTool(SimpleTool):
             # happens to share its name.
             metadata.update(self._prune_metadata(exc.parsed.metadata, client, reason="error"))
             _store_diagnostic(metadata, truncated_fields, "salvaged_content", exc.parsed.content)
-        if exc.token_usage is not None:
-            reported = {name: value for name, value in asdict(exc.token_usage).items() if value is not None}
-            if reported:
-                metadata["normalized_usage"] = reported
+        # One projection for both outcomes (#41). `CLIAgentError` carries the same
+        # field names as `AgentOutput` precisely so this can be the same function —
+        # two hand-written blocks were how the error path came to report usage but
+        # not which model spent it.
+        metadata.update(self._call_accounting(exc))
         if exc.stdout:
             _store_diagnostic(metadata, truncated_fields, "stdout", exc.stdout.strip())
         if exc.stderr:

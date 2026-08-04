@@ -3,6 +3,71 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-04 — an AFK batch on the clink honesty line, plus the Phase 0 spike (#12, #43, #37, #41, #29)
+
+Five items cleared unattended. The thread joining four of them: **a knob, a default, a payload or a
+failure that the caller could not see.** #43 dropped `reasoning_effort` silently; #29 resolved an
+omitted model to a config default and reported it like a choice; #37 forwarded a parser's whole
+payload beside a field that was capped; #41 reported what a failed run spent but not what ran it.
+
+**Validated** — each red observed before its implementation, each mutation-tested:
+
+- **#43** (PR #45) `agy --effort low|medium|high` is real. Measured against the binary: the two knobs
+  are mutually exclusive for every model it serves (`agy models` shows every id either bakes its tier
+  in or has no ladder), so the client refuses the pair before spawn. Honoured, not merely accepted —
+  same prompt, `--effort low` → 0 thinking tokens, `--effort high` → 446. The refusal probes cost no
+  quota: agy validates argv before calling a model (`duration_seconds: 0`).
+- **#37** (PR #46) `raw` / `raw_events` dropped in `_prune_metadata`, the one point both paths pass
+  through. Dropped rather than capped because a repo-wide grep found **no production reader** — only
+  two parser-level test assertions. Mutation: pruning one key, or one path, reddens the other.
+- **#41** (PR #47) `CLIAgentError` carries the same field names as `AgentOutput`, so `_call_accounting`
+  is one projection for both outcomes. `observed_model` is now omitted when unobserved rather than
+  reported as `"unknown"` — which is what the function's own docstring already promised two lines up.
+- **#29** (PR #48) **Breaking.** `model` is required. 12 test call sites had to carry one; one test
+  asserted `requested_model` absent, a state that no longer exists through the tool, and was rewritten
+  rather than patched. `CHANGES-FORK.md` gained a Breaking-changes section because its intro claimed
+  every fork change was additive.
+- **#12** (PR #44) Phase 0 spike. All four live clients are resumable headlessly; only Claude Code
+  demonstrably has a pre-tool hook that can block, so Phase 4 must be proven there first rather than
+  shipped uniformly. **The epic's transport premise is now an open question, not a finding** — the
+  60–108s figure was not measured on Claude Code, and the fault is intermittent, so five successful
+  calls prove nothing about it either way.
+
+**Two corrections landed on the spike report itself**, both from the owner: the premise is host-scoped
+(PAL is an MCP server on all four hosts, one was measured), and the fault is random, so a rate is
+needed rather than a verdict. Recorded in `docs/reports/2026-08-04-clink-phase0-spike-host-followup-and-cli-capability.md`.
+
+**The owed gates were paid on 2026-08-04, after the batch and before any merge.** `/simplify`,
+`/code-review` and `/scrutinize` had run zero times across the batch, against `t4-afk`'s own gate list.
+Run afterwards across all ten open PRs (six here, four in `xeno-skills`), they found a real defect in
+**seven** of them — so the omission was not harmless, and none of it would have surfaced at merge:
+
+- **#46** `/simplify` — `events` was already pruned with exactly the shape this PR added for
+  `raw`/`raw_events`: same marker convention, same debug log, written twice. One loop over three keys.
+  Mutation-checked (dropping `events` from the tuple reddens 3 tests).
+- **#47** `/code-review` — `_call_accounting` was annotated `result: AgentOutput` while the error path
+  passes it a `CLIAgentError`. Nothing type-checks this repo, so the declaration was free to be wrong.
+- **#48** `/code-review` — the schema's `model` description said "Required" while `required` stayed
+  `["prompt"]`. A validating MCP client would accept the omission and meet the refusal at execution
+  time. Red observed first, then `["prompt", "model"]`.
+- **#44 · xeno #100** `/scrutinize` — **the same defect in both, and it is the one worth remembering:**
+  a correction was appended to the body and never propagated to the summary, so the top of each
+  document still asserted the claim its own body withdrew. #44's Status section also pointed at a
+  section that does not exist.
+- **xeno #103** `/code-review` — a test whose description read "each claim carries the date it was last
+  verified" checked only that the *column header* existed. Replaced with a row count; mutation-checked.
+- **xeno #101** `/code-review` — an assertion anchored on a 7-character generic substring.
+- **#45 · xeno #102** — clean. On #45 a reuse candidate was considered and rejected: `_model_args`
+  could delegate its `--model` half to `super()`, but `codex.py`'s override writes the same shape
+  explicitly, and matching the sibling won.
+
+Also caught while listing each branch's files: a `git add -A` during the review had swept 19 untracked
+`.playwright-mcp/` files and `aa-home-snapshot.md` into #47. Removed.
+
+**`/security-review` did not trigger, and here is the checkable fact:** `git diff --name-only main...`
+for all five branches lists `clink/agents/{antigravity,base}.py`, `tools/clink.py`, `CHANGES-FORK.md`,
+one report, and test files. No file under an auth, secret, token, entitlement or payment path.
+
 ## 2026-08-03 — the clink model is read back from every spelling, and reported three ways (#27 PR #35, #28 PR #40)
 
 Two slices that only make sense together: #27 refuses a model the client cannot serve *before* spawning,
