@@ -11,10 +11,11 @@ code shipped.**
 | **Q1 — does the master's MCP host issue a follow-up tool call after a non-terminal result?** | ❌ **NOT ANSWERED.** The stub probe was not run — see *Why Q1 is still open*. Adjacent evidence was gathered that **changes why the question matters**. |
 | **Q2 — which clients expose a pre-tool hook and a resumable session?** | ✅ **ANSWERED** for resume on all four live clients; **partially answered** for the pre-tool hook, with the unresolved cells named rather than guessed. |
 
-**The most consequential finding is not either question.** It is that **the timeout measurement the
-epic's problem statement rests on did not reproduce today** — see *The premise that needs
-re-measuring*. Phases 3 and 4 should not be re-planned until that is settled, because the problem
-Phase 3 exists to remove may be substantially smaller than recorded.
+**The most consequential outcome is not either question.** It is that **the epic's transport premise
+is now an open question rather than something this report either confirmed or refuted** — see
+*⚠️ Correction*. It was measured on one of four hosts, and the fault it describes is intermittent, so
+what is recorded below is a five-sample observation on a single host and nothing more. Phases 3 and 4
+should not be re-planned until the premise is measured as a **rate, per host**.
 
 ---
 
@@ -249,7 +250,8 @@ Found while probing; each belongs to a different issue and none is acted on here
       problem statement with the result either way.
 
 Completed by this report: the per-client resume column, the harness-sharing statement, the Phase 4
-capability verdict, and the finding that the epic's timeout premise needs re-measuring.
+capability verdict, and the host inventory that shows the timeout premise was measured on one host of
+four. The premise itself is left **open** — this report neither confirms nor refutes it.
 
 ---
 
