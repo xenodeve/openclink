@@ -129,9 +129,27 @@ class AntigravityAgent(BaseCLIAgent):
         # is unsupported/rejected. Raise instead of returning the fallback as success,
         # so a bad `--model` surfaces as an error rather than a silent wrong-model reply.
         if returncode != 0:
+            # agy names its own cause, and the ConPTY merges stderr into the captured
+            # output, so the reason is already in hand — read it instead of guessing.
+            # Measured 2026-08-05 in the text mode this client actually runs:
+            #   agy --print-timeout 3s --print "…"
+            #   -> exit 1, stdout empty, stderr 'Error: timeout waiting for response'
+            # Reporting that as "a requested model may be unsupported/rejected" names
+            # the WRONG cause, which is worse than a vague one because it sends the
+            # reader somewhere. The deadline is agy's own, defaults to 5m0s, sits
+            # inside clink's 1800s child timeout, and bounds the wait for the FIRST
+            # response rather than the whole call — a 20s bound on a much longer
+            # prompt still succeeded, because the model began answering inside it (#49).
+            if "timeout waiting for response" in raw_output.lower():
+                detail = (
+                    "agy's own print-mode deadline elapsed (`--print-timeout`, default 5m0s) — "
+                    "it bounds the wait for the first response, not the whole call. Raise it, or "
+                    "shorten the prompt so the backend starts answering sooner"
+                )
+            else:
+                detail = "a requested model may be unsupported/rejected"
             raise CLIAgentError(
-                f"CLI '{self.client.name}' exited with status {returncode} "
-                "(a requested model may be unsupported/rejected)",
+                f"CLI '{self.client.name}' exited with status {returncode} ({detail})",
                 returncode=returncode,
                 stdout=raw_output,
             )
