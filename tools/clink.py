@@ -526,24 +526,15 @@ class CLinkTool(SimpleTool):
         *,
         reason: str,
     ) -> dict[str, Any]:
+        # Everything a parser stores beside the answer for its own diagnostics, none of
+        # which the tool reads: `events`, plus the parsers' whole decoded payload —
+        # gemini as `raw`, claude as `raw` and `raw_events`. `raw`/`raw_events` passed
+        # through no bound at all, so a large CLI response was capped in the field a
+        # caller reads and unbounded in the field next to it (#37). Dropped rather than
+        # capped, and dropped here, the one place both the success and the error path
+        # already pass through, so the bound cannot be stated per-parser and drift.
         cleaned = dict(metadata)
-        events = cleaned.pop("events", None)
-        if events is not None:
-            cleaned[f"events_removed_for_{reason}"] = True
-            logger.debug(
-                "Clink dropped %s events metadata for %s response (%s)",
-                client.name,
-                reason,
-                type(events).__name__,
-            )
-        # The parsers keep their whole decoded payload beside the answer — gemini as
-        # `raw`, claude as `raw` and `raw_events`. Neither passed through a bound, so
-        # a large CLI response was capped in the field a caller reads and unbounded in
-        # the field next to it (#37). Nothing in the tool reads either value, so they
-        # are dropped rather than capped — and dropped here, the one place both the
-        # success and the error path already pass through, so the bound cannot be
-        # stated per-parser and drift.
-        for key in ("raw", "raw_events"):
+        for key in ("events", "raw", "raw_events"):
             payload = cleaned.pop(key, None)
             if payload is not None:
                 cleaned[f"{key}_removed_for_{reason}"] = True
