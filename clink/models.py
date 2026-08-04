@@ -40,6 +40,37 @@ class CLIRoleConfig(BaseModel):
         raise TypeError("role_args must be a list of strings or a single string")
 
 
+class ModelRate(BaseModel):
+    """Price per token class for one model, in the card's own unit.
+
+    Every class is optional. A class the card does not price is not free — it is
+    unpriced, and the caller is told which ones those were rather than being
+    handed a total that quietly omits them.
+    """
+
+    input: float | None = None
+    cached_input: float | None = None
+    output: float | None = None
+    reasoning_output: float | None = None
+
+
+class RateCard(BaseModel):
+    """What one client's models cost, declared in that client's configuration.
+
+    `unit` travels with every figure computed from this card. A subscription
+    backend prices in credits and a token-billed one in currency; the two are
+    never summed, so a bare number would be unusable to a caller that routes
+    across both.
+    """
+
+    unit: str = Field(..., description="e.g. 'USD' or 'credits'. Carried onto every cost computed from this card.")
+    per_tokens: PositiveInt = Field(
+        default=1_000_000,
+        description="The token count the rates are quoted per. Vendors quote per 1M; a card may say otherwise.",
+    )
+    models: dict[str, ModelRate] = Field(default_factory=dict)
+
+
 class CLIClientConfig(BaseModel):
     """Raw CLI client configuration before internal defaults are applied."""
 
