@@ -27,6 +27,41 @@ from .base import AgentOutput, BaseCLIAgent, CLIAgentError
 class AntigravityAgent(BaseCLIAgent):
     """Run `agy` inside a ConPTY and capture its plain-text output."""
 
+    # Declared so `_resolve_model_effort` can read the effort back off the command.
+    # Writing the flag without declaring it here reports `resolved_effort: None`
+    # while the CLI honours it — the silent hole #27 closed for codex.
+    EFFORT_FLAGS = ("--effort",)
+
+    def _model_args(self, model: str | None, reasoning_effort: str | None) -> list[str]:
+        # `agy --effort low|medium|high` is a real flag — the base implementation's
+        # "effort is baked into the model name for these CLIs" is only half true here,
+        # and dropping it silently is the defect this fixes (#43).
+        args: list[str] = []
+        if model:
+            args += ["--model", model]
+        if reasoning_effort:
+            args += ["--effort", reasoning_effort]
+        return args
+
+    def refuse_unservable(self, command: Sequence[str]) -> None:
+        # agy's two knobs are mutually exclusive for every model it serves. Measured
+        # 2026-08-04 against the real binary: a tiered id gives "--model X conflicts
+        # with --effort=Y", an untiered one gives "--effort is not supported for
+        # model X", and `agy models` shows every id either bakes its tier in or has
+        # no ladder — so no tuple exists where both are servable. The CLI fails
+        # closed on its own; refusing here keeps a guaranteed-error command from
+        # ever being spawned (#27's rule), and names both values so the caller
+        # knows which to drop.
+        model, effort = self._resolve_model_effort(command)
+        if model and effort:
+            raise CLIAgentError(
+                f"CLI '{self.client.name}' cannot serve a model and a reasoning effort together: "
+                f"--model {model!r} with --effort {effort!r}. agy bakes the tier into the model id "
+                f"(e.g. 'gemini-3.1-pro-high'), so pass one or the other, not both.",
+                returncode=None,
+            )
+        super().refuse_unservable(command)
+
     def _build_command(
         self,
         *,
