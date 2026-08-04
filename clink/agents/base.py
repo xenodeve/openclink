@@ -53,6 +53,10 @@ class AgentOutput:
     observed_model: str | None = None
     resolved_effort: str | None = None
     token_usage: TokenUsage | None = None
+    # True when this client's CLI reports no usage at all — a fact about the CLI,
+    # not about PAL. Distinct from a missing `token_usage`, which also covers
+    # "no adapter written yet".
+    usage_unavailable: bool = False
     # Filled in by the rate-card slice; absent until then.
     cost: float | None = None
 
@@ -126,6 +130,7 @@ class CLIAgentError(RuntimeError):
         resolved_model: str | None = None,
         observed_model: str | None = None,
         resolved_effort: str | None = None,
+        usage_unavailable: bool = False,
         cost: float | None = None,
     ) -> None:
         super().__init__(message)
@@ -148,6 +153,7 @@ class CLIAgentError(RuntimeError):
         self.resolved_model = resolved_model
         self.observed_model = observed_model
         self.resolved_effort = resolved_effort
+        self.usage_unavailable = usage_unavailable
         self.cost = cost
 
 
@@ -174,6 +180,12 @@ class BaseCLIAgent:
     # CLI usage key -> normalised TokenUsage field. Empty means this client has no
     # adapter yet, so it reports no usage rather than a wrong one.
     USAGE_FIELD_MAP: dict[str, str] = {}
+
+    # Declared True by a client whose CLI reports no usage at all. That is a
+    # different fact from an empty field map, which also covers a client whose
+    # adapter nobody has written — and the two must not read alike, or an
+    # unfinished adapter looks like a finished one.
+    USAGE_UNAVAILABLE: bool = False
 
     def __init__(self, client: ResolvedCLIClient):
         self.client = client
@@ -384,6 +396,7 @@ class BaseCLIAgent:
                 resolved_model=resolved_model,
                 observed_model=parsed.metadata.get("model_used"),
                 resolved_effort=resolved_effort,
+                usage_unavailable=self.USAGE_UNAVAILABLE,
             )
 
         return AgentOutput(
@@ -400,6 +413,7 @@ class BaseCLIAgent:
             observed_model=parsed.metadata.get("model_used"),
             resolved_effort=resolved_effort,
             token_usage=token_usage,
+            usage_unavailable=self.USAGE_UNAVAILABLE,
         )
 
     def refuse_unservable(self, command: Sequence[str]) -> None:

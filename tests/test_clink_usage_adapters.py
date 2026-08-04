@@ -29,11 +29,14 @@ from pathlib import Path
 
 import pytest
 
+from clink.agents.antigravity import AntigravityAgent
 from clink.agents.base import BaseCLIAgent, TokenUsage
 from clink.agents.claude import ClaudeAgent
+from clink.agents.cursor import CursorAgent
 from clink.agents.gemini import GeminiAgent
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
 from clink.parsers.base import ParsedCLIResponse
+from tools.clink import CLinkTool
 
 
 def _agent(cls: type[BaseCLIAgent], name: str, parser: str) -> BaseCLIAgent:
@@ -186,6 +189,61 @@ def test_claude_cache_creation_tokens_are_not_folded_into_cache_reads():
     agent = _agent(ClaudeAgent, "claude", "claude_json")
     account = _account(agent, {"usage": CLAUDE_RECORDED_USAGE})
     assert account.cached_input_tokens == 20327
+
+
+def _accounting(agent: BaseCLIAgent, metadata: dict) -> dict:
+    output = agent.finalize_output(
+        parsed=ParsedCLIResponse(content="OK", metadata=metadata),
+        sanitized_command=[agent.client.name],
+        returncode=0,
+        stdout="",
+        stderr="",
+        duration_seconds=0.1,
+    )
+    return CLinkTool()._call_accounting(output)
+
+
+class _NoAdapterYetAgent(BaseCLIAgent):
+    """A client nobody has written an adapter for — the third state."""
+
+
+def test_a_cli_that_reports_no_usage_says_so_explicitly():
+    # Required case, not an edge case. Without it, `cursor` and `antigravity`
+    # are indistinguishable from a client whose adapter was never written, and
+    # a cost report cannot tell "this call was free to account for" from "this
+    # call's cost is unknown".
+    for cls, name, parser in (
+        (AntigravityAgent, "antigravity", "antigravity_text"),
+        (CursorAgent, "cursor", "codex_jsonl"),
+    ):
+        accounting = _accounting(_agent(cls, name, parser), {})
+        assert accounting["usage_unavailable"] is True, name
+        assert "normalized_usage" not in accounting, name
+
+
+def test_an_unwritten_adapter_stays_silent_rather_than_claiming_unavailable():
+    # The distinction the whole marker exists for. "No adapter yet" is a fact
+    # about PAL; "the CLI reports nothing" is a fact about the CLI. Collapsing
+    # them would let an unfinished adapter read as a finished one.
+    accounting = _accounting(_agent(_NoAdapterYetAgent, "someone-new", "codex_jsonl"), {})
+    assert "usage_unavailable" not in accounting
+    assert "normalized_usage" not in accounting
+
+
+def test_a_client_that_does_report_usage_carries_no_unavailable_marker():
+    # Control: passes before and after. The marker must not leak onto clients
+    # that account normally.
+    accounting = _accounting(_agent(ClaudeAgent, "claude", "claude_json"), {"usage": CLAUDE_RECORDED_USAGE})
+    assert "usage_unavailable" not in accounting
+    assert accounting["normalized_usage"]["input_tokens"] == 2
+
+
+def test_the_marker_is_not_zeros():
+    # The AC's actual demand, stated as its own assertion: an unavailable
+    # account must not be reported as an account of zero, which would be a
+    # false statement about a call that may have cost a great deal.
+    accounting = _accounting(_agent(AntigravityAgent, "antigravity", "antigravity_text"), {})
+    assert "normalized_usage" not in accounting
 
 
 def test_claude_ignores_non_integer_members_of_the_usage_block():

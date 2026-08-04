@@ -465,6 +465,12 @@ class CLinkTool(SimpleTool):
             accounting["normalized_usage"] = {
                 name: value for name, value in asdict(result.token_usage).items() if value is not None
             }
+        elif result.usage_unavailable:
+            # Said out loud, because silence here already means something else:
+            # a client whose adapter is simply unwritten also reports nothing.
+            # Never zeros — a call whose consumption is unknown is not a call
+            # that consumed nothing.
+            accounting["usage_unavailable"] = True
         if result.cost is not None:
             accounting["cost"] = result.cost
         return accounting
