@@ -90,8 +90,8 @@ class CLinkRequest(BaseModel):
     model: str | None = Field(
         default=None,
         description=(
-            "Override the model for this call (codex: -m; others: --model). "
-            "Omit to use the CLI's configured default."
+            "Model for this call (codex: -m; others: --model). Required — an omitted "
+            "model is refused, not resolved to the client's configured default."
         ),
     )
     reasoning_effort: str | None = Field(
@@ -197,8 +197,8 @@ class CLinkTool(SimpleTool):
             "model": {
                 "type": "string",
                 "description": (
-                    "Override the model for this call (codex: -m; others: --model). "
-                    "Omit to use the CLI's configured default."
+                    "Model for this call (codex: -m; others: --model). Required — an omitted "
+                    "model is refused, not resolved to the client's configured default."
                 ),
             },
             "reasoning_effort": {
@@ -248,6 +248,19 @@ class CLinkTool(SimpleTool):
             role_config = client_config.get_role(request.role)
         except KeyError as exc:
             self._raise_tool_error(str(exc))
+
+        # Refused here, before the prompt is prepared and before an agent exists, so
+        # the caller never pays for a call it was never going to be allowed to make.
+        # An omitted model used to fall through to whatever the client's config said,
+        # which made a model nobody chose indistinguishable from one someone did —
+        # the same defect as #27 and #28, one step earlier in the chain. Decision
+        # recorded on #29 before any code: refuse immediately, no grace period.
+        if request.model is None:
+            self._raise_tool_error(
+                f"CLI '{client_config.name}' was given no model. An omitted model is no longer "
+                "resolved to the client's configured default, because a model nobody chose must "
+                "not be reported the same way as one someone did. Pass `model` explicitly."
+            )
 
         absolute_file_paths = self.get_request_files(request)
         images = self.get_request_images(request)
