@@ -53,6 +53,10 @@ class AgentOutput:
     observed_model: str | None = None
     resolved_effort: str | None = None
     token_usage: TokenUsage | None = None
+    # True when this client's CLI reports no usage at all — a fact about the CLI,
+    # not about PAL. Distinct from a missing `token_usage`, which also covers
+    # "no adapter written yet".
+    usage_unavailable: bool = False
     # Filled in by the rate-card slice; absent until then.
     cost: float | None = None
 
@@ -126,6 +130,7 @@ class CLIAgentError(RuntimeError):
         resolved_model: str | None = None,
         observed_model: str | None = None,
         resolved_effort: str | None = None,
+        usage_unavailable: bool = False,
         cost: float | None = None,
     ) -> None:
         super().__init__(message)
@@ -148,6 +153,7 @@ class CLIAgentError(RuntimeError):
         self.resolved_model = resolved_model
         self.observed_model = observed_model
         self.resolved_effort = resolved_effort
+        self.usage_unavailable = usage_unavailable
         self.cost = cost
 
 
@@ -165,9 +171,21 @@ class BaseCLIAgent:
     EFFORT_FLAGS: tuple[str, ...] = ()
     EFFORT_PREFIX: str | None = None
 
+    # Which metadata key this CLI publishes its usage payload under. Per-client
+    # because the parsers already differ: codex and claude write `usage`, gemini
+    # writes `token_usage`. A field map describes the fields *inside* the payload
+    # and so cannot reach one filed under a different name.
+    USAGE_METADATA_KEY: str = "usage"
+
     # CLI usage key -> normalised TokenUsage field. Empty means this client has no
     # adapter yet, so it reports no usage rather than a wrong one.
     USAGE_FIELD_MAP: dict[str, str] = {}
+
+    # Declared True by a client whose CLI reports no usage at all. That is a
+    # different fact from an empty field map, which also covers a client whose
+    # adapter nobody has written — and the two must not read alike, or an
+    # unfinished adapter looks like a finished one.
+    USAGE_UNAVAILABLE: bool = False
 
     def __init__(self, client: ResolvedCLIClient):
         self.client = client
@@ -378,6 +396,7 @@ class BaseCLIAgent:
                 resolved_model=resolved_model,
                 observed_model=parsed.metadata.get("model_used"),
                 resolved_effort=resolved_effort,
+                usage_unavailable=self.USAGE_UNAVAILABLE,
             )
 
         return AgentOutput(
@@ -394,6 +413,7 @@ class BaseCLIAgent:
             observed_model=parsed.metadata.get("model_used"),
             resolved_effort=resolved_effort,
             token_usage=token_usage,
+            usage_unavailable=self.USAGE_UNAVAILABLE,
         )
 
     def refuse_unservable(self, command: Sequence[str]) -> None:
@@ -428,12 +448,14 @@ class BaseCLIAgent:
     def _extract_token_usage(self, parsed: ParsedCLIResponse) -> TokenUsage | None:
         """Map this CLI's raw usage report onto the normalised account.
 
-        Driven by `USAGE_FIELD_MAP`, which is empty in the base — a client whose
-        adapter is not written yet reports no usage rather than a wrong one.
+        Two per-client declarations, because they answer different questions:
+        `USAGE_METADATA_KEY` is *where* the payload is, `USAGE_FIELD_MAP` is what
+        the fields inside it are called. The map is empty in the base — a client
+        whose adapter is not written yet reports no usage rather than a wrong one.
         """
         if not self.USAGE_FIELD_MAP:
             return None
-        usage = parsed.metadata.get("usage")
+        usage = parsed.metadata.get(self.USAGE_METADATA_KEY)
         if not isinstance(usage, dict):
             return None
         reported = {field: usage[key] for key, field in self.USAGE_FIELD_MAP.items() if isinstance(usage.get(key), int)}

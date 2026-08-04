@@ -8,6 +8,7 @@ from .antigravity import AntigravityAgent
 from .base import AgentOutput, BaseCLIAgent, CLIAgentError, TokenUsage
 from .claude import ClaudeAgent
 from .codex import CodexAgent
+from .cursor import CursorAgent
 from .gemini import GeminiAgent
 
 _AGENTS: dict[str, type[BaseCLIAgent]] = {
@@ -15,6 +16,7 @@ _AGENTS: dict[str, type[BaseCLIAgent]] = {
     "codex": CodexAgent,
     "claude": ClaudeAgent,
     "antigravity": AntigravityAgent,
+    "cursor": CursorAgent,
 }
 
 

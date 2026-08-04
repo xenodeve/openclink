@@ -27,6 +27,11 @@ from .base import AgentOutput, BaseCLIAgent, CLIAgentError
 class AntigravityAgent(BaseCLIAgent):
     """Run `agy` inside a ConPTY and capture its plain-text output."""
 
+    # agy's print mode emits prose and nothing else — there is no usage block to
+    # adapt, in any mode PAL runs. Declared rather than left to an empty field
+    # map so a caller can tell this from an adapter nobody has written yet.
+    USAGE_UNAVAILABLE = True
+
     # Declared so `_resolve_model_effort` can read the effort back off the command.
     # Writing the flag without declaring it here reports `resolved_effort: None`
     # while the CLI honours it — the silent hole #27 closed for codex.
