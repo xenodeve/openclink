@@ -10,7 +10,39 @@ protocol in `docs/agents/` and the entry map (`using-t4`).
 
 ## Active
 
-### AFK batch 2026-08-04 — five PRs open, awaiting merge; the owed gates are paid
+### The #21 cost line is built end to end (2026-08-05) — one decision blocks the last slice
+
+`#23 → #24 → #25` have all landed. Every configured client now either maps its CLI's usage onto the
+normalised account or **declares that its CLI reports none** — the two were previously the same value,
+so an unwritten adapter was indistinguishable from a finished one. Cost is computed from that account
+against a per-client rate card and **carries its unit**, because a subscription backend prices in
+credits and a token-billed one in currency and the two are never summed.
+
+**Nothing blocks #26 mechanically** — its `blocked-by` (#25) is discharged, and it is additive
+accounting across a continuation thread rather than anything needing real prices. **But #56 should
+land first**, and the reason is not a dependency: the account has **no field for cache-creation
+tokens**, which in a recorded 2026-08-05 claude run was **24477 tokens against 2 input tokens**.
+Pricing cannot see what the account cannot represent, so **no marker anywhere can report the
+shortfall** — #26 would put a confident, wrong number in front of a caller. `ready-for-human`: adding
+a field changes the account #23 shipped.
+
+**No real vendor rate ships anywhere.** The schema and the arithmetic are in; `conf/cli_clients/*.json`
+carries no prices, because none was fetched and verified. A client without a card loads and runs, and
+says nothing about it. Populating the cards is #26's input.
+
+🔴 **`code_quality_checks.sh` silently rewrites tracked files on every run.** `ruff`, `black` and
+`isort` all run in **write** mode, so the script the docs tell every agent to run leaves unrelated
+modifications in the tree — the mechanism behind two contaminated commits on 2026-08-04. `ruff` is now
+clean on `main` (#54), but **`black` would still rewrite 10 files** under `tests/` and
+`simulator_tests/`. Inventoried in PR #55, not fixed: a 10-file reformat inside a lint PR is the
+muddied diff #54 was opened to avoid. **No issue yet.**
+
+🔴 **The T4 Type label group does not exist in this repo.** `gh label list` returns 16 names;
+`tech-debt`, `critical`, `Minor` and the Component labels are absent, so a documented vocabulary reads
+as configured and is not. `xeno-skills#96` measured this and PR #108 shipped the fix — **this repo has
+not had it applied.** Recorded on #54 so it is not rediscovered a third time.
+
+### AFK batch 2026-08-04 — five PRs merged; the owed gates are paid
 
 | PR | Issue | State |
 |---|---|---|
@@ -29,14 +61,15 @@ list. `/security-review` did not trigger; the exemption's checkable fact is reco
 a correction written into the body while the summary above it kept the withdrawn claim. Correcting a
 document means correcting what a reader skims, not only what the correction section says.
 
-**New, unstarted:** #49 — `agy --print-timeout` defaults to 5m0s, a client-side deadline sitting *inside*
-clink's 1800s child timeout that PAL does not model. A run cut by the CLI is attributed to whatever its
-output happens to look like. Needs a measurement (what agy emits at 300s) before a shape is chosen.
+✅ **#49 shipped 2026-08-05** (PR #53). `agy --print-timeout` bounds the wait for the **first
+response**, not the whole call — a 20s bound on a much longer prompt succeeded. Forced at 3s: exit 1,
+stdout 0 bytes, stderr `Error: timeout waiting for response`. **Still open on #49:** whether PAL should
+raise `--print-timeout` to match its own 1800s child timeout. That is a larger call and was not taken.
 
-**Still open in the #21 cost line:** #24 → #25 → #26, sequential. Unblocked, untouched.
+**The #21 cost line has moved on** — see the 2026-08-05 section at the top. #24 and #25 shipped;
+#26 is the only slice left.
 
-**#22 is likely closeable** — its three slices (#27, #28, #29) are merged or have PRs open. Confirm
-after #48 lands.
+**#22 is likely closeable** — its three slices (#27, #28, #29) are merged. Confirm.
 
 **Masteragent (#11) — nothing AFK-able.** #14 and #16 are security-boundary; #15 and #20 are
 architecture/seam; #12's remainder needs a PAL restart and three other hosts. All park by the boundary
@@ -115,7 +148,8 @@ possible again. Start order: #13 → #14, with #12 runnable in parallel througho
 | #30 | unit suite green on Windows | ✅ PR #31 |
 
 **The suite baseline changed with #30: it is now 0 failed, not "25 failed is normal".** On `main` at
-`b608f2f` it is **960 passed, 4 skipped, 16 deselected**. Any red is yours.
+`3ed29be` (2026-08-05) it is **1008 passed, 4 skipped, 16 deselected**, and `ruff check .` is clean.
+Any red is yours.
 
 Opened by this batch, none of it started:
 

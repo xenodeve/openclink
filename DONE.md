@@ -3,6 +3,73 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-05 — the cost line: usage normalised for every client, then priced (#54, #49, #24, #25)
+
+Four merged (PRs #53, #55, #57, #58), two opened (#56, and #54's own correction). The thread joining
+them: **a value that could not be told apart from a different value.** A timeout that read as a model
+problem; a silent lint fix that read as a clean tree; "no adapter written" that read as "the CLI
+reports nothing"; and an unconfigured rate card that would have read as a live signal.
+
+**Validated** — each mutation-tested; the red-first status of each is stated individually because one
+of them was not.
+
+- **#49** (PR #53) `agy --print-timeout` (default 5m0s) is a client-side deadline *inside* clink's
+  1800s child timeout, and every non-zero exit was reported as "a requested model may be
+  unsupported/rejected" — the wrong cause, which costs more than a vague one because it sends the
+  reader somewhere. **The first measurement was of the wrong code path and nearly became the fix:**
+  it used `--output-format json`, which the antigravity config never passes. Re-measured in text mode,
+  a 20s bound on a much longer prompt **succeeded** — the flag bounds the wait for the FIRST response,
+  not the whole call. Forced at 3s: exit 1, stdout 0 bytes, stderr `Error: timeout waiting for
+  response`. Red first: 2 failed, 1 passed; the one that passed is a control asserting a *non*-timeout
+  still names the model, which is what stopped the fix from being a blanket message rewrite.
+- **#54** (PR #55) `clink/registry.py` had an unsorted import block. **The issue's own premise was
+  wrong and the correction is worth more than the fix:** `code_quality_checks.sh` does *not* fail on a
+  clean tree — it runs `ruff check --fix`, which fixed it and exited 0. Reproduced by stashing the fix
+  and running the script's exact command. What is actually wrong is quieter: **the gate silently
+  rewrites tracked files on every run** (`ruff`, `black` and `isort` all run in write mode), which is
+  the mechanism by which `git add -A` swept unrelated changes into a behaviour commit twice on
+  2026-08-04. `black` would rewrite **10 files** under `tests/` and `simulator_tests/`; inventoried in
+  the PR, deliberately not fixed there. The issue body and title were corrected.
+- **#24** (PR #57) Usage normalised for all six clients, in four slices. **The blocker was one the
+  issue's own wording hid:** `_extract_token_usage` hardcoded `metadata.get("usage")`, but gemini
+  publishes under `token_usage` and never writes `usage` at all — so a field map alone could never
+  reach it, and every adapter written before a per-agent key would have been a correct map hung off a
+  key that never appears. Found by the change-site survey, which is the whole reason it runs before
+  the plan. `cursor` had **no agent class at all** — it fell through to the same `BaseCLIAgent` an
+  unknown client gets, so it could not say anything about itself a stranger would not also say.
+  **The strongest test in the set came from the pre-merge review, not the loop:** every other test
+  builds its agent by hand and so would still pass if a client were wired to the wrong class; the
+  registry-walking test is the only one that notices, and unregistering `CursorAgent` fails it by
+  name. That review also **checked a claim an earlier commit message had asserted without evidence** —
+  that `claude-9arm` inherits `ClaudeAgent`. It does, via `runner: "claude"`.
+- **#25** (PR #58) Rate cards in per-client config, cost carrying its unit, cached input priced at its
+  own rate (folding it into input overstates a cache-heavy call ~10×). **The change site the issue did
+  not name:** `cost` already existed as `float | None` and was already emitted **with no unit** — so
+  the AC was a contract change across three sites, not an addition. Safe because `grep -rn "cost=" clink/`
+  found **no assignment anywhere**: the field was declared by #23 and never populated.
+  **The review found a real defect again** — `finalize_output` prices every call and no bundled client
+  ships a card, so `cost_unavailable: no_rate_card` would have appeared on *every response of every
+  client*. It also contradicted a decision made hours earlier in the same series: #24 slice 4 ruled
+  that a fact about *PAL* stays silent so a marker always means a fact about the *CLI or the call*.
+  Fixed in `4274130`.
+
+**No real vendor rate is shipped.** None was fetched and verified, and an unchecked price in a bundled
+config is an unverified claim wearing a config file. Populating it is #26's input.
+
+**Opened, not closed:** **#56** — the normalised account has **no field for cache-creation tokens**,
+and in a run recorded 2026-08-05 that class was **24477 tokens against 2 input tokens**. Folding it
+into `cached_input_tokens` would be *worse* than dropping it, because that field means cache *reads*
+for every other client — the account would be wrong rather than incomplete. Pinned by a test so it
+cannot be closed by accident. **It must land before #26 puts a number in front of anyone.**
+
+**Process, recorded because it changes what the evidence is worth:** #25 slice 1 was **not red-first**
+— the implementation was written before the tests were run, so removing it produced only a collection
+error, the vacuous red this repo has been bitten by before. Its falsification is mutation and only
+mutation. The other cycles were properly red-first with behavioural failures.
+
+**Suite:** 960 → **1008 passed**, 4 skipped, 16 deselected. `ruff check .` clean on `main` for the
+first time.
+
 ## 2026-08-04 — an AFK batch on the clink honesty line, plus the Phase 0 spike (#12, #43, #37, #41, #29)
 
 Five items cleared unattended. The thread joining four of them: **a knob, a default, a payload or a
