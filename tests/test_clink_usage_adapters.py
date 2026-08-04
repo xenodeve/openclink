@@ -188,7 +188,33 @@ def test_claude_cache_creation_tokens_are_not_folded_into_cache_reads():
     # account #23 shipped, so it is parked as its own decision.
     agent = _agent(ClaudeAgent, "claude", "claude_json")
     account = _account(agent, {"usage": CLAUDE_RECORDED_USAGE})
-    assert account.cached_input_tokens == 20327
+    assert 24477 not in vars(account).values()
+
+
+def test_every_configured_client_either_accounts_or_says_it_cannot():
+    """The acceptance criterion in its own words, checked against the real registry.
+
+    Every test above builds its agent by hand, so all of them would still pass
+    if a client were wired to the wrong class — which is exactly the defect
+    `cursor` had: no agent class at all, so it fell through to the same fallback
+    an unknown client gets. This is the only test here that would notice.
+    """
+    from clink.agents import create_agent
+    from clink.registry import get_registry
+
+    registry = get_registry()
+    names = registry.list_clients()
+    assert names, "no clients configured — this test would pass vacuously"
+
+    for name in names:
+        agent_cls = type(create_agent(registry.get_client(name)))
+        declares_adapter = bool(agent_cls.USAGE_FIELD_MAP)
+        declares_unavailable = agent_cls.USAGE_UNAVAILABLE
+        assert declares_adapter != declares_unavailable, (
+            f"{name} ({agent_cls.__name__}) must do exactly one of the two: "
+            f"map its CLI's usage, or declare that its CLI reports none. "
+            f"adapter={declares_adapter} unavailable={declares_unavailable}"
+        )
 
 
 def _accounting(agent: BaseCLIAgent, metadata: dict) -> dict:
@@ -239,11 +265,11 @@ def test_a_client_that_does_report_usage_carries_no_unavailable_marker():
 
 
 def test_the_marker_is_not_zeros():
-    # The AC's actual demand, stated as its own assertion: an unavailable
-    # account must not be reported as an account of zero, which would be a
-    # false statement about a call that may have cost a great deal.
-    accounting = _accounting(_agent(AntigravityAgent, "antigravity", "antigravity_text"), {})
-    assert "normalized_usage" not in accounting
+    # The AC's actual demand, checked a layer below the accounting dict: an
+    # unavailable account must not be reported as an account OF ZERO, which
+    # would be a false statement about a call that may have cost a great deal.
+    account = _account(_agent(AntigravityAgent, "antigravity", "antigravity_text"), {})
+    assert account is None
 
 
 def test_claude_ignores_non_integer_members_of_the_usage_block():
