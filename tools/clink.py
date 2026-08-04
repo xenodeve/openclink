@@ -536,6 +536,24 @@ class CLinkTool(SimpleTool):
                 reason,
                 type(events).__name__,
             )
+        # The parsers keep their whole decoded payload beside the answer — gemini as
+        # `raw`, claude as `raw` and `raw_events`. Neither passed through a bound, so
+        # a large CLI response was capped in the field a caller reads and unbounded in
+        # the field next to it (#37). Nothing in the tool reads either value, so they
+        # are dropped rather than capped — and dropped here, the one place both the
+        # success and the error path already pass through, so the bound cannot be
+        # stated per-parser and drift.
+        for key in ("raw", "raw_events"):
+            payload = cleaned.pop(key, None)
+            if payload is not None:
+                cleaned[f"{key}_removed_for_{reason}"] = True
+                logger.debug(
+                    "Clink dropped %s %s metadata for %s response (%s)",
+                    client.name,
+                    key,
+                    reason,
+                    type(payload).__name__,
+                )
         return cleaned
 
     def _build_error_metadata(self, client: ResolvedCLIClient, exc: CLIAgentError) -> dict[str, Any]:
