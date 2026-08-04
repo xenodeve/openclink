@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
 import re
-from dataclasses import asdict
+import time
+import uuid
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -25,6 +29,22 @@ logger = logging.getLogger(__name__)
 
 MAX_RESPONSE_CHARS = 20_000
 SUMMARY_PATTERN = re.compile(r"<SUMMARY>(.*?)</SUMMARY>", re.IGNORECASE | re.DOTALL)
+
+
+@dataclass
+class _Session:
+    """One in-flight background delegation.
+
+    Process-local and does not survive a PAL restart — the same property the
+    conversation store already has, stated here rather than worked around.
+    """
+
+    task: asyncio.Task
+    cli_name: str
+    started_at: float
+
+
+_SESSIONS: dict[str, _Session] = {}
 
 
 def _names_one_model(resolved: str, observed: str) -> bool:
@@ -99,6 +119,14 @@ class CLinkRequest(BaseModel):
         description=(
             "Codex reasoning effort (low|medium|high|xhigh|max). Ignored by CLIs that "
             "bake effort into the model name (e.g. antigravity)."
+        ),
+    )
+    background: bool = Field(
+        default=False,
+        description=(
+            "Return immediately with a session id instead of waiting for the CLI. "
+            "Collect the result with `clink_status`. A delegation takes 45-190s, so "
+            "prefer this whenever you have other work to do."
         ),
     )
 
@@ -209,6 +237,14 @@ class CLinkTool(SimpleTool):
                     "model name (e.g. antigravity)."
                 ),
             },
+            "background": {
+                "type": "boolean",
+                "description": (
+                    "Return immediately with a session id instead of waiting for the CLI. "
+                    "Collect the result with `clink_status`. A delegation takes 45-190s, "
+                    "so prefer this whenever you have other work to do."
+                ),
+            },
         }
 
         schema = {
@@ -299,6 +335,76 @@ class CLinkTool(SimpleTool):
             logger.exception("Failed to prepare clink prompt")
             self._raise_tool_error(f"Failed to prepare prompt: {exc}")
 
+        if request.background:
+            # Registered and started here, then returned immediately (#15). The
+            # child runs on the server's own event loop, so this is PAL's
+            # behaviour rather than one host's: Claude Code's automatic
+            # backgrounding has no per-server form and does not apply to a call
+            # made from inside a subagent, so a mechanism that only works there
+            # is not a mechanism.
+            session_id = uuid.uuid4().hex[:12]
+            task = asyncio.create_task(
+                self._run_and_format(
+                    request,
+                    client_config,
+                    role_config,
+                    prompt_text,
+                    system_prompt_text,
+                    absolute_file_paths,
+                    images,
+                    continuation_id,
+                )
+            )
+            # asyncio holds only a weak reference to a running task, so a task
+            # nobody keeps can be collected mid-flight — a delegation that
+            # silently never finishes, indistinguishable from a slow one. This
+            # registry is what holds it; that is its load-bearing job.
+            _SESSIONS[session_id] = _Session(task=task, cli_name=client_config.name, started_at=time.time())
+            handle = ToolOutput(
+                status="success",
+                content=(
+                    f"Delegation to '{client_config.name}' started in the background as session "
+                    f"{session_id}. It is still running. Call `clink_status` with "
+                    f'session_id="{session_id}" to collect the result; do other work until then.'
+                ),
+                content_type="text",
+                metadata={
+                    "status": "running",
+                    "session_id": session_id,
+                    "cli_name": client_config.name,
+                    "collect_with": "clink_status",
+                },
+            )
+            return [TextContent(type="text", text=handle.model_dump_json())]
+
+        return await self._run_and_format(
+            request,
+            client_config,
+            role_config,
+            prompt_text,
+            system_prompt_text,
+            absolute_file_paths,
+            images,
+            continuation_id,
+        )
+
+    async def _run_and_format(
+        self,
+        request,
+        client_config: ResolvedCLIClient,
+        role_config: ResolvedCLIRole,
+        prompt_text: str,
+        system_prompt_text: str,
+        absolute_file_paths: list[str],
+        images: list[str],
+        continuation_id: str | None,
+    ) -> list[TextContent]:
+        """Run the child and render the response.
+
+        One function for both call shapes on purpose: a background call must
+        produce a payload indistinguishable from a blocking one, and two
+        hand-written renderers are how those drift (the same argument as #41).
+        """
         agent = create_agent(client_config)
         try:
             result = await agent.run(
@@ -631,3 +737,84 @@ class CLinkTool(SimpleTool):
             except OSError:
                 references.append(f"- {file_path} (unavailable)")
         return "\n".join(references)
+
+
+class CLinkStatusRequest(BaseModel):
+    """Request model for the clink_status tool."""
+
+    session_id: str = Field(..., description="The session id returned by a `clink` call made with background=true.")
+
+
+class CLinkStatusTool(CLinkTool):
+    """Collect a background clink delegation (#15).
+
+    Subclasses `CLinkTool` rather than `SimpleTool` because it is genuinely the
+    same tool's other half: it shares the registry, the schema machinery and the
+    error contract, and duplicating that boilerplate is how the two drift.
+    """
+
+    def get_name(self) -> str:
+        return "clink_status"
+
+    def get_description(self) -> str:
+        return (
+            "Collect a clink delegation started with background=true. Returns immediately: either "
+            "still-running, or the same payload the blocking call would have returned."
+        )
+
+    def get_request_model(self):
+        return CLinkStatusRequest
+
+    def get_input_schema(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "string",
+                    "description": "The session id returned by a `clink` call made with background=true.",
+                }
+            },
+            "required": ["session_id"],
+            "additionalProperties": False,
+        }
+
+    async def execute(self, arguments: dict[str, Any]) -> list[TextContent]:
+        session_id = (arguments or {}).get("session_id")
+        session = _SESSIONS.get(session_id)
+        if session is None:
+            self._raise_tool_error(
+                f"No background clink session '{session_id}'. Sessions are process-local and do not "
+                "survive a PAL restart, so if PAL was restarted the delegation must be re-run."
+            )
+
+        if not session.task.done():
+            still_running = ToolOutput(
+                status="success",
+                content=(
+                    f"Session {session_id} is still running on '{session.cli_name}'. Do other work and "
+                    "call `clink_status` again; nothing is lost by waiting."
+                ),
+                content_type="text",
+                metadata={
+                    "status": "running",
+                    "session_id": session_id,
+                    "cli_name": session.cli_name,
+                    "elapsed_seconds": round(time.time() - session.started_at, 1),
+                },
+            )
+            return [TextContent(type="text", text=still_running.model_dump_json())]
+
+        _SESSIONS.pop(session_id, None)
+        # Re-raises the ToolExecutionError a blocking call would have raised, with
+        # its metadata intact — a failed delegation must not become a different
+        # kind of failure just because it was collected rather than awaited.
+        rendered = session.task.result()
+
+        # The terminal marker is added HERE, not in the shared renderer, so the
+        # blocking `clink` payload is untouched. `clink_status` is the only caller
+        # that has to tell running from finished, so it is the only one that pays.
+        payload = json.loads(rendered[0].text)
+        payload.setdefault("metadata", {})
+        payload["metadata"]["status"] = "succeeded"
+        payload["metadata"]["session_id"] = session_id
+        return [TextContent(type="text", text=json.dumps(payload))]

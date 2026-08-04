@@ -51,6 +51,7 @@ from tools import (  # noqa: E402
     AnalyzeTool,
     ChallengeTool,
     ChatTool,
+    CLinkStatusTool,
     CLinkTool,
     CodeReviewTool,
     ConsensusTool,
@@ -261,6 +262,7 @@ def filter_disabled_tools(all_tools: dict[str, Any]) -> dict[str, Any]:
 TOOLS = {
     "chat": ChatTool(),  # Interactive development chat and brainstorming
     "clink": CLinkTool(),  # Bridge requests to configured AI CLIs
+    "clink_status": CLinkStatusTool(),  # Collect a clink call started with background=true
     "thinkdeep": ThinkDeepTool(),  # Step-by-step deep thinking workflow with expert analysis
     "planner": PlannerTool(),  # Interactive sequential planner using workflow architecture
     "consensus": ConsensusTool(),  # Step-by-step consensus workflow with multi-model analysis
@@ -291,6 +293,11 @@ PROMPT_TEMPLATES = {
         "name": "clink",
         "description": "Forward a request to a configured AI CLI (e.g., Gemini)",
         "template": "Use clink with cli_name=<cli> to run this prompt",
+    },
+    "clink_status": {
+        "name": "clink_status",
+        "description": "Collect a clink delegation started with background=true",
+        "template": "Collect the background clink session",
     },
     "thinkdeep": {
         "name": "thinkdeeper",

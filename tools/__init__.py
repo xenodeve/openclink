@@ -6,7 +6,7 @@ from .analyze import AnalyzeTool
 from .apilookup import LookupTool
 from .challenge import ChallengeTool
 from .chat import ChatTool
-from .clink import CLinkTool
+from .clink import CLinkStatusTool, CLinkTool
 from .codereview import CodeReviewTool
 from .consensus import ConsensusTool
 from .debug import DebugIssueTool
@@ -29,6 +29,7 @@ __all__ = [
     "AnalyzeTool",
     "LookupTool",
     "ChatTool",
+    "CLinkStatusTool",
     "CLinkTool",
     "ConsensusTool",
     "ListModelsTool",
