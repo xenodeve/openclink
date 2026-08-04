@@ -10,7 +10,7 @@ protocol in `docs/agents/` and the entry map (`using-t4`).
 
 ## Active
 
-### AFK batch 2026-08-04 — five PRs open, awaiting merge and two owed gates
+### AFK batch 2026-08-04 — five PRs open, awaiting merge; the owed gates are paid
 
 | PR | Issue | State |
 |---|---|---|
@@ -20,9 +20,14 @@ protocol in `docs/agents/` and the entry map (`using-t4`).
 | #47 | #41 | model accounting on the error path |
 | #48 | #29 | **Breaking** — `model` required. **Must merge last**: #46 and #47 add tests that omit it |
 
-🔴 **Owed before any of these merge:** `/simplify` and `/code-review` + `/scrutinize` were not run per
-item during the batch, against `t4-afk`'s gate list. Not a defect in the changes — an unrun gate, which
-is exactly the thing the skill says a report must not quietly omit.
+✅ **The owed gates are paid** (2026-08-04, before any merge). `/simplify`, `/code-review` and
+`/scrutinize` had run zero times during the batch, against `t4-afk`'s gate list. Run afterwards over all
+ten open PRs they found a real defect in **seven**, each fixed on its own branch — see `DONE.md` for the
+list. `/security-review` did not trigger; the exemption's checkable fact is recorded there too.
+
+**The one to carry forward:** on both documentation PRs (#44 and xeno #100) the defect was identical —
+a correction written into the body while the summary above it kept the withdrawn claim. Correcting a
+document means correcting what a reader skims, not only what the correction section says.
 
 **New, unstarted:** #49 — `agy --print-timeout` defaults to 5m0s, a client-side deadline sitting *inside*
 clink's 1800s child timeout that PAL does not model. A run cut by the CLI is attributed to whatever its
