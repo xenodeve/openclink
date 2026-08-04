@@ -13,7 +13,7 @@ place by changing what an agent does next.
 
 ## Optional groups (add as the tracker grows)
 
-- **Type** — `Feature` / `Bug` / `tech-debt` / `security` / `docs`.
+- **Type** — `Feature` / `bug` / `tech-debt` / `security` / `documentation`.
 - **Component** (one per issue) — `clink` / `agent:<name>` / `registry` / `discovery` / `providers`
   / `server` / `conf`.
 - **Severity** — `critical` / `Major` / `Minor`. A `security` issue must be `critical` or `Major`.
@@ -24,5 +24,19 @@ place by changing what an agent does next.
   don't file it as one.
 - Fork-vs-upstream: label fork-only work so it's distinguishable if this ever syncs with upstream.
 
-Create labels lazily (`gh label create <name> --repo xenodeve/pal-mcp-server`); proceed silently if
-the vocabulary is thinner than this — it's guidance, not a gate.
+## Creating them
+
+**Create the labels with `gh label create <name> --repo xenodeve/pal-mcp-server`, then report the
+reconciliation: which were created, which already existed, and which this document names but you
+skipped.**
+
+The previous wording here said to create them *lazily* and to *proceed silently* if the vocabulary was
+thinner than documented. Those two compose into **never created and never mentioned** — measured on
+2026-08-05, this repo carried 16 labels against the 19 named here, with the whole Type and Severity
+groups missing and `needs-triage` among them. A documented vocabulary with no labels behind it **reads
+as configured and is not**, and `t4-afk` builds its worklist from labels.
+
+`agent:<name>` is a **pattern, not a label**: it cannot be pre-created, so a reconciliation report
+should name it as deliberately absent rather than leave a future audit counting it as missing forever.
+
+Same defect, same fix: `xeno-skills#96` and its PR #108.
