@@ -18,7 +18,81 @@ Phase 3 exists to remove may be substantially smaller than recorded.
 
 ---
 
-## The premise that needs re-measuring
+## ⚠️ Correction — this section was mis-scoped when first written
+
+**The first version of this report claimed the epic's transport premise "did not reproduce". That
+framing was wrong, and the owner corrected it: the 60–108 s figure was not measured on Claude Code.**
+
+`#11` says *"the MCP transport between **the master** and PAL"*. **The master is whichever host is
+driving PAL — and it is not one host.** Enumerated 2026-08-04, PAL is configured as an MCP server on
+**all four**:
+
+| Host | Where PAL is registered |
+|---|---|
+| **Claude Code** | `~/.claude.json` → `mcpServers.pal` |
+| **codex** | `~/.codex/config.toml` → `[mcp_servers.pal]` |
+| **cursor** | `~/.cursor/mcp.json` → `mcpServers.pal` |
+| **antigravity** | `~/.gemini/config/mcp_config.json` → `mcpServers.pal`, and `~/.gemini/antigravity-cli/mcp/pal` |
+
+**I measured one of four and wrote the result as a statement about PAL.** The transport deadline is a
+property of the *host's MCP client*, not of PAL, so a measurement on one host transfers to no other —
+the same rule `#12` already applies to CLI harnesses, applied to the host side, where this report
+failed to apply it.
+
+**Direct evidence that the hosts differ, from this session's own logs.** The `codex` run's stderr
+carried, six times:
+
+```
+ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Auth(AuthorizationRequired)
+```
+
+That is **codex's own MCP client transport dying mid-run** — a failure mode Claude Code did not
+exhibit once across the same five calls. Whatever the 60–108 s figure came from, it plausibly came
+from a host that behaves like this one.
+
+**The finding, restated correctly and now sharper than the wrong version:**
+
+> **Phase 3's value is host-dependent, and neither `#11` nor `#12` says which host it is for.**
+> On a host that backgrounds a long call and delivers the terminal payload later, stories 1 and 2 are
+> already satisfied and Phase 3's remaining scope is small. On a host whose transport simply gives up,
+> they are not satisfied at all and Phase 3 is load-bearing. **`#12` asks for Q1 "yes/no per host
+> tested" but contains no host inventory** — the table above is that inventory, and it is four rows,
+> not one.
+
+### And the failure is intermittent, which changes what any measurement can show
+
+**Second correction from the owner: the transport give-up does not happen every time — it occurs
+randomly.** That is not a detail; it invalidates the shape of the evidence below.
+
+**A run of successes cannot disprove an intermittent fault.** Five successful calls against an unknown
+failure rate *p* is a sample of five. If *p* were as high as 20 %, the probability of seeing five
+straight successes is still about **1 in 3** — an entirely unremarkable outcome. The observation below
+is therefore **not evidence that the premise is wrong even on Claude Code**; it is evidence only that
+this host *can* carry a 672 s call to completion, which was never in doubt.
+
+**Consequences, and they apply to `#12`'s acceptance criteria as written:**
+
+- **Q1 cannot be answered "yes/no per host".** An intermittent fault has a *rate*, not a verdict.
+  The acceptance criterion should be **a failure rate over N repeated trials per host**, with N stated,
+  plus the observation that supports it. A single probe per host will produce a confident wrong answer
+  roughly *p* of the time.
+- **The same applies to the stub probe.** If the host's follow-up behaviour is itself flaky, one stub
+  run answers nothing. Repeat it.
+- **A candidate mechanism is already in hand and is worth chasing before more sampling.** The codex
+  stderr above fails with `Auth(AuthorizationRequired)` — an *authorisation* fault on the MCP channel,
+  which is exactly the shape of a failure that appears random from the outside (token refresh, session
+  expiry, a race on re-auth). **If the intermittency is auth-driven rather than time-driven, then
+  "gives up after 60–108 s" is a symptom description, not a cause**, and Phase 3's entire design is
+  aimed at the wrong thing. That is worth one hour of root-cause work before any further measurement.
+
+**Recorded as an open question, not a finding.** `#11`'s premise is neither confirmed nor refuted by
+this report.
+
+The measurement below stands as what it is: **one host, one day, five samples, reported as such.**
+
+---
+
+## Measured: Claude Code as master
 
 `#11` states:
 
@@ -59,19 +133,24 @@ including `metadata.duration_seconds` and `continuation_offer`.
   Q1's stub probe exists to measure. Backgrounding is the **host** handling its own transport
   deadline; it is not the host polling a handle.
 
-**Consequence for the epic.** Two of Phase 3's user stories — *"I am never told a call failed while
-its subagent is still working"* and *"so that I can decide to wait instead of re-spawning a
-duplicate"* — appear to be **already satisfied by the host** for the 120 s–1800 s band. The stories
-that are *not* satisfied by backgrounding remain live and are the real Phase 3 scope:
+**Consequence — for this host only.** Two of Phase 3's user stories — *"I am never told a call failed
+while its subagent is still working"* and *"so that I can decide to wait instead of re-spawning a
+duplicate"* — are **already satisfied by Claude Code** for the 120 s–1800 s band. **On the other three
+hosts this is unmeasured**, and the codex transport errors above suggest at least one of them behaves
+differently.
+
+Four stories are **not** satisfied by backgrounding on *any* host, because backgrounding does not
+address them at all. These are Phase 3's host-independent core:
 
 - cancelling a running subagent by handle (#11 story 11)
 - listing in-flight sessions to discover a duplicate before starting one (#11 story 12)
 - distinguishing *slow* from *genuinely blocked* (#11 story 4)
 - reattaching after losing the response (#11 story 10)
 
-**Do not treat this as a refutation of the epic.** It is a single-host, single-day observation and
-the original measurement may have been taken on a different host or version. It is recorded as
-evidence that the premise must be **re-measured before Phase 3 is planned**, not as a verdict.
+**This is not a refutation of the epic and the first draft of this report was wrong to read like one.**
+It is one host out of four, measured on one day. What it establishes is that **the premise is
+host-scoped and the epic does not currently say which host it holds for** — so the deliverable is a
+per-host row, not a verdict.
 
 ---
 
