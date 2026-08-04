@@ -1,0 +1,54 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e5]:
+      - link "Artificial Analysis" [ref=e6] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e10]:
+        - link "Premium" [ref=e2112] [cursor=pointer]:
+          - /url: /pricing?source=nav&from=%2F
+        - link "Log in" [ref=e2113] [cursor=pointer]:
+          - /url: /login
+        - button [ref=e11] [cursor=pointer]
+        - button [ref=e12] [cursor=pointer]
+    - generic [ref=e13]:
+      - generic [ref=e15]:
+        - generic [ref=e16]
+        - generic [ref=e19]
+      - generic [ref=e36]:
+        - paragraph [ref=e37]: Highlights
+        - generic [ref=e39]
+      - generic [ref=e70]:
+        - generic [ref=e71]
+        - generic [ref=e96]
+      - generic [ref=e284]:
+        - generic [ref=e285]
+        - generic [ref=e582]
+        - generic [ref=e664]
+        - generic [ref=e714]
+        - generic [ref=e757]
+        - generic [ref=e813]
+        - generic [ref=e870]
+        - generic [ref=e1298]
+        - generic [ref=e1428]
+        - generic [ref=e1495]
+        - generic [ref=e1708]
+        - generic [ref=e1822]
+    - button "Back to top"
+    - region "Notifications alt+T"
+    - generic [ref=e2030]:
+      - generic [ref=e2031]:
+        - link "Artificial Analysis" [ref=e2033] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e2036]
+        - paragraph [ref=e2048]: Artificial Analysis
+        - generic [ref=e2049]
+        - generic [ref=e2076]
+      - generic [ref=e2097]:
+        - paragraph [ref=e2098]: © 2026 Artificial Analysis
+        - link "Terms of Use" [ref=e2099] [cursor=pointer]:
+          - /url: /docs/legal/Terms-of-Use.pdf
+        - link "Privacy Policy" [ref=e2100] [cursor=pointer]:
+          - /url: /docs/legal/Privacy-Policy.pdf
+        - combobox "Select language" [ref=e2102] [cursor=pointer]: English
+  - alert [ref=e2730]
+  - generic [ref=e2731]: "0.8"

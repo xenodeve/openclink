@@ -410,11 +410,16 @@ class CLinkTool(SimpleTool):
             metadata["raw_output_file"] = result.output_file_content
         return metadata
 
-    def _call_accounting(self, result: AgentOutput) -> dict[str, Any]:
+    def _call_accounting(self, result: AgentOutput | CLIAgentError) -> dict[str, Any]:
         """What the call requested and what it consumed, omitting what is unknown.
 
         A key is absent when the client reported nothing for it, so a caller can
         tell "not reported" from a reported zero.
+
+        Takes either outcome. `CLIAgentError` carries these fields under the same
+        names as `AgentOutput` so one projection serves both paths (#41) — the
+        annotation has to say so, or the next reader reasonably assumes the error
+        path has its own copy, which is the duplication this replaced.
         """
         accounting: dict[str, Any] = {}
         if result.requested_model is not None:

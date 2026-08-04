@@ -1,0 +1,1018 @@
+- main [ref=f21e2]:
+  - generic [ref=f21e5]:
+    - link "Artificial Analysis" [ref=f21e6] [cursor=pointer]:
+      - /url: /
+    - generic [ref=f21e10]:
+      - link "Loading":
+        - /url: /login
+      - button [ref=f21e11] [cursor=pointer]
+      - button [ref=f21e12] [cursor=pointer]
+  - generic [ref=f21e13]:
+    - generic [ref=f21e15]:
+      - generic [ref=f21e16]:
+        - generic [ref=f21e17]:
+          - generic [ref=f21e18]:
+            - img "GPT-5.6 Sol (max) logo" [ref=f21e20]
+            - link "OpenAI" [ref=f21e22] [cursor=pointer]:
+              - /url: https://openai.com/
+            - generic [ref=f21e23]: •
+            - paragraph [ref=f21e24]: Proprietary model
+            - generic [ref=f21e25]: •
+            - paragraph [ref=f21e26]: Released July 2026
+          - heading "GPT-5.6 Sol (max) Intelligence, Performance & Price Analysis" [level=1] [ref=f21e27]
+        - generic [ref=f21e28]:
+          - combobox [ref=f21e29] [cursor=pointer]: Compare
+          - link "Try it out" [ref=f21e30] [cursor=pointer]:
+            - /url: /microevals?models=gpt-5-6-sol
+          - link "API Provider Benchmarks" [ref=f21e31] [cursor=pointer]:
+            - /url: /models/gpt-5-6-sol/providers
+      - generic [ref=f21e32]:
+        - generic [ref=f21e34]:
+          - heading "Model summary" [level=3] [ref=f21e35]
+          - generic [ref=f21e36]:
+            - generic [ref=f21e37]:
+              - generic [ref=f21e38]:
+                - heading "Intelligence" [level=4] [ref=f21e39]
+                - button "#4 / 185" [ref=f21e40] [cursor=pointer]:
+                  - generic [ref=f21e41]: "#4"
+                  - text: / 185
+              - generic [ref=f21e55]:
+                - generic [ref=f21e56]: "59"
+                - generic [ref=f21e58]: Artificial Analysis Intelligence Index
+              - generic [ref=f21e59]: 4 out of 4 units for Intelligence.
+            - generic [ref=f21e60]:
+              - generic [ref=f21e61]:
+                - heading "Speed" [level=4] [ref=f21e62]
+                - button "#74 / 185" [ref=f21e63] [cursor=pointer]:
+                  - generic [ref=f21e64]: "#74"
+                  - text: / 185
+              - generic [ref=f21e70]:
+                - generic [ref=f21e71]: "63.5"
+                - generic [ref=f21e73]: Output tokens per second
+              - generic [ref=f21e74]: 2 out of 4 units for Speed.
+            - generic [ref=f21e75]:
+              - generic [ref=f21e76]:
+                - heading "Price" [level=4] [ref=f21e77]
+                - button "#158 / 185" [ref=f21e78] [cursor=pointer]:
+                  - generic [ref=f21e79]: "#158"
+                  - text: / 185
+              - generic [ref=f21e93]:
+                - generic [ref=f21e94]:
+                  - generic [ref=f21e95]: Input
+                  - generic [ref=f21e96]: $5.00
+                  - generic [ref=f21e98]: per 1M tokens
+                - generic [ref=f21e99]:
+                  - generic [ref=f21e100]: Output
+                  - generic [ref=f21e101]: $30.00
+                  - generic [ref=f21e103]: per 1M tokens
+              - generic [ref=f21e104]: 4 out of 4 units for Price.
+            - generic [ref=f21e105]:
+              - generic [ref=f21e106]:
+                - heading "Cache Price" [level=4] [ref=f21e107]
+                - button "#85 / 185" [ref=f21e108] [cursor=pointer]:
+                  - generic [ref=f21e109]: "#85"
+                  - text: / 185
+              - generic [ref=f21e120]:
+                - generic [ref=f21e121]:
+                  - generic [ref=f21e122]: Write
+                  - generic [ref=f21e123]: $6.25
+                  - generic [ref=f21e125]: per 1M tokens
+                - generic [ref=f21e126]:
+                  - generic [ref=f21e127]: Hit
+                  - generic [ref=f21e128]:
+                    - generic [ref=f21e129]: $0.50
+                    - button "90% cache price discount" [ref=f21e130] [cursor=pointer]: (-90%)
+                  - generic [ref=f21e131]: per 1M tokens
+              - generic [ref=f21e132]: 3 out of 4 units for Cache Price.
+            - generic [ref=f21e133]:
+              - generic [ref=f21e134]:
+                - heading "Verbosity" [level=4] [ref=f21e135]
+                - button "#39 / 185" [ref=f21e136] [cursor=pointer]:
+                  - generic [ref=f21e137]: "#39"
+                  - text: / 185
+              - generic [ref=f21e145]:
+                - generic [ref=f21e146]: 70M
+                - generic [ref=f21e148]: Output tokens from Intelligence Index
+              - generic [ref=f21e149]: 3 out of 4 units for Verbosity.
+        - generic [ref=f21e150]:
+          - generic [ref=f21e153]:
+            - heading [level=3] [ref=f21e154]:
+              - button "Comparison Summary" [expanded] [ref=f21e155] [cursor=pointer]
+            - region "Comparison Summary":
+              - generic [ref=f21e158]:
+                - paragraph [ref=f21e159]: GPT-5.6 Sol (max) is amongst the leading models in intelligence, but particularly expensive when comparing to other models of similar price. It's also slower than average and somewhat verbose. The model supports text and image input, outputs text, and has a 1M tokens context window.
+                - paragraph [ref=f21e160]: "GPT-5.6 Sol (max) scores 59 on the Artificial Analysis Intelligence Index, placing it well above average among comparable models (median: 32). When evaluating the Intelligence Index, it generated 70M tokens, which is somewhat verbose in comparison to the median of 63M."
+                - paragraph [ref=f21e161]: "Pricing for GPT-5.6 Sol (max) is $5.00 per 1M input tokens (expensive, median: $2.00) and $30.00 per 1M output tokens (expensive, median: $10.00). In total, it cost $3442.81 to evaluate GPT-5.6 Sol (max) on the Intelligence Index."
+                - paragraph [ref=f21e162]: At 63 tokens per second, GPT-5.6 Sol (max) is slower than average (64).
+          - generic [ref=f21e164]:
+            - generic [ref=f21e165]:
+              - heading [level=3] [ref=f21e166]:
+                - button "Technical specifications" [expanded] [ref=f21e167] [cursor=pointer]
+              - region "Technical specifications":
+                - table [ref=f21e171]:
+                  - rowgroup [ref=f21e172]:
+                    - row [ref=f21e173]:
+                      - rowheader "Reasoning" [ref=f21e174]
+                      - cell [ref=f21e177]:
+                        - text: "Yes"
+                        - button [ref=f21e178]
+                        - generic [ref=f21e182]:
+                          - paragraph [ref=f21e183]: This page shows the reasoning version of this model.
+                          - paragraph [ref=f21e184]: A non-reasoning variant may also exist.
+                    - row [ref=f21e185]:
+                      - rowheader "Input modality" [ref=f21e186]
+                      - cell [ref=f21e190]:
+                        - button [ref=f21e191]
+                        - paragraph [ref=f21e204]: "Supports: text and image"
+                    - row [ref=f21e205]:
+                      - rowheader "Output modality" [ref=f21e206]
+                      - cell [ref=f21e210]:
+                        - button [ref=f21e211]
+                        - paragraph [ref=f21e224]: "Supports: text"
+                    - row [ref=f21e225]:
+                      - rowheader "Context window" [ref=f21e226]
+                      - cell "1M ~1500 A4 pages of size 12 Arial font" [ref=f21e232]:
+                        - text: 1M
+                        - button [ref=f21e233]
+                        - generic [ref=f21e236]: ~1500 A4 pages of size 12 Arial font
+            - generic [ref=f21e237]:
+              - heading [level=3] [ref=f21e238]:
+                - button "185 models in this class" [ref=f21e239] [cursor=pointer]
+              - region "185 models in this class":
+                - generic [ref=f21e243]:
+                  - paragraph [ref=f21e244]: "Metrics are compared against models of the same class:"
+                  - list [ref=f21e245]:
+                    - listitem [ref=f21e246]: Non-reasoning models → compared only with other non-reasoning models
+                    - listitem [ref=f21e247]: Reasoning models → compared across both reasoning and non-reasoning
+                    - listitem [ref=f21e248]: "Open weights models → compared only with other open weights models of the same size class:"
+                    - list [ref=f21e249]:
+                      - listitem [ref=f21e250]: "Tiny: ≤4B parameters"
+                      - listitem [ref=f21e251]: "Small: 4B–40B parameters"
+                      - listitem [ref=f21e252]: "Medium: 40B–150B parameters"
+                      - listitem [ref=f21e253]: "Large: >150B parameters"
+                    - listitem [ref=f21e254]: "Proprietary models → compared across proprietary and open weights models of the same price range, using a blended 3:1 input/output price ratio:"
+                    - list [ref=f21e255]:
+                      - listitem [ref=f21e256]: <$0.15 per 1M tokens
+                      - listitem [ref=f21e257]: $0.15–$1 per 1M tokens
+                      - listitem [ref=f21e258]: ">$1 per 1M tokens"
+    - navigation "Model page tabs" [ref=f21e259]:
+      - link "Model Comparison" [ref=f21e260] [cursor=pointer]:
+        - /url: /models/gpt-5-6-sol
+      - link "API Provider Benchmarks" [ref=f21e261] [cursor=pointer]:
+        - /url: /models/gpt-5-6-sol/providers
+    - generic [ref=f21e262]:
+      - generic [ref=f21e263]:
+        - paragraph [ref=f21e264]: Highlights
+        - generic [ref=f21e266]:
+          - generic [ref=f21e267]:
+            - heading [level=3] [ref=f21e270]:
+              - link "Intelligence" [ref=f21e271] [cursor=pointer]:
+                - /url: "#intelligence"
+            - generic [ref=f21e272]: Artificial Analysis Intelligence Index · Higher is better
+          - generic [ref=f21e277]:
+            - heading [level=3] [ref=f21e280]:
+              - link "Speed" [ref=f21e281] [cursor=pointer]:
+                - /url: "#speed"
+            - generic [ref=f21e282]: Output tokens per second · Higher is better
+          - generic [ref=f21e287]:
+            - heading [level=3] [ref=f21e290]:
+              - link "Cost per Task" [ref=f21e291] [cursor=pointer]:
+                - /url: "#price-cost"
+            - generic [ref=f21e292]: Weighted average cost (USD) per Intelligence Index task · Lower is better
+      - generic [ref=f21e299]:
+        - button "Toggle prompt options" [ref=f21e303] [cursor=pointer]:
+          - generic [ref=f21e304]: Prompt Options
+        - generic [ref=f21e306]:
+          - heading "Intelligence" [level=2] [ref=f21e309]
+          - generic [ref=f21e312]:
+            - generic [ref=f21e313]:
+              - tablist [ref=f21e315]:
+                - tab "Artificial Analysis Intelligence Index" [selected] [ref=f21e316] [cursor=pointer]
+                - tab "Coding Index" [ref=f21e317] [cursor=pointer]
+                - tab "Agentic Index" [ref=f21e318] [cursor=pointer]
+              - tabpanel "Artificial Analysis Intelligence Index" [ref=f21e319]:
+                - generic [ref=f21e320]:
+                  - generic [ref=f21e321]:
+                    - generic [ref=f21e322]:
+                      - generic [ref=f21e323]:
+                        - heading "Artificial Analysis Intelligence Index" [level=3] [ref=f21e324]
+                        - generic [ref=f21e325]: "Artificial Analysis Intelligence Index v4.1 incorporates 9 evaluations: GDPval-AA v2, 𝜏³-Banking, Terminal-Bench v2.1, SciCode, Humanity's Last Exam, GPQA Diamond, CritPt, AA-Omniscience, AA-LCR"
+                      - generic [ref=f21e327]:
+                        - generic [ref=f21e328]:
+                          - button "Copy link to this section" [ref=f21e329] [cursor=pointer]
+                          - button "Download chart as image" [ref=f21e330] [cursor=pointer]
+                          - button "Download data" [ref=f21e331] [cursor=pointer]
+                        - generic [ref=f21e333]:
+                          - generic [ref=f21e334]:
+                            - combobox [ref=f21e336] [cursor=pointer]:
+                              - generic [ref=f21e337]: 26 of 590 models
+                            - button "Open filters" [ref=f21e338] [cursor=pointer]
+                            - button "Open chart display settings" [ref=f21e339] [cursor=pointer]:
+                              - generic [ref=f21e340]: NEW
+                          - button [ref=f21e341] [cursor=pointer]
+                    - generic [ref=f21e343]: Reasoning models are indicated by a lightbulb icon
+                  - generic [ref=f21e355]:
+                    - heading [level=3] [ref=f21e356]:
+                      - button [ref=f21e357] [cursor=pointer]
+                    - region "Artificial Analysis Intelligence Index":
+                      - paragraph [ref=f21e364]:
+                        - text: "Artificial Analysis Intelligence Index v4.1 includes: GDPval-AA v2, 𝜏³-Banking, Terminal-Bench v2.1, SciCode, Humanity's Last Exam, GPQA Diamond, CritPt, AA-Omniscience, AA-LCR. See"
+                        - link "Intelligence Index methodology" [ref=f21e365] [cursor=pointer]:
+                          - /url: /methodology/intelligence-benchmarking
+                        - text: for further details, including a breakdown of each evaluation and how we run them.
+            - generic [ref=f21e366]:
+              - tablist [ref=f21e368]:
+                - tab "Open Weights / Proprietary" [selected] [ref=f21e369] [cursor=pointer]
+                - tab "Reasoning / Non-Reasoning" [ref=f21e370] [cursor=pointer]
+                - tab "Text Only / Multimodal Inputs" [ref=f21e371] [cursor=pointer]
+              - tabpanel "Open Weights / Proprietary" [ref=f21e372]:
+                - generic [ref=f21e373]:
+                  - generic [ref=f21e374]:
+                    - generic [ref=f21e375]:
+                      - generic [ref=f21e376]:
+                        - heading "Artificial Analysis Intelligence Index by Open Weights / Proprietary" [level=3] [ref=f21e377]
+                        - generic [ref=f21e378]: "Artificial Analysis Intelligence Index v4.1 incorporates 9 evaluations: GDPval-AA v2, 𝜏³-Banking, Terminal-Bench v2.1, SciCode, Humanity's Last Exam, GPQA Diamond, CritPt, AA-Omniscience, AA-LCR"
+                      - generic [ref=f21e380]:
+                        - generic [ref=f21e381]:
+                          - button "Copy link to this section" [ref=f21e382] [cursor=pointer]
+                          - button "Download chart as image" [ref=f21e383] [cursor=pointer]
+                          - button "Download data" [ref=f21e384] [cursor=pointer]
+                        - generic [ref=f21e386]:
+                          - generic [ref=f21e387]:
+                            - combobox [ref=f21e389] [cursor=pointer]:
+                              - generic [ref=f21e390]: 26 of 590 models
+                            - button "Open filters" [ref=f21e391] [cursor=pointer]
+                            - button "Open chart display settings" [ref=f21e392] [cursor=pointer]:
+                              - generic [ref=f21e393]: NEW
+                          - button [ref=f21e394] [cursor=pointer]
+                    - generic [ref=f21e397]:
+                      - generic [ref=f21e399]:
+                        - button "Proprietary" [ref=f21e400] [cursor=pointer]
+                        - button "Open Weights (Commercial Use Restricted)" [ref=f21e403] [cursor=pointer]
+                        - button "Open Weights" [ref=f21e406] [cursor=pointer]
+                      - generic [ref=f21e412]: Reasoning models are indicated by a lightbulb icon
+                  - generic [ref=f21e417]:
+                    - generic [ref=f21e419]:
+                      - heading [level=3] [ref=f21e420]:
+                        - button [ref=f21e421] [cursor=pointer]
+                      - region "Artificial Analysis Intelligence Index":
+                        - paragraph [ref=f21e428]:
+                          - text: "Artificial Analysis Intelligence Index v4.1 includes: GDPval-AA v2, 𝜏³-Banking, Terminal-Bench v2.1, SciCode, Humanity's Last Exam, GPQA Diamond, CritPt, AA-Omniscience, AA-LCR. See"
+                          - link "Intelligence Index methodology" [ref=f21e429] [cursor=pointer]:
+                            - /url: /methodology/intelligence-benchmarking
+                          - text: for further details, including a breakdown of each evaluation and how we run them.
+                    - button "1 more note" [ref=f21e430] [cursor=pointer]
+        - generic [ref=f21e433]:
+          - heading [level=2] [ref=f21e436]:
+            - link "Benchmarks" [ref=f21e438] [cursor=pointer]:
+              - /url: /evaluations
+          - generic [ref=f21e439]:
+            - generic [ref=f21e440]:
+              - generic [ref=f21e441]:
+                - generic [ref=f21e442]:
+                  - generic [ref=f21e443]:
+                    - heading "Intelligence Evaluations" [level=3] [ref=f21e444]
+                    - generic [ref=f21e445]: Intelligence evaluations measured independently by Artificial Analysis · Higher is better
+                  - generic [ref=f21e447]:
+                    - generic [ref=f21e448]:
+                      - button "Copy link to this section" [ref=f21e449] [cursor=pointer]
+                      - button "Download chart as image" [ref=f21e450] [cursor=pointer]
+                      - button "Download data" [ref=f21e451] [cursor=pointer]
+                    - generic [ref=f21e453]:
+                      - combobox [ref=f21e454] [cursor=pointer]:
+                        - generic [ref=f21e455]: 18 of 22 evaluations
+                      - generic [ref=f21e456]:
+                        - generic [ref=f21e457]:
+                          - combobox [ref=f21e459] [cursor=pointer]:
+                            - generic [ref=f21e460]: 26 of 590 models
+                          - button "Open filters" [ref=f21e461] [cursor=pointer]
+                          - button "Open chart display settings" [ref=f21e462] [cursor=pointer]:
+                            - generic [ref=f21e463]: NEW
+                        - button [ref=f21e464] [cursor=pointer]
+                - generic [ref=f21e467]:
+                  - generic [ref=f21e468]:
+                    - generic [ref=f21e470]:
+                      - link "GDPval-AA v2" [ref=f21e472] [cursor=pointer]:
+                        - /url: /evaluations/gdpval-aa
+                      - paragraph [ref=f21e476]: Agentic real-world work tasks, (Elo-500)/2000
+                    - generic [ref=f21e482]:
+                      - link "𝜏³-Banking" [ref=f21e484] [cursor=pointer]:
+                        - /url: /evaluations/tau3-banking
+                      - paragraph [ref=f21e488]: Agentic tool use
+                    - generic [ref=f21e494]:
+                      - link "Terminal-Bench v2.1" [ref=f21e496] [cursor=pointer]:
+                        - /url: /evaluations/terminalbench-v2-1
+                      - paragraph [ref=f21e500]: Agentic coding & terminal use
+                    - generic [ref=f21e506]:
+                      - link "SciCode" [ref=f21e508] [cursor=pointer]:
+                        - /url: /evaluations/scicode
+                      - paragraph [ref=f21e512]: Coding
+                    - generic [ref=f21e518]:
+                      - link "Humanity's Last Exam" [ref=f21e520] [cursor=pointer]:
+                        - /url: /evaluations/humanitys-last-exam
+                      - paragraph [ref=f21e524]: Reasoning & knowledge
+                    - generic [ref=f21e530]:
+                      - link "GPQA Diamond" [ref=f21e532] [cursor=pointer]:
+                        - /url: /evaluations/gpqa-diamond
+                      - paragraph [ref=f21e536]: Scientific reasoning
+                    - generic [ref=f21e542]:
+                      - link "CritPt" [ref=f21e544] [cursor=pointer]:
+                        - /url: /evaluations/critpt
+                      - paragraph [ref=f21e548]: Physics reasoning
+                    - generic [ref=f21e554]:
+                      - link "AA-Omniscience Accuracy" [ref=f21e556] [cursor=pointer]:
+                        - /url: /evaluations/omniscience
+                      - paragraph [ref=f21e560]: Knowledge
+                    - generic [ref=f21e566]:
+                      - link "AA-Omniscience Non-Hallucination Rate" [ref=f21e568] [cursor=pointer]:
+                        - /url: /evaluations/omniscience
+                      - paragraph [ref=f21e572]: 1 - hallucination rate
+                    - generic [ref=f21e578]:
+                      - link "AA-LCR" [ref=f21e580] [cursor=pointer]:
+                        - /url: /evaluations/artificial-analysis-long-context-reasoning
+                      - paragraph [ref=f21e584]: Long context reasoning
+                    - generic [ref=f21e590]:
+                      - link "AA-Briefcase" [ref=f21e592] [cursor=pointer]:
+                        - /url: /evaluations/aa-briefcase
+                      - paragraph [ref=f21e596]: Agentic knowledge work, Elo
+                    - generic [ref=f21e602]:
+                      - link "AutomationBench-AA" [ref=f21e604] [cursor=pointer]:
+                        - /url: /evaluations/automationbench-aa
+                      - paragraph [ref=f21e608]: Agentic SaaS workflows
+                    - generic [ref=f21e614]:
+                      - link "Harvey LAB-AA" [ref=f21e616] [cursor=pointer]:
+                        - /url: /evaluations/harvey-lab-aa
+                      - paragraph [ref=f21e620]: Legal agentic work, criterion pass rate
+                    - generic [ref=f21e626]:
+                      - generic [ref=f21e627]:
+                        - link "EnterpriseOps-Gym-AA" [ref=f21e628] [cursor=pointer]:
+                          - /url: /evaluations/enterprise-ops-gym-aa
+                        - generic [ref=f21e632]: New
+                      - paragraph [ref=f21e633]: Agentic business operations
+                    - generic [ref=f21e639]:
+                      - link "IFBench" [ref=f21e641] [cursor=pointer]:
+                        - /url: /evaluations/ifbench
+                      - paragraph [ref=f21e645]: Instruction following
+                    - generic [ref=f21e651]:
+                      - link "APEX-Agents-AA" [ref=f21e653] [cursor=pointer]:
+                        - /url: /evaluations/apex-agents-aa
+                      - paragraph [ref=f21e657]: Long-horizon agentic tasks
+                    - generic [ref=f21e663]:
+                      - link "ITBench-AA" [ref=f21e665] [cursor=pointer]:
+                        - /url: /evaluations/itbench-aa
+                      - paragraph [ref=f21e669]: Kubernetes incident root-cause analysis
+                    - generic [ref=f21e675]:
+                      - link "MMMU-Pro" [ref=f21e677] [cursor=pointer]:
+                        - /url: /evaluations/mmmu-pro
+                      - paragraph [ref=f21e681]: Visual reasoning
+                  - generic [ref=f21e686]: Reasoning models are indicated by a lightbulb icon
+              - generic [ref=f21e691]:
+                - generic [ref=f21e693]:
+                  - heading [level=3] [ref=f21e694]:
+                    - button [ref=f21e695] [cursor=pointer]
+                  - region "Intelligence Evaluation Relevance":
+                    - paragraph [ref=f21e702]: While model intelligence generally translates across use cases, specific evaluations may be more relevant for certain use cases.
+                - button "1 more note" [ref=f21e703] [cursor=pointer]
+            - heading "AA-Briefcase" [level=3] [ref=f21e707]
+            - generic [ref=f21e708]:
+              - tablist [ref=f21e710]:
+                - tab "AA-Briefcase Elo" [selected] [ref=f21e711] [cursor=pointer]
+                - tab "AA-Briefcase Rubric Score (%)" [ref=f21e712] [cursor=pointer]
+                - tab "Analytical Quality & Presentation Elo" [ref=f21e713] [cursor=pointer]
+              - tabpanel "AA-Briefcase Elo" [ref=f21e714]:
+                - generic [ref=f21e715]:
+                  - generic [ref=f21e716]:
+                    - generic [ref=f21e717]:
+                      - generic [ref=f21e718]:
+                        - heading "AA-Briefcase Elo" [level=3] [ref=f21e719]
+                        - generic [ref=f21e720]: AA-Briefcase is an agentic knowledge work benchmark developed by Artificial Analysis. AA-Briefcase Elo is a combined metric that aggregates rubric pass rate, analytical quality Elo and presentation Elo · Higher is better
+                      - generic [ref=f21e722]:
+                        - generic [ref=f21e723]:
+                          - button "Copy link to this section" [ref=f21e724] [cursor=pointer]
+                          - button "Download chart as image" [ref=f21e725] [cursor=pointer]
+                          - button "Download data" [ref=f21e726] [cursor=pointer]
+                        - generic [ref=f21e728]:
+                          - generic [ref=f21e729]:
+                            - combobox [ref=f21e731] [cursor=pointer]:
+                              - generic [ref=f21e732]: 20 of 57 models
+                            - button "Open filters" [ref=f21e733] [cursor=pointer]
+                            - button "Open chart display settings" [ref=f21e734] [cursor=pointer]:
+                              - generic [ref=f21e735]: NEW
+                          - button [ref=f21e736] [cursor=pointer]
+                    - generic [ref=f21e738]: Reasoning models are indicated by a lightbulb icon
+                  - generic [ref=f21e750]:
+                    - heading [level=3] [ref=f21e751]:
+                      - button [ref=f21e752] [cursor=pointer]
+                    - region "AA-Briefcase Elo":
+                      - paragraph [ref=f21e759]: AA-Briefcase Elo is a combined metric that aggregates analytical quality Elo, presentation Elo, and rubric pass rate, with rubric performance converted into Elo via synthetic head-to-head matches. Elo and 95% confidence interval bounds are clamped at 0.
+            - heading "AA-Omniscience" [level=3] [ref=f21e761]
+            - generic [ref=f21e762]:
+              - tablist [ref=f21e764]:
+                - tab "AA-Omniscience Index" [selected] [ref=f21e765] [cursor=pointer]
+                - tab "AA-Omniscience Accuracy" [ref=f21e766] [cursor=pointer]
+                - tab "AA-Omniscience Hallucination Rate" [ref=f21e767] [cursor=pointer]
+              - tabpanel "AA-Omniscience Index" [ref=f21e768]:
+                - generic [ref=f21e769]:
+                  - generic [ref=f21e770]:
+                    - generic [ref=f21e771]:
+                      - generic [ref=f21e772]:
+                        - heading "AA-Omniscience Index" [level=3] [ref=f21e773]
+                        - generic [ref=f21e774]: AA-Omniscience Index (higher is better) measures knowledge reliability and hallucination. It rewards correct answers, penalizes hallucinations, and has no penalty for refusing to answer. Scores range from -100 to 100, where 0 means as many correct as incorrect answers, and negative scores mean more incorrect than correct.
+                      - generic [ref=f21e776]:
+                        - generic [ref=f21e777]:
+                          - button "Copy link to this section" [ref=f21e778] [cursor=pointer]
+                          - button "Download chart as image" [ref=f21e779] [cursor=pointer]
+                          - button "Download data" [ref=f21e780] [cursor=pointer]
+                        - generic [ref=f21e782]:
+                          - generic [ref=f21e783]:
+                            - combobox [ref=f21e785] [cursor=pointer]:
+                              - generic [ref=f21e786]: 26 of 460 models
+                            - button "Open filters" [ref=f21e787] [cursor=pointer]
+                            - button "Open chart display settings" [ref=f21e788] [cursor=pointer]:
+                              - generic [ref=f21e789]: NEW
+                          - button [ref=f21e790] [cursor=pointer]
+                    - generic [ref=f21e792]: Reasoning models are indicated by a lightbulb icon
+                  - generic [ref=f21e804]:
+                    - heading [level=3] [ref=f21e805]:
+                      - button [ref=f21e806] [cursor=pointer]
+                    - region "AA-Omniscience Index":
+                      - paragraph [ref=f21e813]: AA-Omniscience Index (higher is better) measures knowledge reliability and hallucination. It rewards correct answers, penalizes hallucinations, and has no penalty for refusing to answer. Scores range from -100 to 100, where 0 means as many correct as incorrect answers, and negative scores mean more incorrect than correct.
+        - generic [ref=f21e814]:
+          - heading "Intelligence Index Comparisons" [level=2] [ref=f21e817]
+          - generic [ref=f21e821]:
+            - tablist [ref=f21e823]:
+              - tab "Intelligence Index vs. Cost per Task" [selected] [ref=f21e824] [cursor=pointer]
+              - tab "Intelligence Index vs. Time per Task" [ref=f21e825] [cursor=pointer]
+              - tab "Intelligence Index vs. Output Speed" [ref=f21e826] [cursor=pointer]
+              - tab "Intelligence Index vs. End-to-End Response Time" [ref=f21e827] [cursor=pointer]
+            - tabpanel "Intelligence Index vs. Cost per Task" [ref=f21e828]:
+              - generic [ref=f21e829]:
+                - generic [ref=f21e830]:
+                  - generic [ref=f21e831]:
+                    - generic [ref=f21e832]:
+                      - heading "Intelligence Index vs. Cost per Intelligence Index Task" [level=3] [ref=f21e833]
+                      - generic [ref=f21e834]: Artificial Analysis Intelligence Index · Weighted average cost (USD) per Artificial Analysis Intelligence Index task
+                    - generic [ref=f21e836]:
+                      - generic [ref=f21e837]:
+                        - button "Copy link to this section" [ref=f21e838] [cursor=pointer]
+                        - button "Download chart as image" [ref=f21e839] [cursor=pointer]
+                        - button "Download data" [ref=f21e840] [cursor=pointer]
+                      - generic [ref=f21e843]:
+                        - combobox [ref=f21e845] [cursor=pointer]:
+                          - generic [ref=f21e846]: 26 of 590 models
+                        - button "Open filters" [ref=f21e847] [cursor=pointer]
+                        - button "Open chart display settings" [ref=f21e848] [cursor=pointer]:
+                          - generic [ref=f21e849]: NEW
+                  - generic [ref=f21e851]:
+                    - generic [ref=f21e852]:
+                      - generic [ref=f21e853]: Most attractive quadrant
+                      - generic [ref=f21e856]: Pareto line
+                    - generic [ref=f21e860]:
+                      - button "OpenAI" [ref=f21e861] [cursor=pointer]
+                      - button "Google" [ref=f21e864] [cursor=pointer]
+                      - button "Anthropic" [ref=f21e867] [cursor=pointer]
+                      - button "Z AI" [ref=f21e870] [cursor=pointer]
+                      - button "DeepSeek" [ref=f21e873] [cursor=pointer]
+                      - button "SpaceXAI" [ref=f21e876] [cursor=pointer]
+                      - button "Kimi" [ref=f21e879] [cursor=pointer]
+                      - button "NVIDIA" [ref=f21e882] [cursor=pointer]
+                      - button "MiniMax" [ref=f21e885] [cursor=pointer]
+                      - button "Meta" [ref=f21e888] [cursor=pointer]
+                    - generic [ref=f21e893]: Reasoning models are indicated by a lightbulb icon
+                - generic [ref=f21e898]:
+                  - generic [ref=f21e900]:
+                    - heading [level=3] [ref=f21e901]:
+                      - button [ref=f21e902] [cursor=pointer]
+                    - region "Cost per Intelligence Index Task":
+                      - paragraph [ref=f21e909]: Weighted average cost per Intelligence Index task. Each evaluation’s cost is calculated from input, cache hit, cache write, reasoning, and answer token prices, divided by task count, and weighted by its Intelligence Index weight.
+                  - button "1 more note" [ref=f21e910] [cursor=pointer]
+        - generic [ref=f21e913]:
+          - heading "Token Use" [level=2] [ref=f21e916]
+          - generic [ref=f21e920]:
+            - tablist [ref=f21e922]:
+              - tab "Output Tokens per Task" [selected] [ref=f21e923] [cursor=pointer]
+              - tab "Intelligence Index vs. Output Tokens per Task" [ref=f21e924] [cursor=pointer]
+              - tab "Intelligence Index Token Use" [ref=f21e925] [cursor=pointer]
+              - tab "Intelligence Index vs. Token Use" [ref=f21e926] [cursor=pointer]
+            - tabpanel "Output Tokens per Task" [ref=f21e927]:
+              - generic [ref=f21e928]:
+                - generic [ref=f21e929]:
+                  - generic [ref=f21e930]:
+                    - generic [ref=f21e931]:
+                      - heading "Output Tokens per Intelligence Index Task" [level=3] [ref=f21e932]
+                      - generic [ref=f21e933]: Weighted average number of output tokens used to run one task in the Artificial Analysis Intelligence Index
+                    - generic [ref=f21e935]:
+                      - generic [ref=f21e936]:
+                        - button "Copy link to this section" [ref=f21e937] [cursor=pointer]
+                        - button "Download chart as image" [ref=f21e938] [cursor=pointer]
+                        - button "Download data" [ref=f21e939] [cursor=pointer]
+                      - generic [ref=f21e942]:
+                        - combobox [ref=f21e944] [cursor=pointer]:
+                          - generic [ref=f21e945]: 26 of 590 models
+                        - button "Open filters" [ref=f21e946] [cursor=pointer]
+                        - button "Open chart display settings" [ref=f21e947] [cursor=pointer]:
+                          - generic [ref=f21e948]: NEW
+                  - generic [ref=f21e950]:
+                    - generic [ref=f21e952]:
+                      - button "Answer" [ref=f21e953] [cursor=pointer]
+                      - button "Reasoning" [ref=f21e956] [cursor=pointer]
+                    - generic [ref=f21e962]: Reasoning models are indicated by a lightbulb icon
+                - generic [ref=f21e969]:
+                  - heading [level=3] [ref=f21e970]:
+                    - button [ref=f21e971] [cursor=pointer]
+                  - region "Output Tokens per Intelligence Index Task":
+                    - paragraph [ref=f21e978]: The number of tokens required per Intelligence Index task. This is calculated by multiplying the output tokens per eval by the relative weights of each benchmark in the Intelligence Index, then dividing by task count (excluding repeats).
+        - generic [ref=f21e979]:
+          - heading "Cost" [level=2] [ref=f21e982]
+          - generic [ref=f21e985]:
+            - generic [ref=f21e986]:
+              - tablist [ref=f21e988]:
+                - tab "Cost per Task" [selected] [ref=f21e989] [cursor=pointer]
+                - tab "Intelligence Index vs. Cost per Task" [ref=f21e990] [cursor=pointer]
+                - tab "Evaluation Breakdown" [ref=f21e991] [cursor=pointer]
+              - tabpanel "Cost per Task" [ref=f21e992]:
+                - generic [ref=f21e993]:
+                  - generic [ref=f21e994]:
+                    - generic [ref=f21e995]:
+                      - generic [ref=f21e996]:
+                        - heading "Cost per Intelligence Index Task" [level=3] [ref=f21e997]
+                        - generic [ref=f21e998]: Weighted average cost (USD) per Artificial Analysis Intelligence Index task, segmented by token type. Lower is better
+                      - generic [ref=f21e1000]:
+                        - generic [ref=f21e1001]:
+                          - button "Copy link to this section" [ref=f21e1002] [cursor=pointer]
+                          - button "Download chart as image" [ref=f21e1003] [cursor=pointer]
+                          - button "Download data" [ref=f21e1004] [cursor=pointer]
+                        - generic [ref=f21e1007]:
+                          - combobox [ref=f21e1009] [cursor=pointer]:
+                            - generic [ref=f21e1010]: 26 of 590 models
+                          - button "Open filters" [ref=f21e1011] [cursor=pointer]
+                          - button "Open chart display settings" [ref=f21e1012] [cursor=pointer]:
+                            - generic [ref=f21e1013]: NEW
+                    - generic [ref=f21e1015]:
+                      - generic [ref=f21e1017]:
+                        - button "Answer" [ref=f21e1018] [cursor=pointer]
+                        - button "Reasoning" [ref=f21e1021] [cursor=pointer]
+                        - button "Cache Write" [ref=f21e1024] [cursor=pointer]
+                        - button "Cache Hit" [ref=f21e1027] [cursor=pointer]
+                        - button "Input" [ref=f21e1030] [cursor=pointer]
+                      - generic [ref=f21e1036]: Reasoning models are indicated by a lightbulb icon
+                  - generic [ref=f21e1043]:
+                    - heading [level=3] [ref=f21e1044]:
+                      - button [ref=f21e1045] [cursor=pointer]
+                    - region "Cost per Intelligence Index Task":
+                      - paragraph [ref=f21e1052]: Weighted average cost per Intelligence Index task. Each evaluation’s cost is calculated from input, cache hit, cache write, reasoning, and answer token prices, divided by task count, and weighted by its Intelligence Index weight.
+            - generic [ref=f21e1053]:
+              - tablist [ref=f21e1055]:
+                - tab "Intelligence Index Total Cost" [selected] [ref=f21e1056] [cursor=pointer]
+                - tab "Intelligence Index vs. Total Cost" [ref=f21e1057] [cursor=pointer]
+              - tabpanel "Intelligence Index Total Cost" [ref=f21e1058]:
+                - generic [ref=f21e1059]:
+                  - generic [ref=f21e1060]:
+                    - generic [ref=f21e1061]:
+                      - generic [ref=f21e1062]:
+                        - heading "Cost to Run Artificial Analysis Intelligence Index" [level=3] [ref=f21e1063]
+                        - generic [ref=f21e1064]: Cost (USD) to run all evaluations in the Artificial Analysis Intelligence Index
+                      - generic [ref=f21e1066]:
+                        - generic [ref=f21e1067]:
+                          - button "Copy link to this section" [ref=f21e1068] [cursor=pointer]
+                          - button "Download chart as image" [ref=f21e1069] [cursor=pointer]
+                          - button "Download data" [ref=f21e1070] [cursor=pointer]
+                        - generic [ref=f21e1072]:
+                          - generic [ref=f21e1073]:
+                            - combobox [ref=f21e1075] [cursor=pointer]:
+                              - generic [ref=f21e1076]: 26 of 590 models
+                            - button "Open filters" [ref=f21e1077] [cursor=pointer]
+                            - button "Open chart display settings" [ref=f21e1078] [cursor=pointer]:
+                              - generic [ref=f21e1079]: NEW
+                          - button [ref=f21e1080] [cursor=pointer]
+                    - generic [ref=f21e1083]:
+                      - generic [ref=f21e1085]:
+                        - button "Output" [ref=f21e1086] [cursor=pointer]
+                        - button "Reasoning" [ref=f21e1089] [cursor=pointer]
+                        - button "Cache Write" [ref=f21e1092] [cursor=pointer]
+                        - button "Cache Read" [ref=f21e1095] [cursor=pointer]
+                        - button "Non-Cache Input" [ref=f21e1098] [cursor=pointer]
+                      - generic [ref=f21e1104]: Reasoning models are indicated by a lightbulb icon
+                  - generic [ref=f21e1111]:
+                    - heading [level=3] [ref=f21e1112]:
+                      - button [ref=f21e1113] [cursor=pointer]
+                    - region "Cost to Run Artificial Analysis Intelligence Index":
+                      - paragraph [ref=f21e1120]: The cost to run the evaluations in the Artificial Analysis Intelligence Index, calculated using the model's input, cache hit, cache write, reasoning, and answer token prices and the number of tokens used across evaluations (excluding repeats).
+            - generic [ref=f21e1121]:
+              - tablist [ref=f21e1123]:
+                - tab "Cache Hit, Input, and Output Pricing" [selected] [ref=f21e1124] [cursor=pointer]
+                - tab "Blended Price" [ref=f21e1125] [cursor=pointer]
+                - tab "Blended Price (Stacked)" [ref=f21e1126] [cursor=pointer]
+                - tab "Cache Discount" [ref=f21e1127] [cursor=pointer]
+                - tab "Intelligence Index vs. Price" [ref=f21e1128] [cursor=pointer]
+                - tab "Intelligence Index vs. Price (Log, Inverted)" [ref=f21e1129] [cursor=pointer]
+                - tab "Image Input Pricing" [ref=f21e1130] [cursor=pointer]
+              - tabpanel "Cache Hit, Input, and Output Pricing" [ref=f21e1131]:
+                - generic [ref=f21e1132]:
+                  - generic [ref=f21e1133]:
+                    - generic [ref=f21e1134]:
+                      - generic [ref=f21e1135]:
+                        - 'heading "Pricing: Cache Hit, Input, and Output" [level=3] [ref=f21e1136]'
+                        - generic [ref=f21e1137]: Price (USD per M Tokens)
+                      - generic [ref=f21e1139]:
+                        - generic [ref=f21e1140]:
+                          - button "Copy link to this section" [ref=f21e1141] [cursor=pointer]
+                          - button "Download chart as image" [ref=f21e1142] [cursor=pointer]
+                          - button "Download data" [ref=f21e1143] [cursor=pointer]
+                        - generic [ref=f21e1145]:
+                          - generic [ref=f21e1146]:
+                            - combobox [ref=f21e1148] [cursor=pointer]:
+                              - generic [ref=f21e1149]: 26 of 590 models
+                            - button "Open filters" [ref=f21e1150] [cursor=pointer]
+                            - button "Open chart display settings" [ref=f21e1151] [cursor=pointer]:
+                              - generic [ref=f21e1152]: NEW
+                          - button [ref=f21e1153] [cursor=pointer]
+                    - generic [ref=f21e1156]:
+                      - generic [ref=f21e1158]:
+                        - button "Cache Hit" [ref=f21e1159] [cursor=pointer]
+                        - button "Input" [ref=f21e1162] [cursor=pointer]
+                        - button "Output" [ref=f21e1165] [cursor=pointer]
+                      - generic [ref=f21e1171]: Reasoning models are indicated by a lightbulb icon
+                  - generic [ref=f21e1176]:
+                    - generic [ref=f21e1178]:
+                      - heading [level=3] [ref=f21e1179]:
+                        - button [ref=f21e1180] [cursor=pointer]
+                      - region "Cache Hit":
+                        - paragraph [ref=f21e1187]: Price per token for cached prompts (previously processed), typically offering a significant discount compared to regular input price, represented as USD per million tokens. The values shown here are the cache hit price; cache write and cache storage are billed separately and vary by provider — see "Cache pricing by provider" for detail.
+                    - button "4 more notes" [ref=f21e1188] [cursor=pointer]
+        - generic [ref=f21e1191]:
+          - heading "Context Window" [level=2] [ref=f21e1194]
+          - generic [ref=f21e1198]:
+            - tablist [ref=f21e1200]:
+              - tab "Context Window" [selected] [ref=f21e1201] [cursor=pointer]
+              - tab "Intelligence Index vs. Context Window" [ref=f21e1202] [cursor=pointer]
+            - tabpanel "Context Window" [ref=f21e1203]:
+              - generic [ref=f21e1204]:
+                - generic [ref=f21e1205]:
+                  - generic [ref=f21e1206]:
+                    - generic [ref=f21e1207]:
+                      - heading "Context Window" [level=3] [ref=f21e1208]
+                      - generic [ref=f21e1209]: "Context window: tokens limit · Higher is better"
+                    - generic [ref=f21e1211]:
+                      - generic [ref=f21e1212]:
+                        - button "Copy link to this section" [ref=f21e1213] [cursor=pointer]
+                        - button "Download chart as image" [ref=f21e1214] [cursor=pointer]
+                        - button "Download data" [ref=f21e1215] [cursor=pointer]
+                      - generic [ref=f21e1217]:
+                        - generic [ref=f21e1218]:
+                          - combobox [ref=f21e1220] [cursor=pointer]:
+                            - generic [ref=f21e1221]: 26 of 590 models
+                          - button "Open filters" [ref=f21e1222] [cursor=pointer]
+                          - button "Open chart display settings" [ref=f21e1223] [cursor=pointer]:
+                            - generic [ref=f21e1224]: NEW
+                        - button [ref=f21e1225] [cursor=pointer]
+                  - generic [ref=f21e1227]: Reasoning models are indicated by a lightbulb icon
+                - generic [ref=f21e1237]:
+                  - generic [ref=f21e1239]:
+                    - heading [level=3] [ref=f21e1240]:
+                      - button [ref=f21e1241] [cursor=pointer]
+                    - region "Context Window for RAG":
+                      - paragraph [ref=f21e1248]: Larger context windows are relevant to RAG (Retrieval Augmented Generation) LLM workflows which typically involve reasoning and information retrieval of large amounts of data.
+                  - button "1 more note" [ref=f21e1249] [cursor=pointer]
+        - generic [ref=f21e1252]:
+          - generic [ref=f21e1253]:
+            - heading "Speed" [level=2] [ref=f21e1255]
+            - paragraph [ref=f21e1258]: Measured by Output Speed (tokens per second)
+          - generic [ref=f21e1259]:
+            - generic [ref=f21e1260]:
+              - tablist [ref=f21e1262]:
+                - tab "Output Speed" [selected] [ref=f21e1263] [cursor=pointer]
+                - tab "Output Speed by Prompt Type" [ref=f21e1264] [cursor=pointer]
+                - tab "Output Speed Variance" [ref=f21e1265] [cursor=pointer]
+                - tab "Output Speed Over Time" [ref=f21e1266] [cursor=pointer]
+                - tab "Output Speed vs. Price" [ref=f21e1267] [cursor=pointer]
+                - tab "Latency vs. Output Speed" [ref=f21e1268] [cursor=pointer]
+              - tabpanel "Output Speed" [ref=f21e1269]:
+                - generic [ref=f21e1270]:
+                  - generic [ref=f21e1271]:
+                    - generic [ref=f21e1272]:
+                      - generic [ref=f21e1273]:
+                        - heading "Output Speed" [level=3] [ref=f21e1274]
+                        - generic [ref=f21e1275]: Output tokens per second · Higher is better
+                      - generic [ref=f21e1277]:
+                        - generic [ref=f21e1278]:
+                          - button "Copy link to this section" [ref=f21e1279] [cursor=pointer]
+                          - button "Download chart as image" [ref=f21e1280] [cursor=pointer]
+                          - button "Download data" [ref=f21e1281] [cursor=pointer]
+                        - generic [ref=f21e1283]:
+                          - generic [ref=f21e1284]:
+                            - combobox [ref=f21e1286] [cursor=pointer]:
+                              - generic [ref=f21e1287]: 26 of 590 models
+                            - button "Open filters" [ref=f21e1288] [cursor=pointer]
+                            - button "Open chart display settings" [ref=f21e1289] [cursor=pointer]:
+                              - generic [ref=f21e1290]: NEW
+                          - button [ref=f21e1291] [cursor=pointer]
+                    - generic [ref=f21e1293]: Reasoning models are indicated by a lightbulb icon
+                  - generic [ref=f21e1303]:
+                    - generic [ref=f21e1305]:
+                      - heading [level=3] [ref=f21e1306]:
+                        - button [ref=f21e1307] [cursor=pointer]
+                      - region "Output Speed":
+                        - paragraph [ref=f21e1314]: Tokens per second received while the model is generating tokens (ie. after first chunk has been received from the API for models which support streaming).
+                    - button "1 more note" [ref=f21e1315] [cursor=pointer]
+            - generic [ref=f21e1318]:
+              - tablist [ref=f21e1320]:
+                - tab "Time per Task" [selected] [ref=f21e1321] [cursor=pointer]
+                - tab "Intelligence Index vs. Time per Task" [ref=f21e1322] [cursor=pointer]
+                - tab "Cost vs. Time per Task" [ref=f21e1323] [cursor=pointer]
+              - tabpanel "Time per Task" [ref=f21e1324]:
+                - generic [ref=f21e1325]:
+                  - generic [ref=f21e1326]:
+                    - generic [ref=f21e1327]:
+                      - generic [ref=f21e1328]:
+                        - heading "Time per Intelligence Index Task" [level=3] [ref=f21e1329]
+                        - generic [ref=f21e1330]: Weighted average decode time (minutes) per task; excludes TTFT and overhead time · Lower is better
+                      - generic [ref=f21e1332]:
+                        - generic [ref=f21e1333]:
+                          - button "Copy link to this section" [ref=f21e1334] [cursor=pointer]
+                          - button "Download chart as image" [ref=f21e1335] [cursor=pointer]
+                          - button "Download data" [ref=f21e1336] [cursor=pointer]
+                        - generic [ref=f21e1339]:
+                          - combobox [ref=f21e1341] [cursor=pointer]:
+                            - generic [ref=f21e1342]: 26 of 590 models
+                          - button "Open filters" [ref=f21e1343] [cursor=pointer]
+                          - button "Open chart display settings" [ref=f21e1344] [cursor=pointer]:
+                            - generic [ref=f21e1345]: NEW
+                    - generic [ref=f21e1346]: Reasoning models are indicated by a lightbulb icon
+                  - generic [ref=f21e1358]:
+                    - heading [level=3] [ref=f21e1359]:
+                      - button [ref=f21e1360] [cursor=pointer]
+                    - region "Time per Intelligence Index Task":
+                      - paragraph [ref=f21e1367]: The weighted average time (seconds) per Artificial Analysis Intelligence Index task. This is calculated by dividing output tokens per task by output speed, weighted by the relative weights of each benchmark in the Intelligence Index.
+        - generic [ref=f21e1368]:
+          - generic [ref=f21e1369]:
+            - heading "Latency" [level=2] [ref=f21e1371]
+            - paragraph [ref=f21e1374]: Measured by Time (seconds) to First Token
+          - generic [ref=f21e1376]:
+            - tablist [ref=f21e1378]:
+              - tab "Time To First Answer Token" [selected] [ref=f21e1379] [cursor=pointer]
+              - tab "Time To First Token" [ref=f21e1380] [cursor=pointer]
+              - tab "Latency by Prompt Type" [ref=f21e1381] [cursor=pointer]
+              - tab "Latency Variance" [ref=f21e1382] [cursor=pointer]
+              - tab "Latency Over Time" [ref=f21e1383] [cursor=pointer]
+            - tabpanel "Time To First Answer Token" [ref=f21e1384]:
+              - generic [ref=f21e1385]:
+                - generic [ref=f21e1386]:
+                  - generic [ref=f21e1387]:
+                    - generic [ref=f21e1388]:
+                      - 'heading "Latency: Time To First Answer Token" [level=3] [ref=f21e1389]'
+                      - generic [ref=f21e1390]: Seconds to first answer token received · Accounts for reasoning model 'thinking' time
+                    - generic [ref=f21e1392]:
+                      - generic [ref=f21e1393]:
+                        - button "Copy link to this section" [ref=f21e1394] [cursor=pointer]
+                        - button "Download chart as image" [ref=f21e1395] [cursor=pointer]
+                        - button "Download data" [ref=f21e1396] [cursor=pointer]
+                      - generic [ref=f21e1398]:
+                        - generic [ref=f21e1399]:
+                          - combobox [ref=f21e1401] [cursor=pointer]:
+                            - generic [ref=f21e1402]: 26 of 590 models
+                          - button "Open filters" [ref=f21e1403] [cursor=pointer]
+                          - button "Open chart display settings" [ref=f21e1404] [cursor=pointer]:
+                            - generic [ref=f21e1405]: NEW
+                        - button [ref=f21e1406] [cursor=pointer]
+                  - generic [ref=f21e1409]:
+                    - generic [ref=f21e1411]:
+                      - button "Thinking (reasoning models, when applicable)" [ref=f21e1412] [cursor=pointer]
+                      - button "Input processing" [ref=f21e1415] [cursor=pointer]
+                    - generic [ref=f21e1421]: Reasoning models are indicated by a lightbulb icon
+                - generic [ref=f21e1428]:
+                  - heading [level=3] [ref=f21e1429]:
+                    - button [ref=f21e1430] [cursor=pointer]
+                  - region "Time to First Answer Token":
+                    - paragraph [ref=f21e1437]: Time to first answer token received, in seconds, after API request sent. For reasoning models, this includes the 'thinking' time of the model before providing an answer. For models which do not support streaming, this represents time to receive the completion.
+        - generic [ref=f21e1438]:
+          - generic [ref=f21e1439]:
+            - heading "End-to-End Response Time" [level=2] [ref=f21e1441]
+            - paragraph [ref=f21e1444]: Seconds to output 500 tokens, calculated based on time to first token, 'thinking' time for reasoning models, and output speed
+          - generic [ref=f21e1446]:
+            - tablist [ref=f21e1448]:
+              - tab "End-to-End Response Time" [selected] [ref=f21e1449] [cursor=pointer]
+              - tab "End-to-End Response Time by Prompt Type" [ref=f21e1450] [cursor=pointer]
+              - tab "End-to-End Response Time Over Time" [ref=f21e1451] [cursor=pointer]
+            - tabpanel "End-to-End Response Time" [ref=f21e1452]:
+              - generic [ref=f21e1453]:
+                - generic [ref=f21e1454]:
+                  - generic [ref=f21e1455]:
+                    - generic [ref=f21e1456]:
+                      - heading "End-to-End Response Time" [level=3] [ref=f21e1457]
+                      - generic [ref=f21e1458]: Seconds to output 500 tokens, including reasoning model 'thinking' time · Lower is better
+                    - generic [ref=f21e1460]:
+                      - generic [ref=f21e1461]:
+                        - button "Copy link to this section" [ref=f21e1462] [cursor=pointer]
+                        - button "Download chart as image" [ref=f21e1463] [cursor=pointer]
+                        - button "Download data" [ref=f21e1464] [cursor=pointer]
+                      - generic [ref=f21e1466]:
+                        - generic [ref=f21e1467]:
+                          - combobox [ref=f21e1469] [cursor=pointer]:
+                            - generic [ref=f21e1470]: 26 of 590 models
+                          - button "Open filters" [ref=f21e1471] [cursor=pointer]
+                          - button "Open chart display settings" [ref=f21e1472] [cursor=pointer]:
+                            - generic [ref=f21e1473]: NEW
+                        - button [ref=f21e1474] [cursor=pointer]
+                  - generic [ref=f21e1477]:
+                    - generic [ref=f21e1479]:
+                      - button "Outputting time" [ref=f21e1480] [cursor=pointer]
+                      - button "'Thinking' time (reasoning models)" [ref=f21e1483] [cursor=pointer]
+                      - button "Input processing time" [ref=f21e1486] [cursor=pointer]
+                    - generic [ref=f21e1492]: Reasoning models are indicated by a lightbulb icon
+                - generic [ref=f21e1497]:
+                  - generic [ref=f21e1499]:
+                    - heading [level=3] [ref=f21e1500]:
+                      - button [ref=f21e1501] [cursor=pointer]
+                    - region "End-to-End Response Time":
+                      - generic [ref=f21e1508]:
+                        - paragraph [ref=f21e1509]: "Seconds to receive a 500 token response. Key components:"
+                        - list [ref=f21e1510]:
+                          - listitem [ref=f21e1511]: "Input time: Time to receive the first response token"
+                          - listitem [ref=f21e1512]:
+                            - text: "Thinking time (only for reasoning models): Time reasoning models spend outputting tokens to reason prior to providing an answer. Amount of tokens based on the average reasoning tokens across a diverse set of 60 prompts ("
+                            - link "methodology details" [ref=f21e1513] [cursor=pointer]:
+                              - /url: /methodology/performance-benchmarking
+                            - text: ).
+                          - listitem [ref=f21e1514]: "Answer time: Time to generate 500 output tokens, based on output speed"
+                  - button "1 more note" [ref=f21e1515] [cursor=pointer]
+      - generic [ref=f21e1518]:
+        - generic [ref=f21e1519]:
+          - heading "Frequently Asked Questions" [level=2] [ref=f21e1520]
+          - paragraph [ref=f21e1521]: Common questions about GPT-5.6 Sol (max)
+        - generic [ref=f21e1522]:
+          - generic [ref=f21e1523]:
+            - heading [level=3] [ref=f21e1524]:
+              - button "When was GPT-5.6 Sol (max) released?" [ref=f21e1525] [cursor=pointer]
+            - region "When was GPT-5.6 Sol (max) released?":
+              - paragraph [ref=f21e1529]: GPT-5.6 Sol (max) was released on July 9, 2026.
+          - generic [ref=f21e1530]:
+            - heading [level=3] [ref=f21e1531]:
+              - button "Who created GPT-5.6 Sol (max)?" [ref=f21e1532] [cursor=pointer]
+            - region "Who created GPT-5.6 Sol (max)?":
+              - paragraph [ref=f21e1536]: GPT-5.6 Sol (max) was created by OpenAI.
+          - generic [ref=f21e1537]:
+            - heading [level=3] [ref=f21e1538]:
+              - button "How intelligent is GPT-5.6 Sol (max)?" [ref=f21e1539] [cursor=pointer]
+            - region "How intelligent is GPT-5.6 Sol (max)?":
+              - paragraph [ref=f21e1543]: "GPT-5.6 Sol (max) scores 59 on the Artificial Analysis Intelligence Index, placing it well above average among other reasoning models in a similar price tier (median: 32)."
+          - generic [ref=f21e1544]:
+            - heading [level=3] [ref=f21e1545]:
+              - button "How fast is GPT-5.6 Sol (max)?" [ref=f21e1546] [cursor=pointer]
+            - region "How fast is GPT-5.6 Sol (max)?":
+              - paragraph [ref=f21e1550]: "GPT-5.6 Sol (max) generates output at 63.5 tokens per second (based on OpenAI's API), which is below average compared to other reasoning models in a similar price tier (median: 64.3 t/s)."
+          - generic [ref=f21e1551]:
+            - heading [level=3] [ref=f21e1552]:
+              - button "What is the latency of GPT-5.6 Sol (max)?" [ref=f21e1553] [cursor=pointer]
+            - region "What is the latency of GPT-5.6 Sol (max)?":
+              - paragraph [ref=f21e1557]: "GPT-5.6 Sol (max) has a time to first token (TTFT) of 133.04s (based on OpenAI's API), which is at the higher end compared to other reasoning models in a similar price tier (median: 2.80s)."
+          - generic [ref=f21e1558]:
+            - heading [level=3] [ref=f21e1559]:
+              - button "How much does GPT-5.6 Sol (max) cost?" [ref=f21e1560] [cursor=pointer]
+            - region "How much does GPT-5.6 Sol (max) cost?":
+              - paragraph [ref=f21e1564]: "GPT-5.6 Sol (max) costs $5.00 per 1M input tokens (at the higher end, median: $2.00) and $30.00 per 1M output tokens (at the higher end, median: $10.00), based on OpenAI's API."
+          - generic [ref=f21e1565]:
+            - heading [level=3] [ref=f21e1566]:
+              - button "What is GPT-5.6 Sol (max) API pricing?" [ref=f21e1567] [cursor=pointer]
+            - region "What is GPT-5.6 Sol (max) API pricing?":
+              - paragraph [ref=f21e1571]:
+                - text: GPT-5.6 Sol (max) costs $5.00 per 1M input tokens and $30.00 per 1M output tokens (based on OpenAI's API). For a blended rate (7:2:1 cache hit/input/output ratio), this is $4.35 per 1M tokens. Pricing may vary by provider.
+                - link "Compare provider pricing" [ref=f21e1572] [cursor=pointer]:
+                  - /url: /models/gpt-5-6-sol/providers
+          - generic [ref=f21e1573]:
+            - heading [level=3] [ref=f21e1574]:
+              - button "How verbose is GPT-5.6 Sol (max)?" [ref=f21e1575] [cursor=pointer]
+            - region "How verbose is GPT-5.6 Sol (max)?":
+              - paragraph [ref=f21e1579]: "When evaluated on the Intelligence Index, GPT-5.6 Sol (max) generated 70M output tokens, which is somewhat higher than average compared to other reasoning models in a similar price tier (median: 63M)."
+          - generic [ref=f21e1580]:
+            - heading [level=3] [ref=f21e1581]:
+              - button "Is GPT-5.6 Sol (max) a reasoning model?" [ref=f21e1582] [cursor=pointer]
+            - region "Is GPT-5.6 Sol (max) a reasoning model?":
+              - paragraph [ref=f21e1586]: Yes, GPT-5.6 Sol (max) is a reasoning model. It uses extended thinking or chain-of-thought reasoning to work through complex problems before providing an answer.
+          - generic [ref=f21e1587]:
+            - heading [level=3] [ref=f21e1588]:
+              - button "What input modalities does GPT-5.6 Sol (max) support?" [ref=f21e1589] [cursor=pointer]
+            - region "What input modalities does GPT-5.6 Sol (max) support?":
+              - paragraph [ref=f21e1593]: GPT-5.6 Sol (max) supports text and image input.
+          - generic [ref=f21e1594]:
+            - heading [level=3] [ref=f21e1595]:
+              - button "What output modalities does GPT-5.6 Sol (max) support?" [ref=f21e1596] [cursor=pointer]
+            - region "What output modalities does GPT-5.6 Sol (max) support?":
+              - paragraph [ref=f21e1600]: GPT-5.6 Sol (max) supports text output.
+          - generic [ref=f21e1601]:
+            - heading [level=3] [ref=f21e1602]:
+              - button "Can GPT-5.6 Sol (max) process images?" [ref=f21e1603] [cursor=pointer]
+            - region "Can GPT-5.6 Sol (max) process images?":
+              - paragraph [ref=f21e1607]: Yes, GPT-5.6 Sol (max) supports image input and can analyze, describe, and answer questions about images.
+          - generic [ref=f21e1608]:
+            - heading [level=3] [ref=f21e1609]:
+              - button "Is GPT-5.6 Sol (max) multimodal?" [ref=f21e1610] [cursor=pointer]
+            - region "Is GPT-5.6 Sol (max) multimodal?":
+              - paragraph [ref=f21e1614]: Yes, GPT-5.6 Sol (max) is multimodal. It can process text and image input and generate text output.
+          - generic [ref=f21e1615]:
+            - heading [level=3] [ref=f21e1616]:
+              - button "What is the context window of GPT-5.6 Sol (max)?" [ref=f21e1617] [cursor=pointer]
+            - region "What is the context window of GPT-5.6 Sol (max)?":
+              - paragraph [ref=f21e1621]: GPT-5.6 Sol (max) has a context window of 1.0M tokens. This determines how much text and conversation history the model can process in a single request.
+          - generic [ref=f21e1622]:
+            - heading [level=3] [ref=f21e1623]:
+              - button "Is GPT-5.6 Sol (max) open source?" [ref=f21e1624] [cursor=pointer]
+            - region "Is GPT-5.6 Sol (max) open source?":
+              - paragraph [ref=f21e1628]: No, GPT-5.6 Sol (max) is proprietary. The model weights are not publicly available.
+          - generic [ref=f21e1629]:
+            - heading [level=3] [ref=f21e1630]:
+              - button "How many parameters does GPT-5.6 Sol (max) have?" [ref=f21e1631] [cursor=pointer]
+            - region "How many parameters does GPT-5.6 Sol (max) have?":
+              - paragraph [ref=f21e1635]: GPT-5.6 Sol (max) is a proprietary model and OpenAI has not disclosed the model size or parameter count.
+          - generic [ref=f21e1636]:
+            - heading [level=3] [ref=f21e1637]:
+              - button "How does GPT-5.6 Sol (max) perform on benchmarks?" [ref=f21e1638] [cursor=pointer]
+            - region "How does GPT-5.6 Sol (max) perform on benchmarks?":
+              - paragraph [ref=f21e1642]: GPT-5.6 Sol (max) achieves a score of 59 on the Artificial Analysis Intelligence Index. This composite benchmark evaluates models across reasoning, knowledge, mathematics, and coding.
+          - generic [ref=f21e1643]:
+            - heading [level=3] [ref=f21e1644]:
+              - button "Is GPT-5.6 Sol (max) available via API?" [ref=f21e1645] [cursor=pointer]
+            - region "Is GPT-5.6 Sol (max) available via API?":
+              - paragraph [ref=f21e1649]:
+                - text: Yes, GPT-5.6 Sol (max) is available via API through 2 providers.
+                - link "Compare API providers" [ref=f21e1650] [cursor=pointer]:
+                  - /url: /models/gpt-5-6-sol/providers
+          - generic [ref=f21e1651]:
+            - heading [level=3] [ref=f21e1652]:
+              - button "Where can I use GPT-5.6 Sol (max)?" [ref=f21e1653] [cursor=pointer]
+            - region "Where can I use GPT-5.6 Sol (max)?":
+              - paragraph [ref=f21e1657]:
+                - text: GPT-5.6 Sol (max) is available through 2 API providers.
+                - link "Compare providers" [ref=f21e1658] [cursor=pointer]:
+                  - /url: /models/gpt-5-6-sol/providers
+  - button "Back to top"
+  - region "Notifications alt+T"
+  - generic [ref=f21e1660]:
+    - generic [ref=f21e1661]:
+      - link "Artificial Analysis" [ref=f21e1663] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f21e1666]:
+        - paragraph [ref=f21e1667]: Get notified about new articles
+        - generic [ref=f21e1671]:
+          - generic [ref=f21e1672]: Email address
+          - textbox "Email address" [ref=f21e1673]:
+            - /placeholder: What's your email?
+          - button "Subscribe" [ref=f21e1674] [cursor=pointer]
+      - paragraph [ref=f21e1678]: Artificial Analysis
+      - generic [ref=f21e1679]:
+        - generic [ref=f21e1680]:
+          - paragraph [ref=f21e1681]: Explore
+          - list [ref=f21e1682]:
+            - listitem [ref=f21e1683]:
+              - link "LLM Leaderboard" [ref=f21e1684] [cursor=pointer]:
+                - /url: /leaderboards/models
+            - listitem [ref=f21e1685]:
+              - link "Image Arena" [ref=f21e1686] [cursor=pointer]:
+                - /url: /image/arena
+            - listitem [ref=f21e1687]:
+              - link "Video Arena" [ref=f21e1688] [cursor=pointer]:
+                - /url: /video/arena
+            - listitem [ref=f21e1689]:
+              - link "AI Agents" [ref=f21e1690] [cursor=pointer]:
+                - /url: /agents
+            - listitem [ref=f21e1691]:
+              - link "Evaluations" [ref=f21e1692] [cursor=pointer]:
+                - /url: /evaluations
+        - generic [ref=f21e1693]:
+          - paragraph [ref=f21e1694]: Company
+          - list [ref=f21e1695]:
+            - listitem [ref=f21e1696]:
+              - link "Methodology" [ref=f21e1697] [cursor=pointer]:
+                - /url: /methodology
+            - listitem [ref=f21e1698]:
+              - link "Services" [ref=f21e1699] [cursor=pointer]:
+                - /url: /services
+            - listitem [ref=f21e1700]:
+              - link "Contact" [ref=f21e1701] [cursor=pointer]:
+                - /url: /contact
+            - listitem [ref=f21e1702]:
+              - link "Articles" [ref=f21e1703] [cursor=pointer]:
+                - /url: /articles
+            - listitem [ref=f21e1704]:
+              - link "FAQ" [ref=f21e1705] [cursor=pointer]:
+                - /url: /faq
+      - generic [ref=f21e1706]:
+        - link "X" [ref=f21e1707] [cursor=pointer]:
+          - /url: https://x.com/ArtificialAnlys
+        - link "LinkedIn" [ref=f21e1711] [cursor=pointer]:
+          - /url: https://www.linkedin.com/company/artificial-analysis/
+        - link "YouTube" [ref=f21e1715] [cursor=pointer]:
+          - /url: https://www.youtube.com/@ArtificialAnalysisAI
+        - link "Rednote" [ref=f21e1719] [cursor=pointer]:
+          - /url: https://www.xiaohongshu.com/user/profile/69ea6345000000000d034c02
+        - link "Discord" [ref=f21e1723] [cursor=pointer]:
+          - /url: https://discord.gg/Mk298GPZ7V
+    - generic [ref=f21e1727]:
+      - paragraph [ref=f21e1728]: © 2026 Artificial Analysis
+      - link "Terms of Use" [ref=f21e1729] [cursor=pointer]:
+        - /url: /docs/legal/Terms-of-Use.pdf
+      - link "Privacy Policy" [ref=f21e1730] [cursor=pointer]:
+        - /url: /docs/legal/Privacy-Policy.pdf
+      - generic [ref=f21e1731]:
+        - combobox "Select language" [ref=f21e1732] [cursor=pointer]: English
+        - combobox [ref=f21e1740]

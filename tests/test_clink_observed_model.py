@@ -243,9 +243,8 @@ async def test_codex_payload_without_observed_model_omits_it_without_substitutio
 
     assert metadata["resolved_model"] == "configured-model"
     assert "observed_model" not in metadata
-    # Absence must not be inferable from a substitution flag either.
-    assert "model_substituted" not in metadata
     assert "requested_model" not in metadata
+    # Absence must not be inferable from a substitution flag either.
     assert "model_substituted" not in metadata
 
 

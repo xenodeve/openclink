@@ -1,0 +1,1086 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e5]:
+      - link "Artificial Analysis" [ref=e6] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e10]:
+        - link "Loading":
+          - /url: /login
+        - button [ref=e11] [cursor=pointer]
+        - button [ref=e12] [cursor=pointer]
+    - generic [ref=e13]:
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - generic [ref=e17]:
+            - generic [ref=e18]:
+              - img "GPT-5.5 Instant (June 2026) logo" [ref=e20]
+              - link "OpenAI" [ref=e22] [cursor=pointer]:
+                - /url: https://openai.com/
+              - generic [ref=e23]: •
+              - paragraph [ref=e24]: Proprietary model
+              - generic [ref=e25]: •
+              - paragraph [ref=e26]: Released June 2026
+            - heading "GPT-5.5 Instant (June 2026) Intelligence, Performance & Price Analysis" [level=1] [ref=e27]
+          - generic [ref=e28]:
+            - combobox [ref=e29] [cursor=pointer]: Compare
+            - link "API Provider Benchmarks" [ref=e30] [cursor=pointer]:
+              - /url: /models/gpt-5-5-instant-06-26/providers
+        - generic [ref=e31]:
+          - generic [ref=e33]:
+            - heading "Model summary" [level=3] [ref=e34]
+            - generic [ref=e35]:
+              - generic [ref=e36]:
+                - generic [ref=e37]:
+                  - heading "Intelligence" [level=4] [ref=e38]
+                  - button "#104 / 185" [ref=e39] [cursor=pointer]:
+                    - generic [ref=e40]: "#104"
+                    - text: / 185
+                - generic [ref=e48]:
+                  - generic [ref=e49]: "29"
+                  - generic [ref=e51]: Artificial Analysis Intelligence Index
+                - generic [ref=e52]: 2 out of 4 units for Intelligence.
+              - generic [ref=e53]:
+                - heading "Speed" [level=4] [ref=e55]
+                - generic [ref=e56]:
+                  - generic [ref=e57]: N/A
+                  - generic [ref=e59]: Output tokens per second
+                - generic [ref=e60]: Unknown out of 4 units for Speed.
+              - generic [ref=e61]:
+                - generic [ref=e62]:
+                  - heading "Price" [level=4] [ref=e63]
+                  - button "#158 / 185" [ref=e64] [cursor=pointer]:
+                    - generic [ref=e65]: "#158"
+                    - text: / 185
+                - generic [ref=e79]:
+                  - generic [ref=e80]:
+                    - generic [ref=e81]: Input
+                    - generic [ref=e82]: $5.00
+                    - generic [ref=e84]: per 1M tokens
+                  - generic [ref=e85]:
+                    - generic [ref=e86]: Output
+                    - generic [ref=e87]: $30.00
+                    - generic [ref=e89]: per 1M tokens
+                - generic [ref=e90]: 4 out of 4 units for Price.
+              - generic [ref=e91]:
+                - generic [ref=e92]:
+                  - heading "Cache Hit Price" [level=4] [ref=e93]
+                  - button "#85 / 185" [ref=e94] [cursor=pointer]:
+                    - generic [ref=e95]: "#85"
+                    - text: / 185
+                - generic [ref=e106]:
+                  - generic [ref=e107]:
+                    - generic [ref=e108]: $0.50
+                    - button "90% cache price discount" [ref=e109] [cursor=pointer]: (-90%)
+                  - generic [ref=e110]: USD per 1M tokens
+                - generic [ref=e111]: 3 out of 4 units for Cache Hit Price.
+              - generic [ref=e112]:
+                - generic [ref=e113]:
+                  - heading "Verbosity" [level=4] [ref=e114]
+                  - button "#4 / 185" [ref=e115] [cursor=pointer]:
+                    - generic [ref=e116]: "#4"
+                    - text: / 185
+                - generic [ref=e120]:
+                  - generic [ref=e121]: 4.2M
+                  - generic [ref=e123]: Output tokens from Intelligence Index
+                - generic [ref=e124]: 1 out of 4 units for Verbosity.
+          - generic [ref=e125]:
+            - generic [ref=e128]:
+              - heading [level=3] [ref=e129]:
+                - button "Comparison Summary" [expanded] [ref=e130] [cursor=pointer]
+              - region "Comparison Summary" [ref=e133]:
+                - generic [ref=e134]:
+                  - paragraph [ref=e135]: GPT-5.5 Instant (June 2026) is below average in intelligence and particularly expensive when comparing to other models of similar price. The model supports text and image input, outputs text, and has a 400k tokens context window with knowledge up to August 2025.
+                  - paragraph [ref=e136]: "GPT-5.5 Instant (June 2026) scores 29 on the Artificial Analysis Intelligence Index, placing it below average among comparable models (median: 32). When evaluating the Intelligence Index, it generated 4.2M tokens, which is very concise in comparison to the median of 63M."
+                  - paragraph [ref=e137]: "Pricing for GPT-5.5 Instant (June 2026) is $5.00 per 1M input tokens (expensive, median: $2.00) and $30.00 per 1M output tokens (expensive, median: $10.00). In total, it cost $433.33 to evaluate GPT-5.5 Instant (June 2026) on the Intelligence Index."
+            - generic [ref=e139]:
+              - generic [ref=e140]:
+                - heading [level=3] [ref=e141]:
+                  - button "Technical specifications" [expanded] [ref=e142] [cursor=pointer]
+                - region "Technical specifications" [ref=e145]:
+                  - table [ref=e147]:
+                    - rowgroup [ref=e148]:
+                      - row [ref=e149]:
+                        - rowheader "Reasoning" [ref=e150]
+                        - cell [ref=e153]:
+                          - text: "Yes"
+                          - button [ref=e154]
+                          - generic [ref=e158]:
+                            - paragraph [ref=e159]: This page shows the reasoning version of this model.
+                            - paragraph [ref=e160]: A non-reasoning variant may also exist.
+                      - row [ref=e161]:
+                        - rowheader "Input modality" [ref=e162]
+                        - cell [ref=e166]:
+                          - button [ref=e167]
+                          - paragraph [ref=e180]: "Supports: text and image"
+                      - row [ref=e181]:
+                        - rowheader "Output modality" [ref=e182]
+                        - cell [ref=e186]:
+                          - button [ref=e187]
+                          - paragraph [ref=e200]: "Supports: text"
+                      - row [ref=e201]:
+                        - rowheader "Knowledge cutoff" [ref=e202]
+                        - cell "Aug 31, 2025" [ref=e206]
+                      - row [ref=e207]:
+                        - rowheader "Context window" [ref=e208]
+                        - cell "400k ~600 A4 pages of size 12 Arial font" [ref=e214]:
+                          - text: 400k
+                          - button [ref=e215]
+                          - generic [ref=e218]: ~600 A4 pages of size 12 Arial font
+              - generic [ref=e219]:
+                - heading [level=3] [ref=e220]:
+                  - button "185 models in this class" [ref=e221] [cursor=pointer]
+                - region "185 models in this class":
+                  - generic [ref=e225]:
+                    - paragraph [ref=e226]: "Metrics are compared against models of the same class:"
+                    - list [ref=e227]:
+                      - listitem [ref=e228]: Non-reasoning models → compared only with other non-reasoning models
+                      - listitem [ref=e229]: Reasoning models → compared across both reasoning and non-reasoning
+                      - listitem [ref=e230]: "Open weights models → compared only with other open weights models of the same size class:"
+                      - list [ref=e231]:
+                        - listitem [ref=e232]: "Tiny: ≤4B parameters"
+                        - listitem [ref=e233]: "Small: 4B–40B parameters"
+                        - listitem [ref=e234]: "Medium: 40B–150B parameters"
+                        - listitem [ref=e235]: "Large: >150B parameters"
+                      - listitem [ref=e236]: "Proprietary models → compared across proprietary and open weights models of the same price range, using a blended 3:1 input/output price ratio:"
+                      - list [ref=e237]:
+                        - listitem [ref=e238]: <$0.15 per 1M tokens
+                        - listitem [ref=e239]: $0.15–$1 per 1M tokens
+                        - listitem [ref=e240]: ">$1 per 1M tokens"
+      - navigation "Model page tabs" [ref=e241]:
+        - link "Model Comparison" [ref=e242] [cursor=pointer]:
+          - /url: /models/gpt-5-5-instant-06-26
+        - link "API Provider Benchmarks" [ref=e243] [cursor=pointer]:
+          - /url: /models/gpt-5-5-instant-06-26/providers
+      - generic [ref=e244]:
+        - generic [ref=e245]:
+          - paragraph [ref=e246]: Highlights
+          - generic [ref=e248]:
+            - generic [ref=e249]:
+              - heading [level=3] [ref=e252]:
+                - link "Intelligence" [ref=e253] [cursor=pointer]:
+                  - /url: "#intelligence"
+              - generic [ref=e254]: Artificial Analysis Intelligence Index · Higher is better
+              - application [ref=e259]:
+                - generic [ref=e306]:
+                  - generic [ref=e307]:
+                    - generic [ref=e309]:
+                      - img "Claude Opus 5 (max)" [ref=e311]
+                      - img [ref=e314]:
+                        - generic "Reasoning model" [ref=e317]
+                      - link "Claude Opus 5 (max)" [ref=e319] [cursor=pointer]:
+                        - /url: /models/claude-opus-5
+                    - generic [ref=e321]:
+                      - img "Claude Fable 5 (with fallback)" [ref=e323]
+                      - img [ref=e326]:
+                        - generic "Reasoning model" [ref=e329]
+                      - link "Claude Fable 5 (with fallback)" [ref=e331] [cursor=pointer]:
+                        - /url: /models/claude-fable-5
+                    - generic [ref=e333]:
+                      - img "GPT-5.6 Sol (max)" [ref=e335]
+                      - img [ref=e338]:
+                        - generic "Reasoning model" [ref=e341]
+                      - link "GPT-5.6 Sol (max)" [ref=e343] [cursor=pointer]:
+                        - /url: /models/gpt-5-6-sol
+                    - generic [ref=e345]:
+                      - img "Kimi K3 (max)" [ref=e347]
+                      - img [ref=e350]:
+                        - generic "Reasoning model" [ref=e353]
+                      - link "Kimi K3 (max)" [ref=e355] [cursor=pointer]:
+                        - /url: /models/kimi-k3
+                    - generic [ref=e357]:
+                      - img "Grok 4.5 (high)" [ref=e359]
+                      - img [ref=e362]:
+                        - generic "Reasoning model" [ref=e365]
+                      - link "Grok 4.5 (high)" [ref=e367] [cursor=pointer]:
+                        - /url: /models/grok-4-5
+                    - generic [ref=e369]:
+                      - img "GLM-5.2 (max)" [ref=e371]
+                      - img [ref=e374]:
+                        - generic "Reasoning model" [ref=e377]
+                      - link "GLM-5.2 (max)" [ref=e379] [cursor=pointer]:
+                        - /url: /models/glm-5-2
+                    - generic [ref=e381]:
+                      - img "Muse Spark 1.1 (xhigh)" [ref=e383]
+                      - img [ref=e386]:
+                        - generic "Reasoning model" [ref=e389]
+                      - link "Muse Spark 1.1 (xhigh)" [ref=e391] [cursor=pointer]:
+                        - /url: /models/muse-spark-1-1
+                    - generic [ref=e393]:
+                      - img "Gemini 3.6 Flash" [ref=e395]
+                      - img [ref=e398]:
+                        - generic "Reasoning model" [ref=e401]
+                      - link "Gemini 3.6 Flash" [ref=e403] [cursor=pointer]:
+                        - /url: /models/gemini-3-6-flash
+                    - generic [ref=e405]:
+                      - img "MiniMax-M3" [ref=e407]
+                      - img [ref=e410]:
+                        - generic "Reasoning model" [ref=e413]
+                      - link "MiniMax-M3" [ref=e415] [cursor=pointer]:
+                        - /url: /models/minimax-m3
+                    - generic [ref=e417]:
+                      - img "DeepSeek V4 Pro (max)" [ref=e419]
+                      - img [ref=e422]:
+                        - generic "Reasoning model" [ref=e425]
+                      - link "DeepSeek V4 Pro (max)" [ref=e427] [cursor=pointer]:
+                        - /url: /models/deepseek-v4-pro
+                    - generic [ref=e429]:
+                      - img "Nemotron 3 Ultra" [ref=e431]
+                      - img [ref=e434]:
+                        - generic "Reasoning model" [ref=e437]
+                      - link "Nemotron 3 Ultra" [ref=e439] [cursor=pointer]:
+                        - /url: /models/nvidia-nemotron-3-ultra-550b-a55b
+                    - generic [ref=e441]:
+                      - img "GPT-5.5 Instant (June 2026)" [ref=e443]
+                      - img [ref=e446]:
+                        - generic "Reasoning model" [ref=e449]
+                      - link "GPT-5.5 Instant (June 2026)" [ref=e451] [cursor=pointer]:
+                        - /url: /models/gpt-5-5-instant-06-26
+                    - generic [ref=e453]:
+                      - img "gpt-oss-120b (high)" [ref=e455]
+                      - img [ref=e458]:
+                        - generic "Reasoning model" [ref=e461]
+                      - link "gpt-oss-120b (high)" [ref=e463] [cursor=pointer]:
+                        - /url: /models/gpt-oss-120b
+                  - generic [ref=e464]:
+                    - generic [ref=e465]: "61"
+                    - generic [ref=e466]: "60"
+                    - generic [ref=e467]: "59"
+                    - generic [ref=e468]: "57"
+                    - generic [ref=e469]: "54"
+                    - generic [ref=e470]: "51"
+                    - generic [ref=e471]: "51"
+                    - generic [ref=e472]: "50"
+                    - generic [ref=e473]: "44"
+                    - generic [ref=e474]: "44"
+                    - generic [ref=e475]: "38"
+                    - generic [ref=e476]: "29"
+                    - generic [ref=e477]: "24"
+            - generic [ref=e478]:
+              - heading "Speed" [level=3] [ref=e481]
+              - generic [ref=e482]: Output tokens per second · Higher is better
+              - application [ref=e487]:
+                - generic [ref=e531]:
+                  - generic [ref=e532]:
+                    - generic [ref=e534]:
+                      - img "Gemini 3.6 Flash" [ref=e536]
+                      - img [ref=e539]:
+                        - generic "Reasoning model" [ref=e542]
+                      - link "Gemini 3.6 Flash" [ref=e544] [cursor=pointer]:
+                        - /url: /models/gemini-3-6-flash
+                    - generic [ref=e546]:
+                      - img "Nemotron 3 Ultra" [ref=e548]
+                      - img [ref=e551]:
+                        - generic "Reasoning model" [ref=e554]
+                      - link "Nemotron 3 Ultra" [ref=e556] [cursor=pointer]:
+                        - /url: /models/nvidia-nemotron-3-ultra-550b-a55b
+                    - generic [ref=e558]:
+                      - img "gpt-oss-120b (high)" [ref=e560]
+                      - img [ref=e563]:
+                        - generic "Reasoning model" [ref=e566]
+                      - link "gpt-oss-120b (high)" [ref=e568] [cursor=pointer]:
+                        - /url: /models/gpt-oss-120b
+                    - generic [ref=e570]:
+                      - img "GLM-5.2 (max)" [ref=e572]
+                      - img [ref=e575]:
+                        - generic "Reasoning model" [ref=e578]
+                      - link "GLM-5.2 (max)" [ref=e580] [cursor=pointer]:
+                        - /url: /models/glm-5-2
+                    - generic [ref=e582]:
+                      - img "Muse Spark 1.1 (xhigh)" [ref=e584]
+                      - img [ref=e587]:
+                        - generic "Reasoning model" [ref=e590]
+                      - link "Muse Spark 1.1 (xhigh)" [ref=e592] [cursor=pointer]:
+                        - /url: /models/muse-spark-1-1
+                    - generic [ref=e594]:
+                      - img "MiniMax-M3" [ref=e596]
+                      - img [ref=e599]:
+                        - generic "Reasoning model" [ref=e602]
+                      - link "MiniMax-M3" [ref=e604] [cursor=pointer]:
+                        - /url: /models/minimax-m3
+                    - generic [ref=e606]:
+                      - img "Claude Fable 5 (with fallback)" [ref=e608]
+                      - img [ref=e611]:
+                        - generic "Reasoning model" [ref=e614]
+                      - link "Claude Fable 5 (with fallback)" [ref=e616] [cursor=pointer]:
+                        - /url: /models/claude-fable-5
+                    - generic [ref=e618]:
+                      - img "GPT-5.6 Sol (max)" [ref=e620]
+                      - img [ref=e623]:
+                        - generic "Reasoning model" [ref=e626]
+                      - link "GPT-5.6 Sol (max)" [ref=e628] [cursor=pointer]:
+                        - /url: /models/gpt-5-6-sol
+                    - generic [ref=e630]:
+                      - img "DeepSeek V4 Pro (max)" [ref=e632]
+                      - img [ref=e635]:
+                        - generic "Reasoning model" [ref=e638]
+                      - link "DeepSeek V4 Pro (max)" [ref=e640] [cursor=pointer]:
+                        - /url: /models/deepseek-v4-pro
+                    - generic [ref=e642]:
+                      - img "Grok 4.5 (high)" [ref=e644]
+                      - img [ref=e647]:
+                        - generic "Reasoning model" [ref=e650]
+                      - link "Grok 4.5 (high)" [ref=e652] [cursor=pointer]:
+                        - /url: /models/grok-4-5
+                    - generic [ref=e654]:
+                      - img "Claude Opus 5 (max)" [ref=e656]
+                      - img [ref=e659]:
+                        - generic "Reasoning model" [ref=e662]
+                      - link "Claude Opus 5 (max)" [ref=e664] [cursor=pointer]:
+                        - /url: /models/claude-opus-5
+                    - generic [ref=e666]:
+                      - img "Kimi K3 (max)" [ref=e668]
+                      - img [ref=e671]:
+                        - generic "Reasoning model" [ref=e674]
+                      - link "Kimi K3 (max)" [ref=e676] [cursor=pointer]:
+                        - /url: /models/kimi-k3
+                  - generic [ref=e677]:
+                    - generic [ref=e678]: "220"
+                    - generic [ref=e679]: "199"
+                    - generic [ref=e680]: "193"
+                    - generic [ref=e681]: "107"
+                    - generic [ref=e682]: "105"
+                    - generic [ref=e683]: "70"
+                    - generic [ref=e684]: "66"
+                    - generic [ref=e685]: "63"
+                    - generic [ref=e686]: "62"
+                    - generic [ref=e687]: "56"
+                    - generic [ref=e688]: "54"
+                    - generic [ref=e689]: "35"
+            - generic [ref=e690]:
+              - heading [level=3] [ref=e693]:
+                - link "Cost per Task" [ref=e694] [cursor=pointer]:
+                  - /url: "#price-cost"
+              - generic [ref=e695]: Weighted average cost (USD) per Intelligence Index task · Lower is better
+              - application [ref=e700]:
+                - generic [ref=e747]:
+                  - generic [ref=e748]:
+                    - generic [ref=e750]:
+                      - img "DeepSeek V4 Pro (max)" [ref=e752]
+                      - img [ref=e755]:
+                        - generic "Reasoning model" [ref=e758]
+                      - link "DeepSeek V4 Pro (max)" [ref=e760] [cursor=pointer]:
+                        - /url: /models/deepseek-v4-pro
+                    - generic [ref=e762]:
+                      - img "gpt-oss-120b (high)" [ref=e764]
+                      - img [ref=e767]:
+                        - generic "Reasoning model" [ref=e770]
+                      - link "gpt-oss-120b (high)" [ref=e772] [cursor=pointer]:
+                        - /url: /models/gpt-oss-120b
+                    - generic [ref=e774]:
+                      - img "MiniMax-M3" [ref=e776]
+                      - img [ref=e779]:
+                        - generic "Reasoning model" [ref=e782]
+                      - link "MiniMax-M3" [ref=e784] [cursor=pointer]:
+                        - /url: /models/minimax-m3
+                    - generic [ref=e786]:
+                      - img "Muse Spark 1.1 (xhigh)" [ref=e788]
+                      - img [ref=e791]:
+                        - generic "Reasoning model" [ref=e794]
+                      - link "Muse Spark 1.1 (xhigh)" [ref=e796] [cursor=pointer]:
+                        - /url: /models/muse-spark-1-1
+                    - generic [ref=e798]:
+                      - img "Nemotron 3 Ultra" [ref=e800]
+                      - img [ref=e803]:
+                        - generic "Reasoning model" [ref=e806]
+                      - link "Nemotron 3 Ultra" [ref=e808] [cursor=pointer]:
+                        - /url: /models/nvidia-nemotron-3-ultra-550b-a55b
+                    - generic [ref=e810]:
+                      - img "Grok 4.5 (high)" [ref=e812]
+                      - img [ref=e815]:
+                        - generic "Reasoning model" [ref=e818]
+                      - link "Grok 4.5 (high)" [ref=e820] [cursor=pointer]:
+                        - /url: /models/grok-4-5
+                    - generic [ref=e822]:
+                      - img "GPT-5.5 Instant (June 2026)" [ref=e824]
+                      - img [ref=e827]:
+                        - generic "Reasoning model" [ref=e830]
+                      - link "GPT-5.5 Instant (June 2026)" [ref=e832] [cursor=pointer]:
+                        - /url: /models/gpt-5-5-instant-06-26
+                    - generic [ref=e834]:
+                      - img "Gemini 3.6 Flash" [ref=e836]
+                      - img [ref=e839]:
+                        - generic "Reasoning model" [ref=e842]
+                      - link "Gemini 3.6 Flash" [ref=e844] [cursor=pointer]:
+                        - /url: /models/gemini-3-6-flash
+                    - generic [ref=e846]:
+                      - img "GLM-5.2 (max)" [ref=e848]
+                      - img [ref=e851]:
+                        - generic "Reasoning model" [ref=e854]
+                      - link "GLM-5.2 (max)" [ref=e856] [cursor=pointer]:
+                        - /url: /models/glm-5-2
+                    - generic [ref=e858]:
+                      - img "Kimi K3 (max)" [ref=e860]
+                      - img [ref=e863]:
+                        - generic "Reasoning model" [ref=e866]
+                      - link "Kimi K3 (max)" [ref=e868] [cursor=pointer]:
+                        - /url: /models/kimi-k3
+                    - generic [ref=e870]:
+                      - img "GPT-5.6 Sol (max)" [ref=e872]
+                      - img [ref=e875]:
+                        - generic "Reasoning model" [ref=e878]
+                      - link "GPT-5.6 Sol (max)" [ref=e880] [cursor=pointer]:
+                        - /url: /models/gpt-5-6-sol
+                    - generic [ref=e882]:
+                      - img "Claude Opus 5 (max)" [ref=e884]
+                      - img [ref=e887]:
+                        - generic "Reasoning model" [ref=e890]
+                      - link "Claude Opus 5 (max)" [ref=e892] [cursor=pointer]:
+                        - /url: /models/claude-opus-5
+                    - generic [ref=e894]:
+                      - img "Claude Fable 5 (with fallback)" [ref=e896]
+                      - img [ref=e899]:
+                        - generic "Reasoning model" [ref=e902]
+                      - link "Claude Fable 5 (with fallback)" [ref=e904] [cursor=pointer]:
+                        - /url: /models/claude-fable-5
+                  - generic [ref=e905]:
+                    - generic [ref=e906]: $0.05
+                    - generic [ref=e907]: $0.08
+                    - generic [ref=e908]: $0.14
+                    - generic [ref=e909]: $0.29
+                    - generic [ref=e910]: $0.41
+                    - generic [ref=e911]: $0.44
+                    - generic [ref=e912]: $0.54
+                    - generic [ref=e913]: $0.56
+                    - generic [ref=e914]: $0.69
+                    - generic [ref=e915]: $0.86
+                    - generic [ref=e916]: $1.86
+                    - generic [ref=e917]: $2.34
+                    - generic [ref=e918]: $3.15
+        - generic [ref=e921]:
+          - button "Toggle prompt options" [ref=e925] [cursor=pointer]:
+            - generic [ref=e926]: Prompt Options
+          - generic [ref=e928]:
+            - heading "Intelligence" [level=2] [ref=e931]
+            - generic [ref=e934]:
+              - generic [ref=e935]:
+                - tablist [ref=e937]:
+                  - tab "Artificial Analysis Intelligence Index" [selected] [ref=e938] [cursor=pointer]
+                  - tab "Coding Index" [ref=e939] [cursor=pointer]
+                  - tab "Agentic Index" [ref=e940] [cursor=pointer]
+                - tabpanel "Artificial Analysis Intelligence Index" [ref=e941]:
+                  - generic [ref=e942]:
+                    - generic [ref=e943]:
+                      - generic [ref=e944]:
+                        - generic [ref=e945]:
+                          - heading "Artificial Analysis Intelligence Index" [level=3] [ref=e946]
+                          - generic [ref=e947]: "Artificial Analysis Intelligence Index v4.1 incorporates 9 evaluations: GDPval-AA v2, 𝜏³-Banking, Terminal-Bench v2.1, SciCode, Humanity's Last Exam, GPQA Diamond, CritPt, AA-Omniscience, AA-LCR"
+                        - generic [ref=e949]:
+                          - generic [ref=e950]:
+                            - button "Copy link to this section" [ref=e951] [cursor=pointer]
+                            - button "Download chart as image" [ref=e952] [cursor=pointer]
+                            - button "Download data" [ref=e953] [cursor=pointer]
+                          - generic [ref=e955]:
+                            - generic [ref=e956]:
+                              - combobox [ref=e958] [cursor=pointer]:
+                                - generic [ref=e959]: 26 of 590 models
+                              - button "Open filters" [ref=e960] [cursor=pointer]
+                              - button "Open chart display settings" [ref=e961] [cursor=pointer]:
+                                - generic [ref=e962]: NEW
+                            - button [ref=e963] [cursor=pointer]
+                      - generic [ref=e965]: Reasoning models are indicated by a lightbulb icon
+                    - generic [ref=e977]:
+                      - heading [level=3] [ref=e978]:
+                        - button [ref=e979] [cursor=pointer]
+                      - region "Artificial Analysis Intelligence Index":
+                        - paragraph [ref=e986]:
+                          - text: "Artificial Analysis Intelligence Index v4.1 includes: GDPval-AA v2, 𝜏³-Banking, Terminal-Bench v2.1, SciCode, Humanity's Last Exam, GPQA Diamond, CritPt, AA-Omniscience, AA-LCR. See"
+                          - link "Intelligence Index methodology" [ref=e987] [cursor=pointer]:
+                            - /url: /methodology/intelligence-benchmarking
+                          - text: for further details, including a breakdown of each evaluation and how we run them.
+              - generic [ref=e988]:
+                - tablist [ref=e990]:
+                  - tab "Open Weights / Proprietary" [selected] [ref=e991] [cursor=pointer]
+                  - tab "Reasoning / Non-Reasoning" [ref=e992] [cursor=pointer]
+                  - tab "Text Only / Multimodal Inputs" [ref=e993] [cursor=pointer]
+                - tabpanel "Open Weights / Proprietary" [ref=e994]:
+                  - generic [ref=e995]:
+                    - generic [ref=e996]:
+                      - generic [ref=e997]:
+                        - generic [ref=e998]:
+                          - heading "Artificial Analysis Intelligence Index by Open Weights / Proprietary" [level=3] [ref=e999]
+                          - generic [ref=e1000]: "Artificial Analysis Intelligence Index v4.1 incorporates 9 evaluations: GDPval-AA v2, 𝜏³-Banking, Terminal-Bench v2.1, SciCode, Humanity's Last Exam, GPQA Diamond, CritPt, AA-Omniscience, AA-LCR"
+                        - generic [ref=e1002]:
+                          - generic [ref=e1003]:
+                            - button "Copy link to this section" [ref=e1004] [cursor=pointer]
+                            - button "Download chart as image" [ref=e1005] [cursor=pointer]
+                            - button "Download data" [ref=e1006] [cursor=pointer]
+                          - generic [ref=e1008]:
+                            - generic [ref=e1009]:
+                              - combobox [ref=e1011] [cursor=pointer]:
+                                - generic [ref=e1012]: 26 of 590 models
+                              - button "Open filters" [ref=e1013] [cursor=pointer]
+                              - button "Open chart display settings" [ref=e1014] [cursor=pointer]:
+                                - generic [ref=e1015]: NEW
+                            - button [ref=e1016] [cursor=pointer]
+                      - generic [ref=e1019]:
+                        - generic [ref=e1021]:
+                          - button "Proprietary" [ref=e1022] [cursor=pointer]
+                          - button "Open Weights (Commercial Use Restricted)" [ref=e1025] [cursor=pointer]
+                          - button "Open Weights" [ref=e1028] [cursor=pointer]
+                        - generic [ref=e1034]: Reasoning models are indicated by a lightbulb icon
+                    - generic [ref=e1039]:
+                      - generic [ref=e1041]:
+                        - heading [level=3] [ref=e1042]:
+                          - button [ref=e1043] [cursor=pointer]
+                        - region "Artificial Analysis Intelligence Index":
+                          - paragraph [ref=e1050]:
+                            - text: "Artificial Analysis Intelligence Index v4.1 includes: GDPval-AA v2, 𝜏³-Banking, Terminal-Bench v2.1, SciCode, Humanity's Last Exam, GPQA Diamond, CritPt, AA-Omniscience, AA-LCR. See"
+                            - link "Intelligence Index methodology" [ref=e1051] [cursor=pointer]:
+                              - /url: /methodology/intelligence-benchmarking
+                            - text: for further details, including a breakdown of each evaluation and how we run them.
+                      - button "1 more note" [ref=e1052] [cursor=pointer]
+          - generic [ref=e1055]:
+            - heading [level=2] [ref=e1058]:
+              - link "Benchmarks" [ref=e1060] [cursor=pointer]:
+                - /url: /evaluations
+            - generic [ref=e1061]:
+              - generic [ref=e1062]:
+                - generic [ref=e1063]:
+                  - generic [ref=e1064]:
+                    - generic [ref=e1065]:
+                      - heading "Intelligence Evaluations" [level=3] [ref=e1066]
+                      - generic [ref=e1067]: Intelligence evaluations measured independently by Artificial Analysis · Higher is better
+                    - generic [ref=e1069]:
+                      - generic [ref=e1070]:
+                        - button "Copy link to this section" [ref=e1071] [cursor=pointer]
+                        - button "Download chart as image" [ref=e1072] [cursor=pointer]
+                        - button "Download data" [ref=e1073] [cursor=pointer]
+                      - generic [ref=e1075]:
+                        - combobox [ref=e1076] [cursor=pointer]:
+                          - generic [ref=e1077]: 18 of 22 evaluations
+                        - generic [ref=e1078]:
+                          - generic [ref=e1079]:
+                            - combobox [ref=e1081] [cursor=pointer]:
+                              - generic [ref=e1082]: 26 of 590 models
+                            - button "Open filters" [ref=e1083] [cursor=pointer]
+                            - button "Open chart display settings" [ref=e1084] [cursor=pointer]:
+                              - generic [ref=e1085]: NEW
+                          - button [ref=e1086] [cursor=pointer]
+                  - generic [ref=e1089]:
+                    - generic [ref=e1090]:
+                      - generic [ref=e1092]:
+                        - link "GDPval-AA v2" [ref=e1094] [cursor=pointer]:
+                          - /url: /evaluations/gdpval-aa
+                        - paragraph [ref=e1098]: Agentic real-world work tasks, (Elo-500)/2000
+                      - generic [ref=e1104]:
+                        - link "𝜏³-Banking" [ref=e1106] [cursor=pointer]:
+                          - /url: /evaluations/tau3-banking
+                        - paragraph [ref=e1110]: Agentic tool use
+                      - generic [ref=e1116]:
+                        - link "Terminal-Bench v2.1" [ref=e1118] [cursor=pointer]:
+                          - /url: /evaluations/terminalbench-v2-1
+                        - paragraph [ref=e1122]: Agentic coding & terminal use
+                      - generic [ref=e1128]:
+                        - link "SciCode" [ref=e1130] [cursor=pointer]:
+                          - /url: /evaluations/scicode
+                        - paragraph [ref=e1134]: Coding
+                      - generic [ref=e1140]:
+                        - link "Humanity's Last Exam" [ref=e1142] [cursor=pointer]:
+                          - /url: /evaluations/humanitys-last-exam
+                        - paragraph [ref=e1146]: Reasoning & knowledge
+                      - generic [ref=e1152]:
+                        - link "GPQA Diamond" [ref=e1154] [cursor=pointer]:
+                          - /url: /evaluations/gpqa-diamond
+                        - paragraph [ref=e1158]: Scientific reasoning
+                      - generic [ref=e1164]:
+                        - link "CritPt" [ref=e1166] [cursor=pointer]:
+                          - /url: /evaluations/critpt
+                        - paragraph [ref=e1170]: Physics reasoning
+                      - generic [ref=e1176]:
+                        - link "AA-Omniscience Accuracy" [ref=e1178] [cursor=pointer]:
+                          - /url: /evaluations/omniscience
+                        - paragraph [ref=e1182]: Knowledge
+                      - generic [ref=e1188]:
+                        - link "AA-Omniscience Non-Hallucination Rate" [ref=e1190] [cursor=pointer]:
+                          - /url: /evaluations/omniscience
+                        - paragraph [ref=e1194]: 1 - hallucination rate
+                      - generic [ref=e1200]:
+                        - link "AA-LCR" [ref=e1202] [cursor=pointer]:
+                          - /url: /evaluations/artificial-analysis-long-context-reasoning
+                        - paragraph [ref=e1206]: Long context reasoning
+                      - generic [ref=e1212]:
+                        - link "AA-Briefcase" [ref=e1214] [cursor=pointer]:
+                          - /url: /evaluations/aa-briefcase
+                        - paragraph [ref=e1218]: Agentic knowledge work, Elo
+                      - generic [ref=e1224]:
+                        - link "AutomationBench-AA" [ref=e1226] [cursor=pointer]:
+                          - /url: /evaluations/automationbench-aa
+                        - paragraph [ref=e1230]: Agentic SaaS workflows
+                      - generic [ref=e1236]:
+                        - link "Harvey LAB-AA" [ref=e1238] [cursor=pointer]:
+                          - /url: /evaluations/harvey-lab-aa
+                        - paragraph [ref=e1242]: Legal agentic work, criterion pass rate
+                      - generic [ref=e1248]:
+                        - generic [ref=e1249]:
+                          - link "EnterpriseOps-Gym-AA" [ref=e1250] [cursor=pointer]:
+                            - /url: /evaluations/enterprise-ops-gym-aa
+                          - generic [ref=e1254]: New
+                        - paragraph [ref=e1255]: Agentic business operations
+                      - generic [ref=e1261]:
+                        - link "IFBench" [ref=e1263] [cursor=pointer]:
+                          - /url: /evaluations/ifbench
+                        - paragraph [ref=e1267]: Instruction following
+                      - generic [ref=e1273]:
+                        - link "APEX-Agents-AA" [ref=e1275] [cursor=pointer]:
+                          - /url: /evaluations/apex-agents-aa
+                        - paragraph [ref=e1279]: Long-horizon agentic tasks
+                      - generic [ref=e1285]:
+                        - link "ITBench-AA" [ref=e1287] [cursor=pointer]:
+                          - /url: /evaluations/itbench-aa
+                        - paragraph [ref=e1291]: Kubernetes incident root-cause analysis
+                      - generic [ref=e1297]:
+                        - link "MMMU-Pro" [ref=e1299] [cursor=pointer]:
+                          - /url: /evaluations/mmmu-pro
+                        - paragraph [ref=e1303]: Visual reasoning
+                    - generic [ref=e1308]: Reasoning models are indicated by a lightbulb icon
+                - generic [ref=e1313]:
+                  - generic [ref=e1315]:
+                    - heading [level=3] [ref=e1316]:
+                      - button [ref=e1317] [cursor=pointer]
+                    - region "Intelligence Evaluation Relevance":
+                      - paragraph [ref=e1324]: While model intelligence generally translates across use cases, specific evaluations may be more relevant for certain use cases.
+                  - button "1 more note" [ref=e1325] [cursor=pointer]
+              - heading "AA-Omniscience" [level=3] [ref=e1329]
+              - generic [ref=e1330]:
+                - tablist [ref=e1332]:
+                  - tab "AA-Omniscience Index" [selected] [ref=e1333] [cursor=pointer]
+                  - tab "AA-Omniscience Accuracy" [ref=e1334] [cursor=pointer]
+                  - tab "AA-Omniscience Hallucination Rate" [ref=e1335] [cursor=pointer]
+                - tabpanel "AA-Omniscience Index" [ref=e1336]:
+                  - generic [ref=e1337]:
+                    - generic [ref=e1338]:
+                      - generic [ref=e1339]:
+                        - generic [ref=e1340]:
+                          - heading "AA-Omniscience Index" [level=3] [ref=e1341]
+                          - generic [ref=e1342]: AA-Omniscience Index (higher is better) measures knowledge reliability and hallucination. It rewards correct answers, penalizes hallucinations, and has no penalty for refusing to answer. Scores range from -100 to 100, where 0 means as many correct as incorrect answers, and negative scores mean more incorrect than correct.
+                        - generic [ref=e1344]:
+                          - generic [ref=e1345]:
+                            - button "Copy link to this section" [ref=e1346] [cursor=pointer]
+                            - button "Download chart as image" [ref=e1347] [cursor=pointer]
+                            - button "Download data" [ref=e1348] [cursor=pointer]
+                          - generic [ref=e1350]:
+                            - generic [ref=e1351]:
+                              - combobox [ref=e1353] [cursor=pointer]:
+                                - generic [ref=e1354]: 26 of 460 models
+                              - button "Open filters" [ref=e1355] [cursor=pointer]
+                              - button "Open chart display settings" [ref=e1356] [cursor=pointer]:
+                                - generic [ref=e1357]: NEW
+                            - button [ref=e1358] [cursor=pointer]
+                      - generic [ref=e1360]: Reasoning models are indicated by a lightbulb icon
+                    - generic [ref=e1372]:
+                      - heading [level=3] [ref=e1373]:
+                        - button [ref=e1374] [cursor=pointer]
+                      - region "AA-Omniscience Index":
+                        - paragraph [ref=e1381]: AA-Omniscience Index (higher is better) measures knowledge reliability and hallucination. It rewards correct answers, penalizes hallucinations, and has no penalty for refusing to answer. Scores range from -100 to 100, where 0 means as many correct as incorrect answers, and negative scores mean more incorrect than correct.
+          - generic [ref=e1382]:
+            - heading "Intelligence Index Comparisons" [level=2] [ref=e1385]
+            - generic [ref=e1389]:
+              - tablist [ref=e1391]:
+                - tab "Intelligence Index vs. Cost per Task" [selected] [ref=e1392] [cursor=pointer]
+                - tab "Intelligence Index vs. Time per Task" [ref=e1393] [cursor=pointer]
+                - tab "Intelligence Index vs. Output Speed" [ref=e1394] [cursor=pointer]
+                - tab "Intelligence Index vs. End-to-End Response Time" [ref=e1395] [cursor=pointer]
+              - tabpanel "Intelligence Index vs. Cost per Task" [ref=e1396]:
+                - generic [ref=e1397]:
+                  - generic [ref=e1398]:
+                    - generic [ref=e1399]:
+                      - generic [ref=e1400]:
+                        - heading "Intelligence Index vs. Cost per Intelligence Index Task" [level=3] [ref=e1401]
+                        - generic [ref=e1402]: Artificial Analysis Intelligence Index · Weighted average cost (USD) per Artificial Analysis Intelligence Index task
+                      - generic [ref=e1404]:
+                        - generic [ref=e1405]:
+                          - button "Copy link to this section" [ref=e1406] [cursor=pointer]
+                          - button "Download chart as image" [ref=e1407] [cursor=pointer]
+                          - button "Download data" [ref=e1408] [cursor=pointer]
+                        - generic [ref=e1411]:
+                          - combobox [ref=e1413] [cursor=pointer]:
+                            - generic [ref=e1414]: 26 of 590 models
+                          - button "Open filters" [ref=e1415] [cursor=pointer]
+                          - button "Open chart display settings" [ref=e1416] [cursor=pointer]:
+                            - generic [ref=e1417]: NEW
+                    - generic [ref=e1419]:
+                      - generic [ref=e1420]:
+                        - generic [ref=e1421]: Most attractive quadrant
+                        - generic [ref=e1424]: Pareto line
+                      - generic [ref=e1428]:
+                        - button "OpenAI" [ref=e1429] [cursor=pointer]
+                        - button "Google" [ref=e1432] [cursor=pointer]
+                        - button "Anthropic" [ref=e1435] [cursor=pointer]
+                        - button "Z AI" [ref=e1438] [cursor=pointer]
+                        - button "DeepSeek" [ref=e1441] [cursor=pointer]
+                        - button "SpaceXAI" [ref=e1444] [cursor=pointer]
+                        - button "Kimi" [ref=e1447] [cursor=pointer]
+                        - button "NVIDIA" [ref=e1450] [cursor=pointer]
+                        - button "MiniMax" [ref=e1453] [cursor=pointer]
+                        - button "Meta" [ref=e1456] [cursor=pointer]
+                      - generic [ref=e1461]: Reasoning models are indicated by a lightbulb icon
+                  - generic [ref=e1466]:
+                    - generic [ref=e1468]:
+                      - heading [level=3] [ref=e1469]:
+                        - button [ref=e1470] [cursor=pointer]
+                      - region "Cost per Intelligence Index Task":
+                        - paragraph [ref=e1477]: Weighted average cost per Intelligence Index task. Each evaluation’s cost is calculated from input, cache hit, cache write, reasoning, and answer token prices, divided by task count, and weighted by its Intelligence Index weight.
+                    - button "1 more note" [ref=e1478] [cursor=pointer]
+          - generic [ref=e1481]:
+            - heading "Token Use" [level=2] [ref=e1484]
+            - generic [ref=e1488]:
+              - tablist [ref=e1490]:
+                - tab "Output Tokens per Task" [selected] [ref=e1491] [cursor=pointer]
+                - tab "Intelligence Index vs. Output Tokens per Task" [ref=e1492] [cursor=pointer]
+                - tab "Intelligence Index Token Use" [ref=e1493] [cursor=pointer]
+                - tab "Intelligence Index vs. Token Use" [ref=e1494] [cursor=pointer]
+              - tabpanel "Output Tokens per Task" [ref=e1495]:
+                - generic [ref=e1496]:
+                  - generic [ref=e1497]:
+                    - generic [ref=e1498]:
+                      - generic [ref=e1499]:
+                        - heading "Output Tokens per Intelligence Index Task" [level=3] [ref=e1500]
+                        - generic [ref=e1501]: Weighted average number of output tokens used to run one task in the Artificial Analysis Intelligence Index
+                      - generic [ref=e1503]:
+                        - generic [ref=e1504]:
+                          - button "Copy link to this section" [ref=e1505] [cursor=pointer]
+                          - button "Download chart as image" [ref=e1506] [cursor=pointer]
+                          - button "Download data" [ref=e1507] [cursor=pointer]
+                        - generic [ref=e1510]:
+                          - combobox [ref=e1512] [cursor=pointer]:
+                            - generic [ref=e1513]: 26 of 590 models
+                          - button "Open filters" [ref=e1514] [cursor=pointer]
+                          - button "Open chart display settings" [ref=e1515] [cursor=pointer]:
+                            - generic [ref=e1516]: NEW
+                    - generic [ref=e1518]:
+                      - generic [ref=e1520]:
+                        - button "Answer" [ref=e1521] [cursor=pointer]
+                        - button "Reasoning" [ref=e1524] [cursor=pointer]
+                      - generic [ref=e1530]: Reasoning models are indicated by a lightbulb icon
+                  - generic [ref=e1537]:
+                    - heading [level=3] [ref=e1538]:
+                      - button [ref=e1539] [cursor=pointer]
+                    - region "Output Tokens per Intelligence Index Task":
+                      - paragraph [ref=e1546]: The number of tokens required per Intelligence Index task. This is calculated by multiplying the output tokens per eval by the relative weights of each benchmark in the Intelligence Index, then dividing by task count (excluding repeats).
+          - generic [ref=e1547]:
+            - heading "Cost" [level=2] [ref=e1550]
+            - generic [ref=e1553]:
+              - generic [ref=e1554]:
+                - tablist [ref=e1556]:
+                  - tab "Cost per Task" [selected] [ref=e1557] [cursor=pointer]
+                  - tab "Intelligence Index vs. Cost per Task" [ref=e1558] [cursor=pointer]
+                  - tab "Evaluation Breakdown" [ref=e1559] [cursor=pointer]
+                - tabpanel "Cost per Task" [ref=e1560]:
+                  - generic [ref=e1561]:
+                    - generic [ref=e1562]:
+                      - generic [ref=e1563]:
+                        - generic [ref=e1564]:
+                          - heading "Cost per Intelligence Index Task" [level=3] [ref=e1565]
+                          - generic [ref=e1566]: Weighted average cost (USD) per Artificial Analysis Intelligence Index task, segmented by token type. Lower is better
+                        - generic [ref=e1568]:
+                          - generic [ref=e1569]:
+                            - button "Copy link to this section" [ref=e1570] [cursor=pointer]
+                            - button "Download chart as image" [ref=e1571] [cursor=pointer]
+                            - button "Download data" [ref=e1572] [cursor=pointer]
+                          - generic [ref=e1575]:
+                            - combobox [ref=e1577] [cursor=pointer]:
+                              - generic [ref=e1578]: 26 of 590 models
+                            - button "Open filters" [ref=e1579] [cursor=pointer]
+                            - button "Open chart display settings" [ref=e1580] [cursor=pointer]:
+                              - generic [ref=e1581]: NEW
+                      - generic [ref=e1583]:
+                        - generic [ref=e1585]:
+                          - button "Answer" [ref=e1586] [cursor=pointer]
+                          - button "Reasoning" [ref=e1589] [cursor=pointer]
+                          - button "Cache Write" [ref=e1592] [cursor=pointer]
+                          - button "Cache Hit" [ref=e1595] [cursor=pointer]
+                          - button "Input" [ref=e1598] [cursor=pointer]
+                        - generic [ref=e1604]: Reasoning models are indicated by a lightbulb icon
+                    - generic [ref=e1611]:
+                      - heading [level=3] [ref=e1612]:
+                        - button [ref=e1613] [cursor=pointer]
+                      - region "Cost per Intelligence Index Task":
+                        - paragraph [ref=e1620]: Weighted average cost per Intelligence Index task. Each evaluation’s cost is calculated from input, cache hit, cache write, reasoning, and answer token prices, divided by task count, and weighted by its Intelligence Index weight.
+              - generic [ref=e1621]:
+                - tablist [ref=e1623]:
+                  - tab "Intelligence Index Total Cost" [selected] [ref=e1624] [cursor=pointer]
+                  - tab "Intelligence Index vs. Total Cost" [ref=e1625] [cursor=pointer]
+                - tabpanel "Intelligence Index Total Cost" [ref=e1626]:
+                  - generic [ref=e1627]:
+                    - generic [ref=e1628]:
+                      - generic [ref=e1629]:
+                        - generic [ref=e1630]:
+                          - heading "Cost to Run Artificial Analysis Intelligence Index" [level=3] [ref=e1631]
+                          - generic [ref=e1632]: Cost (USD) to run all evaluations in the Artificial Analysis Intelligence Index
+                        - generic [ref=e1634]:
+                          - generic [ref=e1635]:
+                            - button "Copy link to this section" [ref=e1636] [cursor=pointer]
+                            - button "Download chart as image" [ref=e1637] [cursor=pointer]
+                            - button "Download data" [ref=e1638] [cursor=pointer]
+                          - generic [ref=e1640]:
+                            - generic [ref=e1641]:
+                              - combobox [ref=e1643] [cursor=pointer]:
+                                - generic [ref=e1644]: 26 of 590 models
+                              - button "Open filters" [ref=e1645] [cursor=pointer]
+                              - button "Open chart display settings" [ref=e1646] [cursor=pointer]:
+                                - generic [ref=e1647]: NEW
+                            - button [ref=e1648] [cursor=pointer]
+                      - generic [ref=e1651]:
+                        - generic [ref=e1653]:
+                          - button "Output" [ref=e1654] [cursor=pointer]
+                          - button "Reasoning" [ref=e1657] [cursor=pointer]
+                          - button "Cache Write" [ref=e1660] [cursor=pointer]
+                          - button "Cache Read" [ref=e1663] [cursor=pointer]
+                          - button "Non-Cache Input" [ref=e1666] [cursor=pointer]
+                        - generic [ref=e1672]: Reasoning models are indicated by a lightbulb icon
+                    - generic [ref=e1679]:
+                      - heading [level=3] [ref=e1680]:
+                        - button [ref=e1681] [cursor=pointer]
+                      - region "Cost to Run Artificial Analysis Intelligence Index":
+                        - paragraph [ref=e1688]: The cost to run the evaluations in the Artificial Analysis Intelligence Index, calculated using the model's input, cache hit, cache write, reasoning, and answer token prices and the number of tokens used across evaluations (excluding repeats).
+              - generic [ref=e1689]:
+                - tablist [ref=e1691]:
+                  - tab "Cache Hit, Input, and Output Pricing" [selected] [ref=e1692] [cursor=pointer]
+                  - tab "Blended Price" [ref=e1693] [cursor=pointer]
+                  - tab "Blended Price (Stacked)" [ref=e1694] [cursor=pointer]
+                  - tab "Cache Discount" [ref=e1695] [cursor=pointer]
+                  - tab "Intelligence Index vs. Price" [ref=e1696] [cursor=pointer]
+                  - tab "Intelligence Index vs. Price (Log, Inverted)" [ref=e1697] [cursor=pointer]
+                  - tab "Image Input Pricing" [ref=e1698] [cursor=pointer]
+                - tabpanel "Cache Hit, Input, and Output Pricing" [ref=e1699]:
+                  - generic [ref=e1700]:
+                    - generic [ref=e1701]:
+                      - generic [ref=e1702]:
+                        - generic [ref=e1703]:
+                          - 'heading "Pricing: Cache Hit, Input, and Output" [level=3] [ref=e1704]'
+                          - generic [ref=e1705]: Price (USD per M Tokens)
+                        - generic [ref=e1707]:
+                          - generic [ref=e1708]:
+                            - button "Copy link to this section" [ref=e1709] [cursor=pointer]
+                            - button "Download chart as image" [ref=e1710] [cursor=pointer]
+                            - button "Download data" [ref=e1711] [cursor=pointer]
+                          - generic [ref=e1713]:
+                            - generic [ref=e1714]:
+                              - combobox [ref=e1716] [cursor=pointer]:
+                                - generic [ref=e1717]: 26 of 590 models
+                              - button "Open filters" [ref=e1718] [cursor=pointer]
+                              - button "Open chart display settings" [ref=e1719] [cursor=pointer]:
+                                - generic [ref=e1720]: NEW
+                            - button [ref=e1721] [cursor=pointer]
+                      - generic [ref=e1724]:
+                        - generic [ref=e1726]:
+                          - button "Cache Hit" [ref=e1727] [cursor=pointer]
+                          - button "Input" [ref=e1730] [cursor=pointer]
+                          - button "Output" [ref=e1733] [cursor=pointer]
+                        - generic [ref=e1739]: Reasoning models are indicated by a lightbulb icon
+                    - generic [ref=e1744]:
+                      - generic [ref=e1746]:
+                        - heading [level=3] [ref=e1747]:
+                          - button [ref=e1748] [cursor=pointer]
+                        - region "Cache Hit":
+                          - paragraph [ref=e1755]: Price per token for cached prompts (previously processed), typically offering a significant discount compared to regular input price, represented as USD per million tokens. The values shown here are the cache hit price; cache write and cache storage are billed separately and vary by provider — see "Cache pricing by provider" for detail.
+                      - button "4 more notes" [ref=e1756] [cursor=pointer]
+          - generic [ref=e1759]:
+            - heading "Context Window" [level=2] [ref=e1762]
+            - generic [ref=e1766]:
+              - tablist [ref=e1768]:
+                - tab "Context Window" [selected] [ref=e1769] [cursor=pointer]
+                - tab "Intelligence Index vs. Context Window" [ref=e1770] [cursor=pointer]
+              - tabpanel "Context Window" [ref=e1771]:
+                - generic [ref=e1772]:
+                  - generic [ref=e1773]:
+                    - generic [ref=e1774]:
+                      - generic [ref=e1775]:
+                        - heading "Context Window" [level=3] [ref=e1776]
+                        - generic [ref=e1777]: "Context window: tokens limit · Higher is better"
+                      - generic [ref=e1779]:
+                        - generic [ref=e1780]:
+                          - button "Copy link to this section" [ref=e1781] [cursor=pointer]
+                          - button "Download chart as image" [ref=e1782] [cursor=pointer]
+                          - button "Download data" [ref=e1783] [cursor=pointer]
+                        - generic [ref=e1785]:
+                          - generic [ref=e1786]:
+                            - combobox [ref=e1788] [cursor=pointer]:
+                              - generic [ref=e1789]: 26 of 590 models
+                            - button "Open filters" [ref=e1790] [cursor=pointer]
+                            - button "Open chart display settings" [ref=e1791] [cursor=pointer]:
+                              - generic [ref=e1792]: NEW
+                          - button [ref=e1793] [cursor=pointer]
+                    - generic [ref=e1795]: Reasoning models are indicated by a lightbulb icon
+                  - generic [ref=e1805]:
+                    - generic [ref=e1807]:
+                      - heading [level=3] [ref=e1808]:
+                        - button [ref=e1809] [cursor=pointer]
+                      - region "Context Window for RAG":
+                        - paragraph [ref=e1816]: Larger context windows are relevant to RAG (Retrieval Augmented Generation) LLM workflows which typically involve reasoning and information retrieval of large amounts of data.
+                    - button "1 more note" [ref=e1817] [cursor=pointer]
+        - generic [ref=e1820]:
+          - generic [ref=e1821]:
+            - heading "Frequently Asked Questions" [level=2] [ref=e1822]
+            - paragraph [ref=e1823]: Common questions about GPT-5.5 Instant (June 2026)
+          - generic [ref=e1824]:
+            - generic [ref=e1825]:
+              - heading [level=3] [ref=e1826]:
+                - button "When was GPT-5.5 Instant (June 2026) released?" [ref=e1827] [cursor=pointer]
+              - region "When was GPT-5.5 Instant (June 2026) released?":
+                - paragraph [ref=e1831]: GPT-5.5 Instant (June 2026) was released on June 25, 2026.
+            - generic [ref=e1832]:
+              - heading [level=3] [ref=e1833]:
+                - button "Who created GPT-5.5 Instant (June 2026)?" [ref=e1834] [cursor=pointer]
+              - region "Who created GPT-5.5 Instant (June 2026)?":
+                - paragraph [ref=e1838]: GPT-5.5 Instant (June 2026) was created by OpenAI.
+            - generic [ref=e1839]:
+              - heading [level=3] [ref=e1840]:
+                - button "How intelligent is GPT-5.5 Instant (June 2026)?" [ref=e1841] [cursor=pointer]
+              - region "How intelligent is GPT-5.5 Instant (June 2026)?":
+                - paragraph [ref=e1845]: "GPT-5.5 Instant (June 2026) scores 29 on the Artificial Analysis Intelligence Index, placing it below average among other reasoning models in a similar price tier (median: 32)."
+            - generic [ref=e1846]:
+              - heading [level=3] [ref=e1847]:
+                - button "How much does GPT-5.5 Instant (June 2026) cost?" [ref=e1848] [cursor=pointer]
+              - region "How much does GPT-5.5 Instant (June 2026) cost?":
+                - paragraph [ref=e1852]: "GPT-5.5 Instant (June 2026) costs $5.00 per 1M input tokens (at the higher end, median: $2.00) and $30.00 per 1M output tokens (at the higher end, median: $10.00), based on OpenAI's API."
+            - generic [ref=e1853]:
+              - heading [level=3] [ref=e1854]:
+                - button "What is GPT-5.5 Instant (June 2026) API pricing?" [ref=e1855] [cursor=pointer]
+              - region "What is GPT-5.5 Instant (June 2026) API pricing?":
+                - paragraph [ref=e1859]:
+                  - text: GPT-5.5 Instant (June 2026) costs $5.00 per 1M input tokens and $30.00 per 1M output tokens (based on OpenAI's API). For a blended rate (7:2:1 cache hit/input/output ratio), this is $4.35 per 1M tokens. Pricing may vary by provider.
+                  - link "Compare provider pricing" [ref=e1860] [cursor=pointer]:
+                    - /url: /models/gpt-5-5-instant-06-26/providers
+            - generic [ref=e1861]:
+              - heading [level=3] [ref=e1862]:
+                - button "How verbose is GPT-5.5 Instant (June 2026)?" [ref=e1863] [cursor=pointer]
+              - region "How verbose is GPT-5.5 Instant (June 2026)?":
+                - paragraph [ref=e1867]: "When evaluated on the Intelligence Index, GPT-5.5 Instant (June 2026) generated 4.2M output tokens, which is very competitive compared to other reasoning models in a similar price tier (median: 63M)."
+            - generic [ref=e1868]:
+              - heading [level=3] [ref=e1869]:
+                - button "Is GPT-5.5 Instant (June 2026) a reasoning model?" [ref=e1870] [cursor=pointer]
+              - region "Is GPT-5.5 Instant (June 2026) a reasoning model?":
+                - paragraph [ref=e1874]: Yes, GPT-5.5 Instant (June 2026) is a reasoning model. It uses extended thinking or chain-of-thought reasoning to work through complex problems before providing an answer.
+            - generic [ref=e1875]:
+              - heading [level=3] [ref=e1876]:
+                - button "What input modalities does GPT-5.5 Instant (June 2026) support?" [ref=e1877] [cursor=pointer]
+              - region "What input modalities does GPT-5.5 Instant (June 2026) support?":
+                - paragraph [ref=e1881]: GPT-5.5 Instant (June 2026) supports text and image input.
+            - generic [ref=e1882]:
+              - heading [level=3] [ref=e1883]:
+                - button "What output modalities does GPT-5.5 Instant (June 2026) support?" [ref=e1884] [cursor=pointer]
+              - region "What output modalities does GPT-5.5 Instant (June 2026) support?":
+                - paragraph [ref=e1888]: GPT-5.5 Instant (June 2026) supports text output.
+            - generic [ref=e1889]:
+              - heading [level=3] [ref=e1890]:
+                - button "Can GPT-5.5 Instant (June 2026) process images?" [ref=e1891] [cursor=pointer]
+              - region "Can GPT-5.5 Instant (June 2026) process images?":
+                - paragraph [ref=e1895]: Yes, GPT-5.5 Instant (June 2026) supports image input and can analyze, describe, and answer questions about images.
+            - generic [ref=e1896]:
+              - heading [level=3] [ref=e1897]:
+                - button "Is GPT-5.5 Instant (June 2026) multimodal?" [ref=e1898] [cursor=pointer]
+              - region "Is GPT-5.5 Instant (June 2026) multimodal?":
+                - paragraph [ref=e1902]: Yes, GPT-5.5 Instant (June 2026) is multimodal. It can process text and image input and generate text output.
+            - generic [ref=e1903]:
+              - heading [level=3] [ref=e1904]:
+                - button "What is the context window of GPT-5.5 Instant (June 2026)?" [ref=e1905] [cursor=pointer]
+              - region "What is the context window of GPT-5.5 Instant (June 2026)?":
+                - paragraph [ref=e1909]: GPT-5.5 Instant (June 2026) has a context window of 400k tokens. This determines how much text and conversation history the model can process in a single request.
+            - generic [ref=e1910]:
+              - heading [level=3] [ref=e1911]:
+                - button "Is GPT-5.5 Instant (June 2026) open source?" [ref=e1912] [cursor=pointer]
+              - region "Is GPT-5.5 Instant (June 2026) open source?":
+                - paragraph [ref=e1916]: No, GPT-5.5 Instant (June 2026) is proprietary. The model weights are not publicly available.
+            - generic [ref=e1917]:
+              - heading [level=3] [ref=e1918]:
+                - button "How many parameters does GPT-5.5 Instant (June 2026) have?" [ref=e1919] [cursor=pointer]
+              - region "How many parameters does GPT-5.5 Instant (June 2026) have?":
+                - paragraph [ref=e1923]: GPT-5.5 Instant (June 2026) is a proprietary model and OpenAI has not disclosed the model size or parameter count.
+            - generic [ref=e1924]:
+              - heading [level=3] [ref=e1925]:
+                - button "How does GPT-5.5 Instant (June 2026) perform on benchmarks?" [ref=e1926] [cursor=pointer]
+              - region "How does GPT-5.5 Instant (June 2026) perform on benchmarks?":
+                - paragraph [ref=e1930]: GPT-5.5 Instant (June 2026) achieves a score of 29 on the Artificial Analysis Intelligence Index. This composite benchmark evaluates models across reasoning, knowledge, mathematics, and coding.
+            - generic [ref=e1931]:
+              - heading [level=3] [ref=e1932]:
+                - button "What is the knowledge cutoff date for GPT-5.5 Instant (June 2026)?" [ref=e1933] [cursor=pointer]
+              - region "What is the knowledge cutoff date for GPT-5.5 Instant (June 2026)?":
+                - paragraph [ref=e1937]: GPT-5.5 Instant (June 2026) has a knowledge cutoff of August 2025. The model's training data includes information up to this date.
+            - generic [ref=e1938]:
+              - heading [level=3] [ref=e1939]:
+                - button "Is GPT-5.5 Instant (June 2026) available via API?" [ref=e1940] [cursor=pointer]
+              - region "Is GPT-5.5 Instant (June 2026) available via API?":
+                - paragraph [ref=e1944]:
+                  - text: Yes, GPT-5.5 Instant (June 2026) is available via API through 1 provider.
+                  - link "Compare API providers" [ref=e1945] [cursor=pointer]:
+                    - /url: /models/gpt-5-5-instant-06-26/providers
+            - generic [ref=e1946]:
+              - heading [level=3] [ref=e1947]:
+                - button "Where can I use GPT-5.5 Instant (June 2026)?" [ref=e1948] [cursor=pointer]
+              - region "Where can I use GPT-5.5 Instant (June 2026)?":
+                - paragraph [ref=e1952]:
+                  - text: GPT-5.5 Instant (June 2026) is available through 1 API provider.
+                  - link "Compare providers" [ref=e1953] [cursor=pointer]:
+                    - /url: /models/gpt-5-5-instant-06-26/providers
+    - button "Back to top"
+    - region "Notifications alt+T"
+    - generic [ref=e1955]:
+      - generic [ref=e1956]:
+        - link "Artificial Analysis" [ref=e1958] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e1961]:
+          - paragraph [ref=e1962]: Get notified about new articles
+          - generic [ref=e1966]:
+            - generic [ref=e1967]: Email address
+            - textbox "Email address" [ref=e1968]:
+              - /placeholder: What's your email?
+            - button "Subscribe" [ref=e1969] [cursor=pointer]
+        - paragraph [ref=e1973]: Artificial Analysis
+        - generic [ref=e1974]:
+          - generic [ref=e1975]:
+            - paragraph [ref=e1976]: Explore
+            - list [ref=e1977]:
+              - listitem [ref=e1978]:
+                - link "LLM Leaderboard" [ref=e1979] [cursor=pointer]:
+                  - /url: /leaderboards/models
+              - listitem [ref=e1980]:
+                - link "Image Arena" [ref=e1981] [cursor=pointer]:
+                  - /url: /image/arena
+              - listitem [ref=e1982]:
+                - link "Video Arena" [ref=e1983] [cursor=pointer]:
+                  - /url: /video/arena
+              - listitem [ref=e1984]:
+                - link "AI Agents" [ref=e1985] [cursor=pointer]:
+                  - /url: /agents
+              - listitem [ref=e1986]:
+                - link "Evaluations" [ref=e1987] [cursor=pointer]:
+                  - /url: /evaluations
+          - generic [ref=e1988]:
+            - paragraph [ref=e1989]: Company
+            - list [ref=e1990]:
+              - listitem [ref=e1991]:
+                - link "Methodology" [ref=e1992] [cursor=pointer]:
+                  - /url: /methodology
+              - listitem [ref=e1993]:
+                - link "Services" [ref=e1994] [cursor=pointer]:
+                  - /url: /services
+              - listitem [ref=e1995]:
+                - link "Contact" [ref=e1996] [cursor=pointer]:
+                  - /url: /contact
+              - listitem [ref=e1997]:
+                - link "Articles" [ref=e1998] [cursor=pointer]:
+                  - /url: /articles
+              - listitem [ref=e1999]:
+                - link "FAQ" [ref=e2000] [cursor=pointer]:
+                  - /url: /faq
+        - generic [ref=e2001]:
+          - link "X" [ref=e2002] [cursor=pointer]:
+            - /url: https://x.com/ArtificialAnlys
+          - link "LinkedIn" [ref=e2006] [cursor=pointer]:
+            - /url: https://www.linkedin.com/company/artificial-analysis/
+          - link "YouTube" [ref=e2010] [cursor=pointer]:
+            - /url: https://www.youtube.com/@ArtificialAnalysisAI
+          - link "Rednote" [ref=e2014] [cursor=pointer]:
+            - /url: https://www.xiaohongshu.com/user/profile/69ea6345000000000d034c02
+          - link "Discord" [ref=e2018] [cursor=pointer]:
+            - /url: https://discord.gg/Mk298GPZ7V
+      - generic [ref=e2022]:
+        - paragraph [ref=e2023]: © 2026 Artificial Analysis
+        - link "Terms of Use" [ref=e2024] [cursor=pointer]:
+          - /url: /docs/legal/Terms-of-Use.pdf
+        - link "Privacy Policy" [ref=e2025] [cursor=pointer]:
+          - /url: /docs/legal/Privacy-Policy.pdf
+        - combobox "Select language" [ref=e2027] [cursor=pointer]: English
+  - alert [ref=e2035]
+  - generic [ref=e2036]: "0.8"
