@@ -165,6 +165,12 @@ class BaseCLIAgent:
     EFFORT_FLAGS: tuple[str, ...] = ()
     EFFORT_PREFIX: str | None = None
 
+    # Which metadata key this CLI publishes its usage payload under. Per-client
+    # because the parsers already differ: codex and claude write `usage`, gemini
+    # writes `token_usage`. A field map describes the fields *inside* the payload
+    # and so cannot reach one filed under a different name.
+    USAGE_METADATA_KEY: str = "usage"
+
     # CLI usage key -> normalised TokenUsage field. Empty means this client has no
     # adapter yet, so it reports no usage rather than a wrong one.
     USAGE_FIELD_MAP: dict[str, str] = {}
@@ -428,12 +434,14 @@ class BaseCLIAgent:
     def _extract_token_usage(self, parsed: ParsedCLIResponse) -> TokenUsage | None:
         """Map this CLI's raw usage report onto the normalised account.
 
-        Driven by `USAGE_FIELD_MAP`, which is empty in the base — a client whose
-        adapter is not written yet reports no usage rather than a wrong one.
+        Two per-client declarations, because they answer different questions:
+        `USAGE_METADATA_KEY` is *where* the payload is, `USAGE_FIELD_MAP` is what
+        the fields inside it are called. The map is empty in the base — a client
+        whose adapter is not written yet reports no usage rather than a wrong one.
         """
         if not self.USAGE_FIELD_MAP:
             return None
-        usage = parsed.metadata.get("usage")
+        usage = parsed.metadata.get(self.USAGE_METADATA_KEY)
         if not isinstance(usage, dict):
             return None
         reported = {field: usage[key] for key, field in self.USAGE_FIELD_MAP.items() if isinstance(usage.get(key), int)}
