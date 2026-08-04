@@ -230,13 +230,21 @@ async def test_two_genuinely_different_models_are_still_a_substitution(monkeypat
 
 
 @pytest.mark.asyncio
-async def test_codex_payload_without_observed_model_is_unknown_without_substitution(monkeypatch):
+async def test_codex_payload_without_observed_model_omits_it_without_substitution(monkeypatch):
+    # Contract changed in #41: an unobserved model is now expressed by OMITTING the
+    # key, not by the literal string "unknown". The sentinel was truthy and
+    # string-typed, so a caller could not tell "not observed" from "a model named
+    # unknown" — and `_call_accounting`'s own docstring already promised absence
+    # meant an absent key. This test previously pinned the sentinel; it now pins the
+    # convention that replaced it, deliberately rather than by deletion.
     agent, _ = _codex_agent()
 
     metadata = await _execute_with_agent(monkeypatch, agent, cli_name="codex")
 
     assert metadata["resolved_model"] == "configured-model"
-    assert metadata["observed_model"] == "unknown"
+    assert "observed_model" not in metadata
+    # Absence must not be inferable from a substitution flag either.
+    assert "model_substituted" not in metadata
     assert "requested_model" not in metadata
     assert "model_substituted" not in metadata
 
