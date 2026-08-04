@@ -61,9 +61,13 @@ Four requirements currently belong to **no issue in either repository**: argumen
 defences against prompt injection carried in repository content, resource admission, and
 conflict-aware promotion. They are recorded in `xeno-skills#74`.
 
-> Note the tracker asymmetry: this repo has the T4 triage labels (`ready-for-agent`, `clink`,
-> `Feature`, `security`, …); xeno-skills currently has only GitHub's defaults, so its issues are
-> unlabelled. Don't read the missing labels as missing triage.
+> The tracker asymmetry this note used to describe is gone, and **both halves of it were false by
+> 2026-08-05**. This repo did *not* carry the full T4 vocabulary — 16 labels against the 19 in
+> `triage-labels.md`, with the Type and Severity groups missing (#66). And xeno-skills is no longer
+> unlabelled: its open issues carry `ready-for-agent`, `ready-for-human`, `t4`, `multi-agent`,
+> `hooks`, `security`, `ci`, `research`, `blocked`, `Major`, `Feature` and `bug`.
+> Read the labels in either repo as real triage, and treat a missing one as a defect to file rather
+> than a convention to work around.
 
 ## Auto-triggered disciplines
 

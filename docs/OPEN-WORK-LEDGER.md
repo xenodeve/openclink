@@ -37,10 +37,14 @@ clean on `main` (#54), but **`black` would still rewrite 10 files** under `tests
 `simulator_tests/`. Inventoried in PR #55, not fixed: a 10-file reformat inside a lint PR is the
 muddied diff #54 was opened to avoid. **No issue yet.**
 
-🔴 **The T4 Type label group does not exist in this repo.** `gh label list` returns 16 names;
-`tech-debt`, `critical`, `Minor` and the Component labels are absent, so a documented vocabulary reads
-as configured and is not. `xeno-skills#96` measured this and PR #108 shipped the fix — **this repo has
-not had it applied.** Recorded on #54 so it is not rediscovered a third time.
+✅ **The T4 label vocabulary is real as of 2026-08-05** (#66). 16 → **25 labels**; the nine missing
+were created and `#54`/`#63` re-triaged onto `tech-debt`. **The fix that mattered was not the labels:**
+`triage-labels.md` ended by telling the agent to create them *lazily* and *proceed silently* if the
+vocabulary was thin, which composes into never created and never mentioned — the same wording
+`xeno-skills#96` measured and PR #108 replaced. Creating labels without that edit would have
+guaranteed the recurrence. Two near-duplicates were avoided by reconciling the doc to GitHub's
+existing defaults rather than creating twins (`Bug`→`bug`, `docs`→`documentation`), and
+`agent:<name>` is recorded as a pattern that cannot be pre-created.
 
 ### AFK batch 2026-08-04 — five PRs merged; the owed gates are paid
 
