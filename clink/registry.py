@@ -9,7 +9,6 @@ import shlex
 from collections.abc import Iterable
 from pathlib import Path
 
-from clink.discovery import resolve_cli_command
 from clink.constants import (
     CONFIG_DIR,
     DEFAULT_TIMEOUT_SECONDS,
@@ -18,6 +17,7 @@ from clink.constants import (
     USER_CONFIG_DIR,
     CLIInternalDefaults,
 )
+from clink.discovery import resolve_cli_command
 from clink.models import (
     CLIClientConfig,
     CLIRoleConfig,
