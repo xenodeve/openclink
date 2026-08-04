@@ -7,7 +7,7 @@ reproducible from a recorded account, and what lets the tests pin exact numbers.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from clink.models import RateCard
@@ -35,7 +35,13 @@ class CallCost:
     # Classes the CLI *did* report but the card does not price. Named rather
     # than folded in at zero: a total that silently omits a reported class is
     # wrong in a way no caller can see.
-    unpriced_classes: tuple[str, ...] = field(default=())
+    unpriced_classes: tuple[str, ...] = ()
+
+
+# Named because the tool treats this reason differently from the others: it is a
+# fact about PAL's configuration rather than about the CLI or the call, so it is
+# not projected to the caller. A literal spelled in two files would drift.
+NO_RATE_CARD = "no_rate_card"
 
 
 @dataclass(frozen=True)
@@ -52,7 +58,7 @@ class CostUnavailable:
 
 def price_call(card: RateCard | None, model: str | None, account: TokenUsage | None) -> CallCost | CostUnavailable:
     if card is None:
-        return CostUnavailable(reason="no_rate_card")
+        return CostUnavailable(reason=NO_RATE_CARD)
     if model is None:
         return CostUnavailable(reason="model_unresolved")
     if account is None:

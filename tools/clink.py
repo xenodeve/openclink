@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from clink import get_registry
 from clink.agents import AgentOutput, CLIAgentError, create_agent
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
-from clink.pricing import CallCost, CostUnavailable
+from clink.pricing import NO_RATE_CARD, CallCost, CostUnavailable
 from config import TEMPERATURE_BALANCED
 from tools.models import ToolModelCategory, ToolOutput
 from tools.shared.base_models import COMMON_FIELD_DESCRIPTIONS
@@ -479,10 +479,16 @@ class CLinkTool(SimpleTool):
             accounting["cost"] = {"value": result.cost.value, "unit": result.cost.unit}
             if result.cost.unpriced_classes:
                 accounting["cost_unpriced_classes"] = list(result.cost.unpriced_classes)
-        elif isinstance(result.cost, CostUnavailable):
+        elif isinstance(result.cost, CostUnavailable) and result.cost.reason != NO_RATE_CARD:
             # Absent figure plus a reason, never a raised error and never a
             # guessed number: a model released this morning must not turn every
             # delegation into a failure.
+            #
+            # `no_rate_card` is the one reason NOT projected, for the same
+            # argument #24 slice 4 made about an unwritten adapter: it is a fact
+            # about PAL, not about the CLI or this call. Marking it would put
+            # the key on every response of every client until someone configures
+            # a card, and a marker present on everything marks nothing.
             accounting["cost_unavailable"] = result.cost.reason
         return accounting
 

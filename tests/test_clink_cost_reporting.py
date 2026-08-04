@@ -103,6 +103,13 @@ def test_a_client_with_no_rate_card_still_loads_and_runs():
     accounting = _accounting(_codex(None), {"usage": USAGE}, ["codex", "-m", "gpt-5.6-luna"])
     assert accounting["normalized_usage"]["input_tokens"] == 100_000
     assert "cost" not in accounting
+    # And SILENT, not marked unavailable. "Nobody has configured a rate card"
+    # is a fact about PAL, exactly like "nobody has written this adapter" in
+    # #24 slice 4 - and that was deliberately left silent so that a marker
+    # always means a fact about the CLI or the call. Marking it here would put
+    # `cost_unavailable` on every response of every client, which is how a
+    # signal stops being one.
+    assert "cost_unavailable" not in accounting
 
 
 def test_the_cost_reaches_the_caller_with_its_unit():
