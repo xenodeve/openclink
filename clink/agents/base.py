@@ -122,6 +122,11 @@ class CLIAgentError(RuntimeError):
         stderr: str = "",
         parsed: ParsedCLIResponse | None = None,
         token_usage: TokenUsage | None = None,
+        requested_model: str | None = None,
+        resolved_model: str | None = None,
+        observed_model: str | None = None,
+        resolved_effort: str | None = None,
+        cost: float | None = None,
     ) -> None:
         super().__init__(message)
         self.returncode = returncode
@@ -133,6 +138,17 @@ class CLIAgentError(RuntimeError):
         # A run that failed still spent the tokens it spent. Making the outcome
         # honest must not make the call unaccountable.
         self.token_usage = token_usage
+        # The same argument, one field over: a failed run still ran *some* model,
+        # and a wrong-model run is a plausible reason for it to have failed at all
+        # — so the accounting is most valuable exactly where it used to be absent
+        # (#41). These names deliberately match `AgentOutput`'s, so the tool can
+        # project the accounting block from either with one function instead of
+        # two that drift.
+        self.requested_model = requested_model
+        self.resolved_model = resolved_model
+        self.observed_model = observed_model
+        self.resolved_effort = resolved_effort
+        self.cost = cost
 
 
 class BaseCLIAgent:
@@ -358,6 +374,10 @@ class BaseCLIAgent:
                 stderr=stderr,
                 parsed=parsed,
                 token_usage=token_usage,
+                requested_model=requested_model,
+                resolved_model=resolved_model,
+                observed_model=parsed.metadata.get("model_used"),
+                resolved_effort=resolved_effort,
             )
 
         return AgentOutput(

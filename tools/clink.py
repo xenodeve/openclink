@@ -410,18 +410,29 @@ class CLinkTool(SimpleTool):
             metadata["raw_output_file"] = result.output_file_content
         return metadata
 
-    def _call_accounting(self, result: AgentOutput) -> dict[str, Any]:
+    def _call_accounting(self, result: AgentOutput | CLIAgentError) -> dict[str, Any]:
         """What the call requested and what it consumed, omitting what is unknown.
 
         A key is absent when the client reported nothing for it, so a caller can
         tell "not reported" from a reported zero.
+
+        Takes either outcome. `CLIAgentError` carries these fields under the same
+        names as `AgentOutput` so one projection serves both paths (#41) — the
+        annotation has to say so, or the next reader reasonably assumes the error
+        path has its own copy, which is the duplication this replaced.
         """
         accounting: dict[str, Any] = {}
         if result.requested_model is not None:
             accounting["requested_model"] = result.requested_model
         if result.resolved_model is not None:
             accounting["resolved_model"] = result.resolved_model
-        accounting["observed_model"] = result.observed_model if result.observed_model is not None else "unknown"
+        # Omitted when unobserved, not reported as the literal "unknown": that string
+        # is truthy and string-typed, so a caller could not tell "not observed" from
+        # "a model actually named unknown" — and it contradicted this function's own
+        # docstring two lines up. Absence is now expressed the same way twice in one
+        # object, matching `normalized_usage` (#41).
+        if result.observed_model is not None:
+            accounting["observed_model"] = result.observed_model
         if (
             result.resolved_model is not None
             and result.observed_model is not None
@@ -563,10 +574,11 @@ class CLinkTool(SimpleTool):
             # happens to share its name.
             metadata.update(self._prune_metadata(exc.parsed.metadata, client, reason="error"))
             _store_diagnostic(metadata, truncated_fields, "salvaged_content", exc.parsed.content)
-        if exc.token_usage is not None:
-            reported = {name: value for name, value in asdict(exc.token_usage).items() if value is not None}
-            if reported:
-                metadata["normalized_usage"] = reported
+        # One projection for both outcomes (#41). `CLIAgentError` carries the same
+        # field names as `AgentOutput` precisely so this can be the same function —
+        # two hand-written blocks were how the error path came to report usage but
+        # not which model spent it.
+        metadata.update(self._call_accounting(exc))
         if exc.stdout:
             _store_diagnostic(metadata, truncated_fields, "stdout", exc.stdout.strip())
         if exc.stderr:
