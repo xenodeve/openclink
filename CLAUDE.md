@@ -54,12 +54,16 @@ source venv/bin/activate
 ./code_quality_checks.sh
 ```
 
-This script automatically runs:
-- Ruff linting with auto-fix
-- Black code formatting 
-- Import sorting with isort
+This script **reports; it does not rewrite**. It runs:
+- Ruff linting (`check`, no `--fix`)
+- Black formatting check (`--check`)
+- Import-order check with isort (`--check-only`)
 - Complete unit test suite (excluding integration tests)
-- Verification that all checks pass 100%
+
+**A red gate means run the formatter yourself** — the same commands without
+`--check` / `--check-only`. It used to auto-fix, which meant it exited 0 having
+edited tracked files, and a following `git add -A` swept them into an unrelated
+commit (#63).
 
 **Run Integration Tests (requires API keys):**
 ```bash

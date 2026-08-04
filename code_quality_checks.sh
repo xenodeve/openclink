@@ -66,17 +66,20 @@ echo ""
 echo "📋 Step 1: Running Linting and Formatting Checks"
 echo "--------------------------------------------------"
 
-echo "🔧 Running ruff linting with auto-fix..."
-$RUFF check --fix --exclude test_simulation_files --exclude .pal_venv
+# These REPORT; they do not rewrite. A gate that edits your tree behind you is
+# not a gate — it exits 0 having changed tracked files, and the next `git add -A`
+# sweeps them into an unrelated commit. That happened twice on 2026-08-04, once
+# carrying a settings change that had been explicitly rejected (#63).
+# To fix what these report, run the same commands without --check/--check-only.
 
-echo "🎨 Running black code formatting..."
-$BLACK . --exclude="test_simulation_files/" --exclude=".pal_venv/"
-
-echo "📦 Running import sorting with isort..."
-$ISORT . --skip-glob=".pal_venv/*" --skip-glob="test_simulation_files/*"
-
-echo "✅ Verifying all linting passes..."
+echo "🔍 Running ruff linting..."
 $RUFF check --exclude test_simulation_files --exclude .pal_venv
+
+echo "🎨 Checking black formatting..."
+$BLACK . --check --exclude="test_simulation_files/" --exclude=".pal_venv/"
+
+echo "📦 Checking import sorting with isort..."
+$ISORT . --check-only --skip-glob=".pal_venv/*" --skip-glob="test_simulation_files/*"
 
 echo "✅ Step 1 Complete: All linting and formatting checks passed!"
 echo ""

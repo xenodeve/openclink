@@ -14,7 +14,7 @@ Authoritative documentation and samples live in `docs/`, and runtime diagnostics
 ## Build, Test, and Development Commands
 - `source .pal_venv/bin/activate` – activate the managed Python environment.
 - `./run-server.sh` – install dependencies, refresh `.env`, and launch the MCP server locally.
-- `./code_quality_checks.sh` – run Ruff autofix, Black, isort, and the default pytest suite.
+- `./code_quality_checks.sh` – **check** Ruff, Black and isort (it reports, it does not rewrite), then run the default pytest suite. A red gate means run the formatter yourself.
 - `python communication_simulator_test.py --quick` – smoke-test orchestration across tools and providers.
 - `./run_integration_tests.sh [--with-simulator]` – exercise provider-dependent flows against remote or Ollama models.
 
