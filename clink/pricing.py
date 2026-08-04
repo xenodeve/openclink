@@ -8,9 +8,13 @@ reproducible from a recorded account, and what lets the tests pin exact numbers.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
-from clink.agents.base import TokenUsage
 from clink.models import RateCard
+
+if TYPE_CHECKING:  # `agents.base` imports this module, so the account type is
+    # referenced for typing only — importing it at runtime would close the cycle.
+    from clink.agents.base import TokenUsage
 
 # Normalised account field -> the rate that prices it. Declared once so a new
 # token class cannot be added to the account and silently priced at zero.

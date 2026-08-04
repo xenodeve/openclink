@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from clink import get_registry
 from clink.agents import AgentOutput, CLIAgentError, create_agent
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
+from clink.pricing import CallCost, CostUnavailable
 from config import TEMPERATURE_BALANCED
 from tools.models import ToolModelCategory, ToolOutput
 from tools.shared.base_models import COMMON_FIELD_DESCRIPTIONS
@@ -471,8 +472,18 @@ class CLinkTool(SimpleTool):
             # Never zeros — a call whose consumption is unknown is not a call
             # that consumed nothing.
             accounting["usage_unavailable"] = True
-        if result.cost is not None:
-            accounting["cost"] = result.cost
+        if isinstance(result.cost, CallCost):
+            # The unit travels with the number. A caller routing across a
+            # subscription backend and a token-billed one cannot sum credits
+            # with currency, and a bare float invites exactly that.
+            accounting["cost"] = {"value": result.cost.value, "unit": result.cost.unit}
+            if result.cost.unpriced_classes:
+                accounting["cost_unpriced_classes"] = list(result.cost.unpriced_classes)
+        elif isinstance(result.cost, CostUnavailable):
+            # Absent figure plus a reason, never a raised error and never a
+            # guessed number: a model released this morning must not turn every
+            # delegation into a failure.
+            accounting["cost_unavailable"] = result.cost.reason
         return accounting
 
     def _merge_metadata(self, base: dict[str, Any] | None, extra: dict[str, Any]) -> dict[str, Any]:

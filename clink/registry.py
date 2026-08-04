@@ -174,6 +174,7 @@ class ClinkRegistry:
             output_to_file=output_to_file,
             working_dir=working_dir,
             model_catalog=raw.model_catalog,
+            rate_card=raw.rate_card,
         )
 
     def _resolve_executable(

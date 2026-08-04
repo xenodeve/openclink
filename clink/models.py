@@ -83,6 +83,7 @@ class CLIClientConfig(BaseModel):
     roles: dict[str, CLIRoleConfig] = Field(default_factory=dict)
     output_to_file: OutputCaptureConfig | None = None
     model_catalog: dict[str, list[str]] | None = None
+    rate_card: RateCard | None = None
 
     @field_validator("additional_args", mode="before")
     @classmethod
@@ -120,6 +121,7 @@ class ResolvedCLIClient(BaseModel):
     roles: dict[str, ResolvedCLIRole]
     output_to_file: OutputCaptureConfig | None = None
     model_catalog: dict[str, list[str]] | None = None
+    rate_card: RateCard | None = None
 
     def list_roles(self) -> list[str]:
         return list(self.roles.keys())

@@ -17,6 +17,7 @@ from clink.constants import DEFAULT_STREAM_LIMIT
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
 from clink.parsers import BaseParser, ParsedCLIResponse, ParserError, get_parser
 from clink.parsers.base import NO_ANSWER_METADATA_KEY
+from clink.pricing import CallCost, CostUnavailable, price_call
 from clink.validation import validate_model_request
 
 logger = logging.getLogger("clink.agent")
@@ -57,8 +58,11 @@ class AgentOutput:
     # not about PAL. Distinct from a missing `token_usage`, which also covers
     # "no adapter written yet".
     usage_unavailable: bool = False
-    # Filled in by the rate-card slice; absent until then.
-    cost: float | None = None
+    # Either a figure carrying its unit, or the machine-readable reason there is
+    # none. A bare float was declared here by #23 and never populated by
+    # anything — `grep -rn "cost=" clink/` had no assignment — so giving it a
+    # unit breaks no caller.
+    cost: CallCost | CostUnavailable | None = None
 
 
 # The error path does not run through the tool's output limiter, so whatever is
@@ -131,7 +135,7 @@ class CLIAgentError(RuntimeError):
         observed_model: str | None = None,
         resolved_effort: str | None = None,
         usage_unavailable: bool = False,
-        cost: float | None = None,
+        cost: CallCost | CostUnavailable | None = None,
     ) -> None:
         super().__init__(message)
         self.returncode = returncode
@@ -374,6 +378,11 @@ class BaseCLIAgent:
         """
         resolved_model, resolved_effort = self._resolve_model_effort(sanitized_command)
         token_usage = self._extract_token_usage(parsed)
+        # Priced here rather than in the tool, because this is the one place that
+        # holds the client (and so its rate card), the resolved model and the
+        # account at the same time. A failed run is priced too: it still spent
+        # what it spent (#41).
+        cost = price_call(self.client.rate_card, resolved_model, token_usage)
 
         failure: str | None = None
         if returncode != 0:
@@ -397,6 +406,7 @@ class BaseCLIAgent:
                 observed_model=parsed.metadata.get("model_used"),
                 resolved_effort=resolved_effort,
                 usage_unavailable=self.USAGE_UNAVAILABLE,
+                cost=cost,
             )
 
         return AgentOutput(
@@ -414,6 +424,7 @@ class BaseCLIAgent:
             resolved_effort=resolved_effort,
             token_usage=token_usage,
             usage_unavailable=self.USAGE_UNAVAILABLE,
+            cost=cost,
         )
 
     def refuse_unservable(self, command: Sequence[str]) -> None:
