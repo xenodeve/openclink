@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -459,6 +460,16 @@ class CLinkTool(SimpleTool):
             accounting["model_substituted"] = True
         if result.resolved_effort is not None:
             accounting["resolved_effort"] = result.resolved_effort
+        # Which binary ran, as an absolute path. `BaseCLIAgent.run` rewrites
+        # `command[0]` with `shutil.which`, so an absolute first element is a
+        # resolved one and a bare name never was — reported only in the first
+        # case, per this function's absence convention. Clink resolves from the
+        # PROCESS PATH at load time, so two PAL processes on one machine can run
+        # different binaries under one `cli_name`, and a stale one blames the
+        # model for its own age (#64).
+        command = result.sanitized_command
+        if command and os.path.isabs(command[0]):
+            accounting["resolved_executable"] = command[0]
         if result.token_usage is not None:
             # `normalized_usage`, not `token_usage`: the gemini parser already
             # publishes `token_usage` in that CLI's own raw shape, and one key

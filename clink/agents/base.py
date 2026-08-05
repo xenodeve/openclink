@@ -129,6 +129,7 @@ class CLIAgentError(RuntimeError):
         stdout: str = "",
         stderr: str = "",
         parsed: ParsedCLIResponse | None = None,
+        sanitized_command: list[str] | None = None,
         token_usage: TokenUsage | None = None,
         requested_model: str | None = None,
         resolved_model: str | None = None,
@@ -144,6 +145,12 @@ class CLIAgentError(RuntimeError):
         # Whatever the failed run still managed to say. Reporting the outcome
         # honestly must not cost the caller its diagnosis.
         self.parsed = parsed
+        # Which binary actually ran. Carried on the error under the same name as
+        # `AgentOutput`, because the PATH divergence this reports did not surface
+        # as a successful call — a stale codex answered a valid model with an
+        # HTTP 400 blaming the model (#64). A failed run is exactly when the
+        # caller needs to know which executable produced it.
+        self.sanitized_command = sanitized_command
         # A run that failed still spent the tokens it spent. Making the outcome
         # honest must not make the call unaccountable.
         self.token_usage = token_usage
@@ -400,6 +407,7 @@ class BaseCLIAgent:
                 stdout=stdout,
                 stderr=stderr,
                 parsed=parsed,
+                sanitized_command=sanitized_command,
                 token_usage=token_usage,
                 requested_model=requested_model,
                 resolved_model=resolved_model,
