@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 from clink import get_registry
 from clink.agents import AgentOutput, CLIAgentError, create_agent
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
-from clink.pricing import NO_RATE_CARD, CallCost, CostUnavailable
+from clink.pricing import NO_RATE_CARD, CallCost, CostUnavailable, sum_thread_accounts
 from config import TEMPERATURE_BALANCED
 from tools.models import ToolModelCategory, ToolOutput
 from tools.shared.base_models import COMMON_FIELD_DESCRIPTIONS
@@ -334,11 +334,20 @@ class CLinkTool(SimpleTool):
             # asked for. Without the fallback, codex and antigravity record a
             # null model on every stored turn while the response names one.
             "model_name": result.parsed.metadata.get("model_used") or result.resolved_model,
+            # This call's own account, so the turn carries what it cost. The base
+            # class builds turn metadata only from a provider `model_response`,
+            # which clink has none of — it spawns a CLI — so every clink turn was
+            # persisted with `model_metadata=None` and a thread had nothing to
+            # sum (#26).
+            "accounting": self._call_accounting(result),
         }
 
         if continuation_id:
             try:
                 self._record_assistant_turn(continuation_id, content, request, model_info)
+                # Totals cover the turns already stored plus this one, which is
+                # not in the thread until the line above ran.
+                metadata.update(self._thread_totals(continuation_id))
             except Exception:
                 logger.debug("Failed to record assistant turn for continuation %s", continuation_id, exc_info=True)
 
@@ -428,6 +437,54 @@ class CLinkTool(SimpleTool):
         if result.output_file_content and "raw" not in metadata:
             metadata["raw_output_file"] = result.output_file_content
         return metadata
+
+    def _record_assistant_turn(
+        self, continuation_id: str, response_text: str, request, model_info: dict[str, Any] | None
+    ) -> None:
+        """Store the turn with this call's account attached.
+
+        Overridden rather than widening the base, which every `SimpleTool`
+        shares: the base builds `model_metadata` only from a provider
+        `model_response`, and clink has none. Overriding here is the established
+        per-tool escape hatch — `tools/chat.py` does the same. `model_metadata`
+        is the documented home for this (`utils/conversation_memory.py`: "e.g.
+        thinking mode, token usage"), so the account is stored, not smuggled.
+        """
+        from utils.conversation_memory import add_turn
+
+        if not continuation_id:
+            return
+        accounting = (model_info or {}).get("accounting") or {}
+        add_turn(
+            continuation_id,
+            "assistant",
+            response_text,
+            files=self.get_request_files(request),
+            images=self.get_request_images(request),
+            tool_name=self.get_name(),
+            model_provider=(model_info or {}).get("provider"),
+            model_name=(model_info or {}).get("model_name"),
+            model_metadata={"accounting": accounting} if accounting else None,
+        )
+
+    def _thread_totals(self, continuation_id: str) -> dict[str, Any]:
+        """Cumulative usage and cost across the thread, beside the per-call figures.
+
+        Read here rather than threaded through `AgentOutput`: the tool already
+        holds the thread id, so carrying it down into the agent layer would add a
+        field there so the tool could learn something it was already told.
+        """
+        from utils.conversation_memory import get_thread
+
+        thread = get_thread(continuation_id)
+        if thread is None:
+            return {}
+        accounts = [
+            turn.model_metadata["accounting"]
+            for turn in thread.turns
+            if isinstance(getattr(turn, "model_metadata", None), dict) and turn.model_metadata.get("accounting")
+        ]
+        return sum_thread_accounts(accounts)
 
     def _call_accounting(self, result: AgentOutput | CLIAgentError) -> dict[str, Any]:
         """What the call requested and what it consumed, omitting what is unknown.

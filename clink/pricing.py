@@ -56,6 +56,59 @@ class CostUnavailable:
     reason: str
 
 
+def sum_thread_accounts(accounts: list[dict]) -> dict:
+    """Add up the per-call accounts already stored on a thread.
+
+    Pure: it takes accounting blocks and returns one. Absence is preserved
+    rather than filled — a turn that reported nothing makes the total
+    *incomplete* rather than smaller, because a total that quietly drops a turn
+    is wrong in a way no caller can see.
+
+    **Mixed units are never summed.** A subscription backend prices in credits
+    and a token-billed one in currency; a thread that used both has no total and
+    says so, instead of adding two different things.
+    """
+    totals: dict[str, int] = {}
+    incomplete_usage = False
+    cost_value = 0.0
+    cost_units: set[str] = set()
+    priced_turns = 0
+    unpriced_turns = 0
+
+    for account in accounts:
+        usage = account.get("normalized_usage")
+        if isinstance(usage, dict):
+            for name, value in usage.items():
+                if isinstance(value, int):
+                    totals[name] = totals.get(name, 0) + value
+        else:
+            # The turn ran and reported nothing accountable. Its tokens are not
+            # zero; they are unknown.
+            incomplete_usage = True
+
+        cost = account.get("cost")
+        if isinstance(cost, dict) and isinstance(cost.get("value"), (int, float)):
+            cost_value += float(cost["value"])
+            cost_units.add(str(cost.get("unit")))
+            priced_turns += 1
+        else:
+            unpriced_turns += 1
+
+    out: dict = {}
+    if totals:
+        out["cumulative_usage"] = totals
+    if incomplete_usage and totals:
+        out["cumulative_usage_incomplete"] = True
+
+    if priced_turns and len(cost_units) > 1:
+        out["cumulative_cost_unavailable"] = "mixed_units"
+    elif priced_turns:
+        out["cumulative_cost"] = {"value": cost_value, "unit": next(iter(cost_units))}
+        if unpriced_turns:
+            out["cumulative_cost_incomplete"] = True
+    return out
+
+
 def price_call(card: RateCard | None, model: str | None, account: TokenUsage | None) -> CallCost | CostUnavailable:
     if card is None:
         return CostUnavailable(reason=NO_RATE_CARD)
