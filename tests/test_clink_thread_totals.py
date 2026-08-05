@@ -109,6 +109,60 @@ def test_a_clink_turn_stores_its_own_account():
     assert stored.model_metadata["accounting"]["normalized_usage"] == {"input_tokens": 100, "output_tokens": 20}
 
 
+@pytest.mark.asyncio
+async def test_the_totals_actually_reach_the_caller(monkeypatch):
+    """The wiring, pinned — added by the pre-merge code-review gate, not the loop.
+
+    Every other test here exercises `sum_thread_accounts` or
+    `_record_assistant_turn` in isolation. **Deleting the one line in `execute`
+    that joins them left all 1040 tests passing**, so the whole feature could
+    have been removed silently. This drives the real `execute` and asserts the
+    totals arrive in the response metadata.
+    """
+    import json
+
+    from clink.agents import AgentOutput
+    from clink.agents.base import TokenUsage
+    from utils.conversation_memory import create_thread
+
+    thread_id = create_thread("clink", {"prompt": "x"})
+
+    class DummyAgent:
+        async def run(self, **_kwargs):
+            # `token_usage` is passed explicitly because this bypasses
+            # `finalize_output`, which is what normally computes it. Building
+            # AgentOutput directly and leaving it None was the first version of
+            # this fixture, and it made the test fail against WORKING code —
+            # the account had nothing to sum, so the totals were correctly empty.
+            return AgentOutput(
+                parsed=ParsedCLIResponse(content="OK", metadata={"usage": {"input_tokens": 100, "output_tokens": 20}}),
+                sanitized_command=["codex", "-m", MODEL],
+                returncode=0,
+                stdout="",
+                stderr="",
+                duration_seconds=0.1,
+                parser_name="codex_jsonl",
+                resolved_model=MODEL,
+                token_usage=TokenUsage(input_tokens=100, output_tokens=20),
+            )
+
+    monkeypatch.setattr("tools.clink.create_agent", lambda _client: DummyAgent())
+    result = await CLinkTool().execute(
+        {
+            "prompt": "hi",
+            "cli_name": "codex",
+            "role": "default",
+            "absolute_file_paths": [],
+            "images": [],
+            "model": MODEL,
+            "continuation_id": thread_id,
+        }
+    )
+
+    metadata = json.loads(result[0].text)["metadata"]
+    assert metadata["cumulative_usage"] == {"input_tokens": 100, "output_tokens": 20}
+
+
 def test_a_single_turn_thread_totals_that_turn():
     # 100/100*1 + 20/100*2 = 1.40
     totals = _sum([_account({"input_tokens": 100, "output_tokens": 20})])
