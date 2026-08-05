@@ -4,7 +4,25 @@
 # This script runs all required linting and testing checks before committing changes.
 # ALL checks must pass 100% for CI/CD to succeed.
 
-set -e  # Exit on any error
+# Deliberately NOT `set -e`. Under it the first failing check aborted the script,
+# and the formatting checks run before the unit suite — so one misplaced space
+# meant the 1000+ tests never ran and the agent learned nothing about whether its
+# code worked (#79). Formatting is the cheapest, least informative check here;
+# gating the most informative one behind it makes the gate useless exactly when
+# there is real work to check.
+#
+# Instead every check records its outcome and the script fails at the end.
+FAILED_CHECKS=()
+
+# record <name> <exit-code> — remember a failure without abandoning the run.
+record() {
+    if [ "$2" -ne 0 ]; then
+        FAILED_CHECKS+=("$1")
+        echo "❌ $1: FAILED"
+    else
+        echo "✅ $1: passed"
+    fi
+}
 
 echo "🔍 Running Code Quality Checks for PAL MCP Server"
 echo "================================================="
@@ -74,33 +92,50 @@ echo "--------------------------------------------------"
 
 echo "🔍 Running ruff linting..."
 $RUFF check --exclude test_simulation_files --exclude .pal_venv
+record "Linting (ruff)" $?
 
 echo "🎨 Checking black formatting..."
 $BLACK . --check --exclude="test_simulation_files/" --exclude=".pal_venv/"
+record "Formatting (black)" $?
 
 echo "📦 Checking import sorting with isort..."
 $ISORT . --check-only --skip-glob=".pal_venv/*" --skip-glob="test_simulation_files/*"
+record "Import sorting (isort)" $?
 
-echo "✅ Step 1 Complete: All linting and formatting checks passed!"
 echo ""
 
-# Step 2: Unit Tests
+# Step 2: Unit Tests — reached even when the checks above failed, because they
+# are the ones that tell you whether the code works.
 echo "🧪 Step 2: Running Complete Unit Test Suite"
 echo "---------------------------------------------"
 
 echo "🏃 Running unit tests (excluding integration tests)..."
-$PYTHON_CMD -m pytest tests/ -v -x -m "not integration"
-
-echo "✅ Step 2 Complete: All unit tests passed!"
+$PYTHON_CMD -m pytest tests/ -q -m "not integration"
+record "Unit tests" $?
 echo ""
 
-# Step 3: Final Summary
+# Step 3: Final Summary — the outcome is stated here, once, from what actually
+# ran. The old version printed "PASSED" for all four unconditionally and relied
+# on `set -e` never reaching it; that is only true while nothing fails, which is
+# the one case the summary does not matter.
+echo "=================================="
+if [ ${#FAILED_CHECKS[@]} -gt 0 ]; then
+    echo "❌ Code Quality Checks FAILED"
+    echo "=================================="
+    for check in "${FAILED_CHECKS[@]}"; do
+        echo "   failed: $check"
+    done
+    echo ""
+    echo "💡 For a formatting or import failure, run the same command without"
+    echo "   --check / --check-only to fix it:"
+    echo "     $BLACK . --exclude=\"test_simulation_files/\" --exclude=\".pal_venv/\""
+    echo "     $ISORT . --skip-glob=\".pal_venv/*\" --skip-glob=\"test_simulation_files/*\""
+    exit 1
+fi
+
 echo "🎉 All Code Quality Checks Passed!"
 echo "=================================="
-echo "✅ Linting (ruff): PASSED"
-echo "✅ Formatting (black): PASSED" 
-echo "✅ Import sorting (isort): PASSED"
-echo "✅ Unit tests: PASSED"
+echo "✅ Linting (ruff) · Formatting (black) · Import sorting (isort) · Unit tests"
 echo ""
 echo "🚀 Your code is ready for commit and GitHub Actions!"
 echo "💡 Remember to add simulator tests if you modified tools"
