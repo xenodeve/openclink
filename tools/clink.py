@@ -25,6 +25,24 @@ from tools.simple.base import SchemaBuilder, SimpleTool
 
 logger = logging.getLogger(__name__)
 
+
+def _provider_name(provider: Any) -> str | None:
+    """Normalise a provider the way `SimpleTool._record_assistant_turn` does.
+
+    clink always passes its client name, a string — but the base accepts a
+    provider *object* and unwraps it, and an override that only handles the
+    string narrows that contract silently. Pydantic then rejects the object at
+    the storage boundary rather than here, which is a long way from the cause
+    (#77).
+    """
+    if provider is None or isinstance(provider, str):
+        return provider
+    try:
+        return provider.get_provider_type().value
+    except AttributeError:
+        return str(provider)
+
+
 MAX_RESPONSE_CHARS = 20_000
 SUMMARY_PATTERN = re.compile(r"<SUMMARY>(.*?)</SUMMARY>", re.IGNORECASE | re.DOTALL)
 
@@ -343,13 +361,10 @@ class CLinkTool(SimpleTool):
         }
 
         if continuation_id:
-            try:
-                self._record_assistant_turn(continuation_id, content, request, model_info)
-                # Totals cover the turns already stored plus this one, which is
-                # not in the thread until the line above ran.
-                metadata.update(self._thread_totals(continuation_id))
-            except Exception:
-                logger.debug("Failed to record assistant turn for continuation %s", continuation_id, exc_info=True)
+            # Totals cover the turns already stored plus this one, which is not
+            # in the thread until it has been recorded — so the two happen
+            # together, and separately enough that one failing is reported.
+            metadata.update(self._record_turn_and_total(continuation_id, content, request, model_info))
 
         continuation_offer = self._create_continuation_offer(request, model_info)
         if continuation_offer:
@@ -462,10 +477,36 @@ class CLinkTool(SimpleTool):
             files=self.get_request_files(request),
             images=self.get_request_images(request),
             tool_name=self.get_name(),
-            model_provider=(model_info or {}).get("provider"),
+            model_provider=_provider_name((model_info or {}).get("provider")),
             model_name=(model_info or {}).get("model_name"),
             model_metadata={"accounting": accounting} if accounting else None,
         )
+
+    def _record_turn_and_total(
+        self, continuation_id: str, content: str, request, model_info: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Store this turn, then total the thread — as two outcomes, not one.
+
+        They shared a single `except` and a `debug` log, so a storage failure
+        removed the cumulative figures from the response with nothing visible at
+        the default level, and left the next call totalling a thread quietly
+        missing a turn (#77). A failure to record is now reported at `warning`
+        and yields no totals rather than wrong ones.
+        """
+        try:
+            self._record_assistant_turn(continuation_id, content, request, model_info)
+        except Exception:
+            logger.warning(
+                "clink could not record its turn for continuation %s; this call is missing from the thread total",
+                continuation_id,
+                exc_info=True,
+            )
+            return {}
+        try:
+            return self._thread_totals(continuation_id)
+        except Exception:
+            logger.warning("clink stored its turn but could not total continuation %s", continuation_id, exc_info=True)
+            return {}
 
     def _thread_totals(self, continuation_id: str) -> dict[str, Any]:
         """Cumulative usage and cost across the thread, beside the per-call figures.
@@ -484,7 +525,15 @@ class CLinkTool(SimpleTool):
             for turn in thread.turns
             if isinstance(getattr(turn, "model_metadata", None), dict) and turn.model_metadata.get("accounting")
         ]
-        return sum_thread_accounts(accounts)
+        totals = sum_thread_accounts(accounts)
+        if totals:
+            # How many turns the figures cover. A thread is cross-tool by design
+            # (`utils/conversation_memory.py`), and only clink turns carry an
+            # account — so "cumulative" over a mixed thread describes a subset.
+            # The count lets a caller compare it against the thread's own length
+            # instead of reading the name as a claim about the whole thread (#77).
+            totals["cumulative_turns"] = len(accounts)
+        return totals
 
     def _call_accounting(self, result: AgentOutput | CLIAgentError) -> dict[str, Any]:
         """What the call requested and what it consumed, omitting what is unknown.
