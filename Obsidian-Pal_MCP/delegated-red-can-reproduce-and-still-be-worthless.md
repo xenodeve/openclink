@@ -37,12 +37,25 @@ cannot name the observation the test makes before you delegate, you are not dele
   *beside* the old, wrong wording passes. `tests/skills/` has `hasnt()` for exactly this; the returned
   file defined it and never called it.
 
-**The vacuous-red family this belongs to** — three variants have now bitten this project:
+**The vacuous-red family this belongs to** — **four** variants have now bitten this project:
 
 1. an assertion that passes because the thing under test is *absent* (a missing path echoed by `sh`);
 2. a red that is really a **collection/import error**, which proves nothing about behaviour;
-3. this one — a red that is real, reproduces, and tests only that a document contains a sentence
-   somebody just made up.
+3. a red that is real, reproduces, and tests only that a document contains a sentence somebody just
+   made up;
+4. a **substring false-positive** — `assert "--check" in script`, where the script contains
+   `--check-only` for a *different* tool. The assertion passes while the thing it names is absent.
+
+**Variant 4 was mine, not a worker's, and mutation is the only reason it was found.** Written on
+2026-08-05 for `#63`: the gate had to stop running `black` in write mode, the test asserted the flag,
+and it would have passed with `black` still rewriting the tree because `isort`'s `--check-only`
+contains the string. Reading it twice did not reveal it; reverting `black` and re-running did.
+
+**The general form: a `has X` assertion is only as strong as X is unambiguous in the file.** Anchor on
+the whole invocation or a phrase containing a space — never on a flag, a bare word, or a path
+fragment that another line can satisfy. This is the same rule the prose-leaf failure teaches from the
+other direction, and `xeno-skills`' `tests/skills/` documents its own version of the trap.
 
 Related: [[absence-must-not-conflate-two-facts]] — found by the same kind of read-the-assertion check,
-on our own code rather than a worker's.
+on our own code rather than a worker's. [[gh-and-shell-traps-on-this-box]] — the other class of
+mistake that recurs across sessions here.

@@ -16,5 +16,6 @@ what shipped + how it was validated → `DONE.md`; fork-specific changes → `CH
 - [[ci-unavailable-billing-blocked]] — GitHub Actions has never run here (billing-blocked account) even though every workflow reads `active`; the PR gate is local evidence, not a green check
 - [[absence-must-not-conflate-two-facts]] — in the clink accounting block a marker means a fact about the CLI or the call; a fact about PAL's own config stays silent, or it lands on every response
 - [[delegated-red-can-reproduce-and-still-be-worthless]] — a subagent's failing test can reproduce exactly and still test nothing; read what the assertion is anchored to, and treat "verifiable leaf" as *observable behaviour*
+- [[gh-and-shell-traps-on-this-box]] — always `gh --body-file` (never `--body`), `gh` is off the Bash PATH, `.venv` has no `pip`, and PowerShell `Set-Content` corrupts source encoding
 
 Unresolved `[[wikilinks]]` are memories worth writing later, not errors.
