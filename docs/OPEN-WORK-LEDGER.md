@@ -10,6 +10,16 @@ protocol in `docs/agents/` and the entry map (`using-t4`).
 
 ## Active
 
+### ✅ The #36 hooks layer is now pinned by tests (2026-08-09, #83)
+
+The #36 layer shipped with manual demonstrations and **zero committed tests**. Retroactive TDD landed as PR #84
+(merged, `d08fca1`, issue #83 closed): `tests/test_t4_hooks_layer.py` — 17 tests at the config seam
+(marker/verify/settings/permissions/gitattributes) and the gate-decision seam (real `t4-gate` run against
+PreToolUse payloads in a temp sandbox). **Every test falsified by mutation** (M1–M12, each confirmed red then
+reverted) — M12 caught a weak assertion (the word `using-t4` is in the fallback directive too), fixed to a
+snapshot-only ASCII marker. Suite 1050 → 1067. The known-unguarded forms (quoted absolute-path `gh`,
+`mcp__github__*`) are deliberately unpinned pending `xeno-skills#83/#84`.
+
 ### ✅ The T4 enforcement layer is real as of 2026-08-09 (#36)
 
 Slice 2 shipped as PR #82 (merged, `4aef920`). `.claude/t4.json` (verify = fast unit suite, timed 38s), the

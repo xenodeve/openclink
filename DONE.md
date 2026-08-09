@@ -3,6 +3,36 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-09 — the hooks layer finally has tests (retroactive TDD, #83, PR #84)
+
+The #36 layer (earlier today) shipped with manual demonstrations and zero committed tests — a future edit could
+silently break the gate. Retroactive TDD over it, merged at `d08fca1`.
+
+**Validated** — the repo's #25 rule held: **every test was falsified by mutation, not by intent.** Twelve
+mutations (M1–M12), each applied, each confirmed to flip its target test red, each reverted.
+
+- **`tests/test_t4_hooks_layer.py`** — 17 tests at two seams. Config seam: `.claude/t4.json` valid JSON with
+  armed `"verify"` targeting the fast unit suite (pinned *not* to `code_quality_checks.sh`, which aborts on the
+  `.venv`/`.pal_venv` split); `settings.json` registers the three hooks with `startup|clear|compact` and
+  preserves `permissions`; hook files + snapshot exist; `.gitattributes` LF pin. Gate seam: the *real* `t4-gate`
+  run against PreToolUse payloads in a temp-dir sandbox (so no test runs the 38s verify): deny bare `gh pr
+  create`; allow with ref in body/`--body-file`; deny dangerous git; allow reset `--hard` under `"afk": true`;
+  `ask` on merge with passing verify, `deny` with failing verify; marker-guard silence; command-position
+  anchoring; session-start snapshot injection.
+- **M12 caught a real defect in the test, not the gate.** The first assertion checked the word `using-t4` in the
+  injected context — but the fallback directive contains that word too, so breaking the snapshot fallback passed.
+  Now asserts a snapshot-only marker (`Re-route at every phase boundary`). The mutation step is the only reason
+  this was found.
+- **Environment realities recorded in the file** — subprocess output decodes as cp1252 on this box (mojibake'd
+  em-dashes/arrows), so assertions are pure-ASCII; the body-file test passes a forward-slash path because bash
+  `[ -f ]` can't stat `C:\...` backslash paths.
+- **Known-unguarded forms deliberately unpinned** — quoted absolute-path `gh` and `mcp__github__*` stay
+  unpinned pending `xeno-skills#83/#84`; pinning them as "allowed" would claim enforcement that does not exist.
+
+**Gates:** `/simplify` ran · `/code-review` ran · `/scrutinize` ran · `/security-review` n-a (test-only diff:
+`git diff --name-only` = one `tests/` file) · `/verify` ran (**1067 passed**, 4 skipped, 16 deselected — was
+1050). `ruff`/`black`/`isort` clean.
+
 ## 2026-08-09 — the enforcement layer the docs promised (#36, PR #82)
 
 Slice 2 of the T4 retrofit: the repo had the prose and no gate, so every rule described as *mechanically
