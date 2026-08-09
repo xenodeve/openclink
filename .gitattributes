@@ -10,6 +10,9 @@ run-server text eol=lf
 code_quality_checks text eol=lf
 run_integration_tests text eol=lf
 
+# T4 hook scripts (extensionless bash; CRLF would break them)
+.claude/hooks/* text eol=lf
+
 # General text files
 *.md text
 *.txt text
