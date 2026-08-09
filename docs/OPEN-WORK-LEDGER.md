@@ -10,6 +10,17 @@ protocol in `docs/agents/` and the entry map (`using-t4`).
 
 ## Active
 
+### ✅ The T4 enforcement layer is real as of 2026-08-09 (#36)
+
+Slice 2 shipped as PR #82 (merged, `4aef920`). `.claude/t4.json` (verify = fast unit suite, timed 38s), the
+byte-identical hook scripts + `run-hook.cmd`, `hooks` merged into `.claude/settings.json` (permissions block
+preserved), `using-t4.snapshot.md`, and a `.gitattributes` eol=lf pin for the extensionless hooks. Gate
+demonstrated firing: bare `gh pr create` no-issue → deny; dangerous git → deny; `gh pr merge` → ask after
+running verify itself. **Two forms remain known-unguarded** (quoted absolute-path `gh` and
+`mcp__github__*`), recorded rather than claimed — the fix is upstream (`xeno-skills#83/#84`), not a fork edit.
+The `"verify"` value is `.venv`-specific because that is what this checkout carries; the two-venv ledger item
+below is why the full `code_quality_checks.sh` is not wired.
+
 ### The #21 cost line is built end to end (2026-08-05) — one decision blocks the last slice
 
 `#23 → #24 → #25` have all landed. Every configured client now either maps its CLI's usage onto the
@@ -159,7 +170,7 @@ Opened by this batch, none of it started:
 
 | # | What | Why it is not a commit |
 |---|---|---|
-| #36 | retrofit the T4 enforcement layer — this repo has the docs but **no `.claude/hooks/`, no `t4.json`, no `hooks` key** | slice 1 (CLAUDE.md standing defaults) shipped as PR #38; slice 2 open |
+| #36 | retrofit the T4 enforcement layer — this repo has the docs but **no `.claude/hooks/`, no `t4.json`, no `hooks` key** | ✅ shipped 2026-08-09 (PR #82, `4aef920`) — see the top of this ledger |
 | #37 | parser `raw` / `raw_events` metadata reaches the caller uncapped on both paths | predates #13, outside its finding |
 | #39 | **the model catalog cannot be enforced from argv** — codex takes a model from `~/.codex/config.toml` and `--profile` | closing it is a public-contract change; `ready-for-human` |
 | #41 | a failed run reports no model accounting; `"unknown"` is truthy and unlike its neighbour's absence convention | two small contract questions |

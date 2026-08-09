@@ -3,6 +3,43 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-09 — the enforcement layer the docs promised (#36, PR #82)
+
+Slice 2 of the T4 retrofit: the repo had the prose and no gate, so every rule described as *mechanically
+enforced* was fiction. Now it is not. Shipped on `main` at `4aef920`.
+
+**Validated** — every acceptance criterion carried its evidence into the closing comment, and the honest-gap
+rule held: **the two forms this machine's agent actually uses were measured and recorded as unguarded, not
+claimed as enforced.**
+
+- **`.claude/t4.json`** — marker + `"verify"` = `.venv/Scripts/python.exe -m pytest tests/ -q -m "not
+  integration"`, **timed at 38s (1050 passed, 4 skipped, 16 deselected)**. The full `code_quality_checks.sh`
+  was not wired: it aborts on this box because the checkout has `.venv` and the script demands `.pal_venv`
+  (the two-venv ledger item) — the issue's own guidance says wire the fast unit suite and leave the
+  formatters to `/simplify`.
+- **Hook scripts** — copied **byte-identical** to the canonical `t4-project-bootstrap/references/hooks/`
+  copies (SHA-256 verified), incl. `run-hook.cmd`. `using-t4.snapshot.md` is SHA-256-identical to the
+  current `using-t4` SKILL.md.
+- **`.claude/settings.json`** — `hooks` merged in; the pre-existing `permissions` block left untouched;
+  session-start matcher `startup|clear|compact`.
+- **`.gitattributes`** — `.claude/hooks/*` pinned `text eol=lf`. **The issue did not ask for this file, and
+  it is why the hooks survive this repo:** `core.autocrlf=true` would otherwise check the extensionless bash
+  scripts out with CRLF (`\r: command not found`). Added because the ACs were untestable without it.
+- **Gate demonstrably fires** — fed real PreToolUse payloads through both `bash .claude/hooks/t4-gate` and
+  the `run-hook.cmd` launcher `settings.json` actually invokes: bare `gh pr create` no-issue → **deny**;
+  `git reset --hard` / `git clean -f` → **deny**; `gh pr merge` → **ask** (and it ran the configured
+  `"verify"` itself first, so the ship gate is real, not claimed); `git commit -m "...pr create..."` →
+  silence (command-position anchoring holds).
+- **Known-unguarded, recorded** — `"C:\Program Files\GitHub CLI\gh.exe" pr create …` (quoted absolute path)
+  and `mcp__github__create_pull_request` are **silent**. These were measured, pasted in the PR, and left as
+  upstream work (`xeno-skills#83/#84`) because the hooks must stay byte-identical to the plugin's copies.
+  Ticking AC-7 without stating this would have recorded enforcement that does not exist — the exact failure
+  the issue was filed against.
+
+**Gates:** `/simplify` ran · `/code-review` + `/scrutinize` ran (all ACs traced; the gap-recording is itself
+a scrutinize result) · `/security-review` n-a (`git diff --name-only` is `.claude/*` + `.gitattributes`
+only) · `/verify` ran (wired command passed; gate executed it live on `gh pr merge`).
+
 ## 2026-08-05 — the cost line: usage normalised for every client, then priced (#54, #49, #24, #25)
 
 Four merged (PRs #53, #55, #57, #58), two opened (#56, and #54's own correction). The thread joining
