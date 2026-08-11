@@ -78,7 +78,7 @@ You can make your own custom roles in `conf/cli_clients/` or tweak any of the sh
 ## Tool Parameters
 
 - `prompt`: Your question or task for the external CLI (required)
-- `cli_name`: Which CLI to use - `gemini` (default), `claude`, `codex`, `antigravity` (fork addition, see below), or add your own in `conf/cli_clients/`. **Note:** the standalone Gemini CLI was retired by Google in mid-2026; its successor is `antigravity` (`agy`) — prefer that for Google models.
+- `cli_name`: Which CLI to use - `gemini` (default), `claude`, `codex`, `antigravity`, `cursor`, `opencode` (the last three are fork additions, see below), or add your own in `conf/cli_clients/`. **Note:** the standalone Gemini CLI was retired by Google in mid-2026; its successor is `antigravity` (`agy`) — prefer that for Google models.
 - `role`: Preset role - `default`, `planner`, `codereviewer` (default: `default`)
 - `files`: Optional file paths for context (references only, CLI opens files itself)
 - `images`: Optional image paths for visual context
@@ -152,6 +152,8 @@ Clink configurations live in `conf/cli_clients/`. We ship presets for the suppor
 - `claude.json` – runs `claude --print --output-format json --permission-mode acceptEdits --model sonnet`
 - `codex.json` – runs `codex exec --json --dangerously-bypass-approvals-and-sandbox`
 - `antigravity.json` – **fork addition** – runs Google's Antigravity CLI (`agy`, the Gemini CLI's 2026 successor). See [CHANGES-FORK.md](../../CHANGES-FORK.md) for how it works and why it needs a Windows ConPTY.
+- `cursor.json` – **fork addition** – runs Cursor's headless `cursor-agent -p`, the only route to xAI's Grok, Moonshot's Kimi and Zhipu's GLM. See [CHANGES-FORK.md](../../CHANGES-FORK.md) for the Windows `SHELL` gotcha that silently makes it text-only.
+- `opencode.json` – **fork addition** – runs `opencode run --format json`. The only preset whose CLI reports the **cost of its own call**, and the only route to the `opencode-go` provider. `--auto` is deliberately not passed; declare a `permission` block in your own `opencode.json` instead.
 - `claude-9arm.json.example` – **fork addition** – template showing how to point the `claude` runner at an alternate OpenAI-compatible model gateway instead of Anthropic's own models. Copy to `claude-9arm.json`, fill in the placeholders, and it becomes a new `cli_name` you can clink to.
 
 > **CAUTION**: These flags intentionally bypass each CLI's safety prompts so they can edit files or launch tools autonomously via MCP. Only enable them in trusted sandboxes and tailor role prompts or CLI configs if you need more guardrails.

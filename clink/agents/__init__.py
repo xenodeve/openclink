@@ -10,6 +10,7 @@ from .claude import ClaudeAgent
 from .codex import CodexAgent
 from .cursor import CursorAgent
 from .gemini import GeminiAgent
+from .opencode import OpenCodeAgent
 
 _AGENTS: dict[str, type[BaseCLIAgent]] = {
     "gemini": GeminiAgent,
@@ -17,6 +18,7 @@ _AGENTS: dict[str, type[BaseCLIAgent]] = {
     "claude": ClaudeAgent,
     "antigravity": AntigravityAgent,
     "cursor": CursorAgent,
+    "opencode": OpenCodeAgent,
 }
 
 

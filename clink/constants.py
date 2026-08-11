@@ -69,4 +69,24 @@ INTERNAL_DEFAULTS: dict[str, CLIInternalDefaults] = {
         # cursor bakes reasoning effort into the model name (e.g. `-high`/`-xhigh`).
         runner=None,
     ),
+    "opencode": CLIInternalDefaults(
+        # `opencode run <message> --format json` writes one JSON event per line;
+        # the reply is `part.text` on `type:"text"`. Close to codex's JSONL but a
+        # different shape, so it gets its own parser (see clink/parsers/opencode.py).
+        #
+        # `--auto` is deliberately NOT passed. Verified 2026-08-11 against
+        # opencode 1.18.15: a real `run` call without it exits 0. Its own docs say
+        # most permissions already default to `allow`, and that `--auto` only
+        # flips what would otherwise ask — so passing it buys little and gives up
+        # the ability to deny anything specific. A declared `permission` block in
+        # the user's `opencode.json` is the reviewable instrument; see #85.
+        parser="opencode_jsonl",
+        additional_args=["run", "--format", "json"],
+        default_role_prompt="systemprompts/clink/default.txt",
+        # No dedicated runner: opencode takes `-m provider/model`, which the base
+        # already emits as `--model`. Its reasoning effort is a separate
+        # `--variant` flag whose values are per-provider and unverified, so no
+        # call sets it yet.
+        runner=None,
+    ),
 }

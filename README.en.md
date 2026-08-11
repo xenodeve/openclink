@@ -5,6 +5,7 @@
 > **This is a fork** of [BeehiveInnovations/pal-mcp-server](https://github.com/BeehiveInnovations/pal-mcp-server) (unmaintained since ~mid-2026), adding:
 > - **`antigravity`** — clink agent for Google's post-Gemini-CLI tool `agy`, driven via a Windows ConPTY
 > - **`cursor`** — clink agent for Cursor's `cursor-agent`, the only route to model families no other client carries (xAI's Grok, Moonshot's Kimi, Zhipu's GLM, Composer)
+> - **`opencode`** — clink agent for the [OpenCode](https://opencode.ai) CLI · the only client that **reports the price of its own call** (`part.cost`), and the only route to the `opencode-go` provider (deepseek, GLM, Kimi, MiniMax, Qwen, Grok)
 > - **`claude-9arm`** — example config pointing Claude Code CLI at an alternate model gateway
 > - **per-call `model` / `reasoning_effort` override** for clink (Codex `-m` + effort; others `--model`)
 > - **bug fixes** — `images` was accepted and silently discarded (no runner ever consumed it) and now raises with the approach that does work; `mcp` is pinned `<2`, since 2.x drops `Server.list_tools` and the server dies at import

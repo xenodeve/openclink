@@ -24,6 +24,9 @@ _KNOWN_LOCATIONS: dict[str, list[str]] = {
     "claude": [r"%APPDATA%\npm\claude.cmd", r"~\.local\bin\claude.exe"],
     "codex": [r"%APPDATA%\npm\codex.cmd"],
     "gemini": [r"%APPDATA%\npm\gemini.cmd"],
+    # Installed by bun, which does not put its bin dir on PATH — verified absent
+    # from PATH on this machine 2026-08-11 while the binary was present.
+    "opencode": [r"~\.bun\bin\opencode.exe"],
 }
 
 # Glob candidates (e.g. winget package dirs carry a version/hash suffix).

@@ -1,6 +1,6 @@
 # Fork changes
 
-This is a fork of [BeehiveInnovations/pal-mcp-server](https://github.com/BeehiveInnovations/pal-mcp-server) (Apache-2.0), which has been **unmaintained since ~mid-2026**. Everything from upstream is unchanged except for the `clink` changes described below: three new agents (`antigravity`, `claude-9arm`, `cursor`) plus a per-call `model` / `reasoning_effort` override.
+This is a fork of [BeehiveInnovations/pal-mcp-server](https://github.com/BeehiveInnovations/pal-mcp-server) (Apache-2.0), which has been **unmaintained since ~mid-2026**. Everything from upstream is unchanged except for the `clink` changes described below: four new agents (`antigravity`, `claude-9arm`, `cursor`, `opencode`) plus a per-call `model` / `reasoning_effort` override.
 
 **One of those changes is not additive — see [Breaking changes](#breaking-changes) below.** `model` is now **required**; it used to be optional and fall through to the client's configured default.
 
@@ -91,6 +91,49 @@ The reason to add it: `cursor-agent --list-models` exposes model families no oth
 Install: see Cursor's CLI install docs, then `clink cli_name="cursor"` works out of the box.
 
 **Windows path gotcha.** A config's `command` is passed through `shlex.split()` in POSIX mode, which treats `\` as an escape character — so an absolute Windows path written with backslashes (`C:\\Users\\me\\...` in JSON) is silently mangled into `C:Usersme...` and fails with *"Executable not found in PATH"*. If the binary isn't on `PATH` and you must hardcode a path, write it with **forward slashes** (`C:/Users/me/AppData/Local/cursor-agent/cursor-agent.cmd`). This applies to every clink client, not just this one.
+
+### `opencode` — the OpenCode CLI as a clink agent
+
+[OpenCode](https://opencode.ai) runs headless as `opencode run <message> --format json`, emitting one
+JSON event per line. Wiring (issue #85): a `constants.py` entry, `conf/cli_clients/opencode.json`, a
+`_KNOWN_LOCATIONS` entry, plus a parser and an agent class.
+
+**Why it needs its own parser rather than reusing `codex_jsonl`.** The shapes are close and not the
+same: codex nests the reply under `item`, keys usage at the event root, and reports no cost at all.
+OpenCode puts the reply in `part.text` on `type:"text"`, and the account in `part.tokens` on
+`type:"step_finish"` — plus a `part.cost` that no other client provides.
+
+**It reports the price of its own call.** `part.cost` arrives per step, so PAL needs no rate card to
+know what a call cost. That matters because PAL's own pricing layer is currently unreachable (#77) —
+no bundled config declares a `rate_card`, so `price_call` returns `no_rate_card` for every client.
+OpenCode hands over the number regardless; today it is published in parser metadata while
+`AgentOutput.cost` still reads `CostUnavailable(no_rate_card)`. Reconciling the two is #77's call.
+
+**Per-step accounting, which is the trap.** An agentic run closes a `step_finish` per tool round-trip,
+and each one reports only *its own* spend. Taking the last — the obvious reading, and what the first
+version did — reports the cheap closing step and discards the expensive one that did the work:
+measured on a real two-step file-read at **1,053 input tokens against 102,535 actually spent**, and
+**0.000248 against 0.007392**. It reads as a plausible small number rather than as an error, and no
+single-step fixture can fail that way. The parser accumulates; a single-step run sums a set of one.
+
+**Cache classes are reported and deliberately unmapped.** `tokens.cache.write` has no field on the
+normalised account at all (#56), and `tokens.cache.read` has one — `cached_input_tokens` — but sits a
+level down, which the base's flat field map cannot reach. Both stay absent rather than being folded
+somewhere plausible: an incomplete account is recoverable, a wrong one is not.
+
+**`--auto` is deliberately not passed.** OpenCode's own help calls it *"auto-approve permissions that
+are not explicitly denied (dangerous!)"*, and its docs note that most permissions already default to
+`allow` and that `--auto` only flips what would otherwise ask. A verified `run` call without it exits
+0 and does use its tools. Declare a `permission` block in your own `opencode.json` if you need to
+loosen or tighten it — that is reviewable in a file, where a flag buried in `additional_args` is not.
+
+**Discovery.** OpenCode installs via bun to `~/.bun/bin`, which bun does not add to `PATH` — verified
+absent from `PATH` on the development machine while the binary was present. `_KNOWN_LOCATIONS` covers
+it, so `clink cli_name="opencode"` resolves with zero setup.
+
+**Quota note, not a code concern.** The `opencode-go` provider meters in **dollars** (5-hour $12,
+weekly $30, monthly $60), and its models are not interchangeable in cost — `deepseek-v4-flash` buys
+roughly 323× the work of `kimi-k3` from the same allowance. Pick the model deliberately.
 
 ### `images` now fails loudly instead of being silently dropped
 
