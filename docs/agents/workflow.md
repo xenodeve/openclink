@@ -47,7 +47,7 @@ the **agent-enforcement layer**: the skills that decide how a master agent uses 
 | **#21** report the cost of every call — usage, resolved model/effort, credits | **#73** route on measured cost — refresh the figures, name every scale, contract-test them |
 | — | **#72** research: the capability matrix that sources #73's figures |
 | **#88** a `skills` parameter — PAL guarantees the skill floor the master is supposed to hand over | **#163** split the handoff: the floor becomes PAL's, the task-specific skill stays the master's, and `skills_added_by_default` is the master's own omission rate reported back to it |
-| — | **#164** `clink-ultracode` — the ultracode fan-out shape for clink, carrying its own economics because a clink call spends a subscription lane rather than a token pool |
+| **#89** the ultracode environment (epic) — `clink_phase`, structured returns, an on-disk journal, per-lane caps, and the three enforcement tiers | **#164** `clink-ultracode` — the phase shape, the economics, and the stopping rule; the skill that drives #89 |
 
 **The rule: when you change one side, check the other in the same session.** Specifically —
 
