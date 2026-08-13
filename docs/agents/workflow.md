@@ -46,6 +46,8 @@ the **agent-enforcement layer**: the skills that decide how a master agent uses 
 | **#20** subagent lifetime — no fixed deadline, process-tree ownership, cancel/reap | **#74** master-agent pre-delegation checklist — acceptance, feasibility, containment, failure semantics, verification |
 | **#21** report the cost of every call — usage, resolved model/effort, credits | **#73** route on measured cost — refresh the figures, name every scale, contract-test them |
 | — | **#72** research: the capability matrix that sources #73's figures |
+| **#88** a `skills` parameter — PAL guarantees the skill floor the master is supposed to hand over | **#163** split the handoff: the floor becomes PAL's, the task-specific skill stays the master's, and `skills_added_by_default` is the master's own omission rate reported back to it |
+| — | **#164** `clink-ultracode` — the ultracode fan-out shape for clink, carrying its own economics because a clink call spends a subscription lane rather than a token pool |
 
 **The rule: when you change one side, check the other in the same session.** Specifically —
 
