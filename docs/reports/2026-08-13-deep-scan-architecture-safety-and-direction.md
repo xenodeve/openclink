@@ -153,7 +153,16 @@ Three turns per exchange, so the 50-turn cap is consumed in about sixteen. **Any
 
 `systemprompts/` is 2,355 lines whose content reaches a model on every call, and round 3 was the first time any of it was read.
 
-**`PLANNER_PROMPT`, `TRACER_PROMPT` and `DOCGEN_PROMPT` — 30,104 bytes, about 24% of the prompt corpus — reach no model.** Each is returned only by `get_system_prompt()`, read on a `WorkflowTool` only inside `_call_expert_analysis`, gated on `requires_expert_analysis()`. Verified: all three return `False`. `DOCGEN_PROMPT` is the second-largest prompt in the repo and the only place the Objective-C/Swift `///` rule and the Big-O requirement are written down. **Editing any of the three changes nothing** — those tools' behaviour lives entirely in the `next_steps` strings inside the tool bodies.
+**`PLANNER_PROMPT`, `TRACER_PROMPT` and `DOCGEN_PROMPT` reach no model.** Each is returned only by `get_system_prompt()`, read on a `WorkflowTool` only inside `_call_expert_analysis`, gated on `requires_expert_analysis()`. Reproduced by instantiating all three and calling both methods:
+
+```
+planner  requires_expert_analysis() = False   system prompt bytes =  6,394
+tracer   requires_expert_analysis() = False   system prompt bytes =  6,788
+docgen   requires_expert_analysis() = False   system prompt bytes = 16,697
+                                                          total    29,879
+```
+
+**29,879 bytes of assembled system prompt, about a quarter of the corpus, delivered to nothing.** `DOCGEN_PROMPT` is the second-largest prompt in the repo and the only place the Objective-C/Swift `///` rule and the Big-O requirement are written down. **Editing any of the three changes nothing** — those tools' behaviour lives entirely in the `next_steps` strings inside the tool bodies.
 
 **Six statuses the prompts declare MANDATORY have no consumer.** `full_codereview_required`, `focused_review_required`, `test_sample_needed`, `more_tests_required`, `no_bug_found`, `more_refactor_required` — the workflow layer promotes exactly three statuses and none is these. A model correctly signalling *"this diff is too large to review honestly"* or *"there is no bug here"* has that signal buried inside the analysis blob, so **a codereview of an oversized diff returns a confident partial review presented as complete.** `SPECIAL_STATUS_MODELS`, the registry built to validate these, is imported by `base_tool.py` and never referenced again. Symmetrically, the two statuses the layer *does* handle — `investigation_paused`, `refactoring_paused` — are requested by no prompt.
 
@@ -179,7 +188,7 @@ The largest class round 3 found, and the one no test can catch. Each verified.
 
 **Schemas that disagree with their own server.** `planner` and `tracer` mark `model` as required while `requires_model()` is `False`, so every call must invent a value the server discards — and a strict host rejects calls that omit it. `docgen` marks six server-defaulted fields as required. `tracer` marks two step-1-only fields as globally required. `cli_name` is in clink's `required` array while the tool defaults it. `clink` advertises `images` and then refuses every call that uses it. `consensus` declares `minItems: 2` while its validator checks only truthiness, so a one-model "consensus" is accepted end to end.
 
-**A total panel failure reports success.** When every model in a `consensus` panel fails, the tool still emits `consensus_workflow_complete`, `consensus_complete: true`, and a **hardcoded `consensus_confidence: "high"`**, listing the failed models under `models_consulted`. An orchestrator cannot detect a dead panel from the envelope.
+**A total panel failure reports success.** When every model in a `consensus` panel fails, the tool still emits `consensus_workflow_complete`, `consensus_complete: true`, and a **hardcoded `consensus_confidence: "high"`**, listing the failed models under `models_consulted`. An orchestrator cannot detect a dead panel from the envelope. Reproduced: the literal is hardcoded at **two** sites, `tools/consensus.py:399` and `:512`, so a fix must change both.
 
 **And there is no response contract to program against.** Seven sites hand-build a wire response; `apilookup` and `challenge` emit statuses absent from `ToolOutput`'s `Literal` with different field names; `tools/models.py` is **86% dead** (26 of 28 public names have zero production references), so anyone extending the envelope reads a contract that nothing consumes.
 
@@ -270,6 +279,35 @@ Against that:
 - **`code_quality_checks.ps1` still runs all three formatters in write mode**, aborts on first failure, passes `-x` to pytest, and with `-SkipTests -SkipLinting` prints "All Code Quality Checks Passed!" and exits 0 having run nothing. No test covers it.
 - **`.coveragerc` measures a package that does not exist** (`source = gemini_server`) and `pytest-cov` is neither declared nor installed. **Nobody has measured coverage on this repo.**
 - **The simulator harness cannot find this repo's virtualenv on Windows** — both `_get_python_path()` implementations probe only POSIX layouts. *(Refuter-verified by execution.)*
+
+### The coverage the report could not otherwise supply
+
+Nobody has ever measured coverage here (`.coveragerc` points at a package that does not exist and `pytest-cov` is not installed), so this is a **proxy**: for each of 28 anchors a finding in this report rests on, does **any** of the 172 files under `tests/` or `simulator_tests/` so much as mention the symbol? Executed against the repo:
+
+```
+anchors mentioned by any test: 18 / 28
+```
+
+**Read it as an upper bound, not a measure** — a mention may be a mock, a name in a docstring, or an assertion on wording. The true figure is at most 18/28 and probably well below it.
+
+**The pattern is the finding.** Every anchor with *no* mention at all clusters in one place:
+
+```
+clink.py::get_annotations                 readOnlyHint True on a mutating tool   -- NONE --
+clink.py::_agent_capabilities_guidance    every CLI told it is Gemini            -- NONE --
+clink.py::_apply_output_limit             summary discards the body              -- NONE --
+clink/agents/base.py::_build_environment  full os.environ to the child           -- NONE --
+consensus.py::consensus_confidence        dead panel reports high confidence     -- NONE --
+chat.py::_persist_generated_code_block    writes into a caller-named directory   -- NONE --
+simple/base.py::prepare_chat_style_prompt websearch instruction discarded        -- NONE --
+simple/base.py::set_request_files         catches the wrong exception            -- NONE --
+thinkdeep.py::get_expert_analysis_instr…  misnamed override, dead                -- NONE --
+openai_compatible.py::_configure_timeouts CUSTOM_* applies to every provider     -- NONE --
+```
+
+Meanwhile every upstream-inherited area a finding touches — path traversal, conversation memory, model restrictions, auto-mode selection, retry classification, token usage — **is** mentioned by tests, several of them by four or more files.
+
+**So the coverage gap maps almost exactly onto the fork's own additions.** The four most consequential clink anchors in this report — the annotation, the environment, the identity string and the output limiter — are named by no test at all. That is not an accident of sampling: it is what a feature built under time pressure on top of a well-tested upstream looks like, and it is why §14's Tier 4 is a tier rather than a footnote.
 
 ---
 
@@ -364,11 +402,13 @@ Named honestly, because an unstated boundary reads as coverage. Roughly **4,000 
 - **The Docker threat model** beyond confirming no ports are published.
 - **`mcp` 2.x itself** — no 2.x package is installed and its migration path was not fetched.
 
-**The highest-value remaining target is the test bodies**, not for more findings but for the one number this report cannot supply: what fraction of the behaviour above is pinned by anything.
+**The highest-value remaining target is no longer the test bodies** — §11's proxy answers the shape of that question (18 of 28 anchors mentioned by any test, and every clink anchor mentioned by none). **It is executing a real delegation.** By this repository's own standard — *"verify clink changes against a real CLI; a `_build_command` unit test doesn't prove the CLI honored the flags"* — every clink finding here is unverified at the level that matters, and that standard exists because a CLI silently ignoring a correctly-built command is exactly the bug that produced ADR 0002.
 
 ---
 
 ## 17. Evidence register
+
+**AUTHOR-REPRODUCED** — the five highest-consequence round-3 claims were re-run directly rather than trusted from a subagent, because a subagent's report is a hypothesis until checked. All five held, and two produced corrections now folded in above: (1) the conversation-history guard — the emitted header does **not** contain the looked-for substring, so the guard never matches; (2) `execute_workflow` contains no `self.work_history = []` reset and `server.TOOLS["debug"]` is a module-level singleton; (3) `debug` accepts `confidence="CERTAIN"` with annotation `Optional[str]` while `refactor` raises `ValidationError` — the enum is enforced in exactly one of them; (4) `consensus_confidence: "high"` is hardcoded at **two** sites, not one; (5) the three unreachable system prompts total **29,879** assembled bytes. The coverage proxy in §11 (18 of 28 anchors mentioned by any test) was likewise executed by the author.
 
 **VERIFIED** — read in code at `2aa6e49`, or produced by a command whose output was read: every `file:line` citation; the environment-inheritance chain (read **and** executed); the storage backend's in-memory singleton; the TTL and sweeper intervals (executed); the `readOnlyHint` literal; the hardcoded Gemini identity string; the `shlex` path corruption (demonstrated with the repo's own interpreter); the Windows path probe (executed); the `ast` newline census (executed); the allowlist reroute to DIAL (executed); the conversation-doubling character counts (executed); the `.env` import-time load; the log contents; the unit-suite counts; the venv layout; the absence of `uv.lock`, of a `rate_card` in any config, and of an `upstream` remote in any config scope.
 
