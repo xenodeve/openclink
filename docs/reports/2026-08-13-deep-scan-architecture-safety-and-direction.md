@@ -1,6 +1,8 @@
 # Deep scan of the fork — architecture, the safety boundary, and where it can go (2026-08-13)
 
-**Method:** twelve independent readers over twelve subsystems, each load-bearing claim then handed to a separate agent whose instructions were to *break* it. 380 claims produced; 27 reached a refuter, of which **11 were refuted or materially corrected and 16 survived**. Read at `2aa6e49`, branch `feat/85-opencode-client`.
+**Method:** three rounds. Rounds 1–2 sent twelve independent readers over twelve subsystems and handed each load-bearing claim to a separate agent instructed to *break* it — 380 claims, of which 27 reached a refuter and **11 were refuted or materially corrected**. Round 3 (§10c) sent eight readers over the ~21,000 lines the first two never opened, with **no refuter stage**: verification was done afterwards in the main loop against named claims, which cost almost nothing and produced the sharpest numbers in this report. **605 claims in total**, read at `2aa6e49`, branch `feat/85-opencode-client`.
+
+**Coverage:** roughly 26,000 of the 30,238 lines of production Python have now been read. What remains is named with line counts in §10b and §11.
 
 **Scope note, because it changes how to read this:** this is a **code scan**. Issue and PR numbers appear only as annotations so that whoever picks a finding up can find its tracker context — no finding here was derived from reading the tracker, and none should be actioned on the strength of an issue number alone.
 
@@ -269,6 +271,105 @@ Deeply read: `clink/` (2,385), `utils/conversation_memory.py` (1,108), `utils/se
 **Still unread, with line counts, so the next pass can be scoped rather than guessed:** `systemprompts/` (2,355 — the prompts every tool actually sends, entirely unread); the per-tool bodies under `tools/` outside the shared machinery (roughly 10,000 of 15,709); `providers/` outside the retry/timeout paths (roughly 3,800 of 4,560, including the whole of `gemini.py`, `dial.py`, `azure_openai.py`, `openrouter.py`); `utils/file_utils.py` above line 421, `utils/model_restrictions.py`, `utils/client_info.py`, `utils/file_types.py` (roughly 1,300); and the test bodies.
 
 **The highest-value of those is `systemprompts/`**, because it is the only unread area whose content reaches a model on every single call and is therefore load-bearing for output quality rather than for correctness of the plumbing.
+
+---
+
+## 10c. Round 3 — the ~21,000 lines the first two rounds never opened
+
+**Method:** eight readers, one per unread surface, no refuter stage — verification was done afterwards in the main loop against specific claims, which costs almost nothing and is where the sharpest numbers below came from. All eight returned; **225 claims, 1.51 M tokens.** Surfaces: `systemprompts/` (2,355), `tools/shared/` (1,606+), `tools/simple/base.py` (1,011), `tools/workflow/` (2,225), `providers/` core and per-vendor (4,560), and the nineteen tool bodies (~10,000).
+
+The first two rounds found defects in the *plumbing*. This round found them in the **contract** — what a tool advertises versus what it does, and what a prompt instructs versus what any code consumes. That class is invisible to every test in the repository, because nothing fails.
+
+### The prompt layer: a quarter of it is never sent to anything
+
+`PLANNER_PROMPT`, `TRACER_PROMPT` and `DOCGEN_PROMPT` — **30,104 bytes, roughly 24% of the prompt corpus** — reach no model. Each is returned only by `get_system_prompt()`, which on a `WorkflowTool` is read only inside `_call_expert_analysis`, which is gated on `requires_expert_analysis()`. Verified directly: all three tools return `False`. `DOCGEN_PROMPT` is the second-largest prompt in the repo and the only place the Objective-C/Swift `///` rule and the Big-O requirement are written down. Editing any of the three changes nothing; those tools' behaviour lives entirely in the `next_steps` strings inside the tool bodies.
+
+Two more prompt-layer findings of the same kind:
+
+- **Six statuses the prompts declare MANDATORY have no consumer.** `full_codereview_required`, `focused_review_required`, `test_sample_needed`, `more_tests_required`, `no_bug_found`, `more_refactor_required` — the workflow layer promotes exactly three statuses and none of them is these. So a model correctly signalling *"this diff is too large to review honestly"* or *"there is no bug here"* has that signal buried inside the analysis blob, and a codereview of an oversized diff returns a confident partial review presented as complete. `SPECIAL_STATUS_MODELS`, the registry built to validate these, is imported by `base_tool.py` and never referenced.
+- **`GENERATE_CODE_PROMPT` and its own consumer contradict each other.** The prompt spends ~1,763 tokens per capable-model chat call demanding complete, immediately-applicable code; `tools/chat.py` then tells the coding agent the blocks are partial excerpts that will corrupt the codebase if applied. And its `<NEWFILE:>`/`<UPDATED_EXISTING_FILE:>` tag structure is parsed by nothing — the whole block is written verbatim to one file named `pal_generated.code`.
+
+### The literal-backslash-n corruption, measured precisely
+
+Several tools build their expert-analysis prompt and their caller-facing guidance with `"\\n"` — a literal backslash followed by `n` — instead of a newline. Evaluating every string literal in each file with `ast`:
+
+```
+tools/analyze.py       literal-backslash-n:  54   real newlines:  48   <-- corrupted
+tools/codereview.py    literal-backslash-n:  74   real newlines:  52   <-- corrupted
+tools/precommit.py     literal-backslash-n:  74   real newlines:  58   <-- corrupted
+tools/refactor.py      literal-backslash-n:  61   real newlines:  52   <-- corrupted
+tools/testgen.py       literal-backslash-n:  19   real newlines:  65
+tools/tracer.py        literal-backslash-n:  26   real newlines: 226
+tools/debug.py         literal-backslash-n:   0   real newlines: 123
+tools/secaudit.py      literal-backslash-n:   0   real newlines: 132
+```
+
+**In four tools the corrupted form outnumbers the correct one**, and `debug` and `secaudit` are clean — which is what proves it is a mistake rather than a convention. The consequence runs both ways: the expert model receives the investigation context as one unbroken line with `\n` litter where the section delimiters should be, and the **caller** receives the numbered required-actions list the same way. These tools exist to steer a calling agent through forced pauses; the steering instructions are the product.
+
+**Any measured quality difference between `debug`/`secaudit` and `analyze`/`codereview` may be this bug rather than the prompts** — which makes it a precondition for evaluating anything else in the tool layer.
+
+### The conversation doubles every turn
+
+`server.py:1088` adds the user turn, and `tools/simple/base.py:353` adds a **second** user turn whose content is the entire embedded conversation history — because the guard at `:335` looks for a header string that is never emitted (§4). Measured on a 15-character user message: the prompt sent to the model goes **3,069 → 6,480 → 13,307 → 26,965 → 54,280 characters** across five exchanges. The thread grows three turns per exchange, so the 50-turn cap is consumed in about sixteen.
+
+**Any measurement of token cost, budget behaviour or thread capacity taken before this is fixed is measuring the bug.** And the advertised capacity compounds it: `remaining_turns` counts turns while the note calls them "exchanges", so a fresh thread advertises 49 exchanges against a real capacity nearer sixteen.
+
+### The tool singletons leak, and the leak reaches a third-party model
+
+`server.py:260` states *"Tools are instantiated once and reused across requests (stateless design)"*. They are not stateless. **Eleven instance fields survive across two unrelated runs**; only three are cleared per call. `work_history`, `consolidated_findings`, `analysis_config`, `review_config`, `git_config`, `security_config`, `trace_config`, `branches` and `initial_request` all persist.
+
+`consolidated_findings` is the sole input to `prepare_expert_analysis_context`, so **a fresh run's expert prompt embeds the previous unrelated run's findings, file paths and full file contents, and sends them to the external provider.** Worse, the state-restore path only matches assistant turns from the same tool, so a contaminated singleton gets written into the new thread and then restored later as legitimate-looking history — an in-memory leak becoming durable.
+
+`ConsensusTool` is the only tool that resets both fields, and it does so in its own override rather than in the shared mixin. The fix is a named lifecycle reset in one place, not a defensive read in twelve.
+
+### Contract defects — what a tool advertises versus what it does
+
+This is the round's largest class. A representative set, each verified:
+
+- **`confidence='certain'` is the documented way to decline a paid expert call.** `debug`, `thinkdeep`, `secaudit` and `testgen` advertise a seven-value enum but type the field as plain `str`, so `'Certain'`, `'CERTAIN'` or any typo is accepted and silently fails the exact-equality check — and the caller is billed for the call they declined. `refactor` is the only one that enforces its enum with a `Literal`.
+- **`analyze` advertises the same enum and ignores it entirely**, pinning confidence to `"medium"` and never skipping expert analysis; its own attempt to exclude the field from the schema is defeated by the schema builder's ordering.
+- **`use_assistant_model` is inert on four tools** — `planner`, `consensus`, `docgen`, `tracer` advertise it while hard-coding `requires_expert_analysis() == False`. On `thinkdeep` it is worse: advertised, and the override never reads it, so disabling expert analysis on the most expensive tool does nothing.
+- **`exclude=True` does not remove a field from a schema.** `codereview`, `debug` and `precommit` each carry the comment *"Override inherited fields to exclude them from schema"* over `temperature`/`thinking_mode` declared with pydantic `exclude=True` — which affects serialisation only. Three authors independently wrote the same wrong idiom, which points at the schema builder never consulting the pydantic model.
+- **`precommit` never runs git.** No subprocess, no git library, anywhere. `compare_to`, `include_staged` and `include_unstaged` change no behaviour; the required-actions text instructs the caller to run the git commands.
+- **`testgen` says it "generates framework-specific tests"** and writes nothing — it has no framework parameter and returns guidance plus an expert opinion, like the other seven.
+- **`secaudit`'s `audit_focus`, `threat_level` and `compliance_requirements` do not change the investigation** — `get_required_actions` branches only on step number and emits a fixed six-step plan.
+- **`refactor`'s `style_guide_examples` paths are validated and never opened**; `refactor_type` does not narrow the work; `codereview`'s `severity_filter`, `standards` and `focus_on` filter and enforce nothing; `analyze`'s `output_format` changes nothing.
+- **`planner` and `tracer` mark `model` as required in their JSON Schema while `requires_model()` is `False`**, so every call must invent a value the server discards — and a host doing strict validation rejects calls that omit it. `docgen` marks six server-defaulted fields as required.
+- **A total consensus panel failure reports success.** When every model fails, `consensus` still emits `consensus_workflow_complete`, `consensus_complete: true`, and a **hardcoded `consensus_confidence: "high"`**, listing the failed models under `models_consulted`. An orchestrator cannot detect a dead panel from the envelope. Its schema also declares `minItems: 2` while the validator only checks truthiness, so a one-model "consensus" is accepted end to end.
+
+### The provider layer
+
+- **An allowlist reroutes rather than denies.** Verified by execution: with `OPENAI_ALLOWED_MODELS=gpt-5.2`, the name `o3` is silently served by **DIAL** as `o3-2025-04-16`. An operator setting an allowlist for cost or compliance gets a different vendor, a different data-processing agreement and a different bill instead of a refusal.
+- **Usage reads zero on the most expensive models.** `_extract_usage` reads `prompt_tokens`/`completion_tokens`, which do not exist on the Responses API usage object, so every `/responses` call — `gpt-5.2-pro`, `gpt-5.1-codex`, `gpt-5-codex`, `o3-pro` — records `input_tokens=0` and `output_tokens=0` while `total_tokens` is real. The account is internally inconsistent, and input and output bill at several-fold different rates.
+- **Gemini drops the thinking budget from its usage**: `thoughts_token_count` and `cached_content_token_count` are never read and the total is recomputed as input+output, so PAL reports 1,200 tokens where the vendor reported 6,200. The correct figure (`total_token_count`) is already on the object.
+- **Gemini's canonical rate-limit error is never retried.** The predicate enters its 429 branch on `resource_exhausted` and then lists `resource_exhausted` among the **non**-retryable indicators, so `429 RESOURCE_EXHAUSTED` — the SDK's own spelling — fails on the first attempt.
+- **`thinking_mode` reaches only Gemini.** Every tool call site passes it; the OpenAI-compatible base forwards a six-item kwargs whitelist that does not include it. `max_output_tokens` is declared on every model in every manifest and **sent to no vendor at all** — no caller passes it.
+- **`/responses` demotes every system message to a user message**, a workaround for an o3-pro-era quirk, so four flagship models receive a structurally different prompt from every other model. The `instructions` field the Responses API provides for exactly this is never set.
+- **The response reservation ignores `max_output_tokens`**: `gemini-2.5-pro` reserves 209,715 tokens of its window for a response that can be at most 65,536 — 144,179 tokens of usable input budget discarded.
+- **Auto-mode is alphabetical for four providers of seven.** `get_preferred_model()` is implemented only by Gemini, OpenAI and X.AI; elsewhere the fallback is `sorted(allowed_models)[0]`, so `ToolModelCategory` is inert and the FAST_RESPONSE category can get the most expensive model in the catalogue. If nothing is available at all, the ultimate fallback is the hardcoded literal `gemini-2.5-flash`, reported to the operator as the suggested model on installs that never intended to use Google.
+- **`capability_rank` saturates at 100** and the frontier models exceed it, so three OpenAI and two Gemini models tie and fall through to an alphabetical tie-break — listing `gemini-2.5-pro` ahead of `gemini-3-pro-preview`. `intelligence_score` is documented as the primary ordering signal and has no effect at the top of the range.
+- **A restriction set mutates itself at runtime**: `is_allowed()` writes resolved canonical names back into the set it is checking, so a policy declared by alias grows during a session.
+- **`AZURE` and `CUSTOM` are absent from `ModelRestrictionService.ENV_VARS` entirely**, so `is_allowed()` returns `True` unconditionally for them; and a restricted Custom model is still **advertised** by `list_models` and then fails on use — a menu listing unusable models.
+
+### Silent failure is the house style, and that is the finding
+
+Counted across this round, the same shape recurs: **images dropped with a warning when the model cannot see them, so the user gets a confident answer about an image that was never sent** · temperature corrected twice with no user-visible signal · a `relevant_files` value passed as a string silently replaced with an empty list, so the tool analyses nothing and reports success · oversize direct `code` dropped from `read_files` with no entry in `files_skipped` · `_create_continuation_offer` swallowing every exception with no log, making a storage failure indistinguishable from the legitimate turn-limit `None` · a memory-write failure converting an already-billed model response into a tool error.
+
+**None of these can fail a test, because none of them fails.** That is the argument for the structured-output work in §5: an envelope that can carry *"this was dropped"* turns a whole class of silent degradation into something a caller can act on.
+
+### Three things that are simply dead
+
+`tools/models.py` is **86% dead** — 26 of 28 public names have zero production references. `chat`'s web-search instruction is built and then discarded by a string split before the model sees it, so chat has no web-search prompting at all despite three methods existing to configure it. `DEFAULT_THINKING_MODE_THINKDEEP` has no effect on the workflow expert path, which uses a hardcoded `"high"` — and startup logging actively confirms the wrong value to the operator.
+
+### What this round changes about the priorities in §9
+
+Three items join Tier 1, all cheap and all currently corrupting output rather than breaking a path:
+
+1. **Fix the literal-backslash-n in four tools** — `debug` and `secaudit` show the correct form in the same codebase.
+2. **Fix the duplicate user turn** — one string comparison, and it is a precondition for every token or cost measurement.
+3. **Reset workflow singleton state on a new run** — eleven fields, one named lifecycle hook, and it currently leaks one user's file contents into another's provider call.
+
+And one joins Tier 2: **make `confidence` a `Literal` in the four tools that type it as `str`**, because that field is the only mechanism a caller has to decline a paid expert call.
 
 ---
 
