@@ -218,6 +218,60 @@ The pattern is worth stating: **every one of these was a negative or a universal
 
 ---
 
+## 10b. Second pass — the surfaces the readers left, scanned directly
+
+The twelve-reader pass covered roughly a third of the 30,238 lines of production Python, deeply on `clink/`, `utils/conversation_memory.py`, the MCP boundary in `server.py`, logging and packaging. This section is a follow-up pass over the largest gaps it named. Every finding here was produced by reading or by executing the repo's own code in this checkout.
+
+### The Windows path policy has gaps, verified by execution
+
+`utils/security_config.py` blocks two Windows directories — `C:\Windows` and `C:\Program Files` — plus filesystem roots and the bare `C:\Users` container. Driving `is_dangerous_path` and `resolve_and_validate_path` directly:
+
+```
+DANGEROUS  refused   C:\Windows\System32\config\SAM
+DANGEROUS  refused   D:\                       (drive root)
+DANGEROUS  refused   C:\Users                  (container itself)
+allowed    ACCEPTED  C:\Program Files (x86)\app\x.txt
+allowed    ACCEPTED  C:\ProgramData\secrets.txt
+allowed    ACCEPTED  D:\Github\pal-mcp-server\.git\config
+allowed    ACCEPTED  C:\Users\xenod\.aws\credentials
+```
+
+Three of those matter. **`C:\Program Files (x86)` is a different string** from the one on the list, so the 32-bit half of the same directory is unprotected. **`C:\ProgramData`** is where machine-wide application state, certificates and credentials live and appears nowhere. And **`.git/config` is readable by direct path** — `EXCLUDED_DIRS` does contain `.git`, but that set governs *recursive search*, not a path the caller names, and a `.git/config` can carry credentials inside a remote URL.
+
+This is the same defect shape as the docstring finding in §2: the block list reads as a policy and is a short literal set. On a Windows-primary fork it covers two directories on one drive.
+
+### Retryability is decided by substring matching on the error text
+
+`providers/base.py:217-240` classifies an error as retryable by lowercasing its message and testing for `timeout`, `connection`, `temporary`, `unavailable`, `retry`, `reset`, `refused`, `broken pipe`, `tls`, `handshake`, `network`, `500`, `502`, `503`, `504` — after excluding anything containing `429` or `rate limit`.
+
+**`"500" in error_str` matches `"5000"`.** A provider error saying a request exceeded a 5000-token limit is classified as a server error and retried, with sleeps, three more times — each retry deterministically failing the same way. The rate-limit exclusion is right and is the only structured part of the decision; everything else is a substring vote on prose the vendor controls.
+
+The base class says as much: *"Subclasses with structured provider errors should override this hook."* None of the shipped subclasses does.
+
+### The event-loop stall is up to thirty minutes, not ten
+
+§3 recorded that `provider.generate_content(...)` is a synchronous HTTP call on an async path, bounded by the httpx read timeout. The timeout is not one value (`providers/openai_compatible.py:145-200`):
+
+| Endpoint kind | connect | **read** |
+|---|---|---|
+| standard | 30 s | **600 s** |
+| custom remote | 45 s | **900 s** |
+| **local** | 60 s | **1800 s** |
+
+So one `chat` against a local model can freeze the whole server — every other tool, every clink child's output drain, and the MCP protocol reader — for **half an hour**, and the retry loop adds `time.sleep` on top: DIAL ships `RETRY_DELAYS = [1, 3, 5, 8]`, seventeen seconds of blocking sleep on the only thread there is.
+
+This changes the priority of moving that call off the loop from "worth doing" to "the largest availability risk in the server", and it is entirely independent of clink.
+
+### Coverage after this pass
+
+Deeply read: `clink/` (2,385), `utils/conversation_memory.py` (1,108), `utils/security_config.py` (163), the MCP boundary and logging in `server.py` (1,526 total, ~800 read), the provider retry and timeout paths, `tools/clink.py`, and the base-class surface of `tools/shared/`, `tools/simple/`, `tools/workflow/`.
+
+**Still unread, with line counts, so the next pass can be scoped rather than guessed:** `systemprompts/` (2,355 — the prompts every tool actually sends, entirely unread); the per-tool bodies under `tools/` outside the shared machinery (roughly 10,000 of 15,709); `providers/` outside the retry/timeout paths (roughly 3,800 of 4,560, including the whole of `gemini.py`, `dial.py`, `azure_openai.py`, `openrouter.py`); `utils/file_utils.py` above line 421, `utils/model_restrictions.py`, `utils/client_info.py`, `utils/file_types.py` (roughly 1,300); and the test bodies.
+
+**The highest-value of those is `systemprompts/`**, because it is the only unread area whose content reaches a model on every single call and is therefore load-bearing for output quality rather than for correctness of the plumbing.
+
+---
+
 ## 11. What nobody read
 
 Named honestly by the readers themselves, because an unstated boundary reads as coverage:
