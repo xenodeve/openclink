@@ -43,11 +43,11 @@ py-modules = ["server", "config"]
 
 [project.scripts]
 openclink = "server:run"
-# Kept through the rename (#94). Every install instruction published so far ends
-# in `pal-mcp-server`, as does whatever users already pasted into their own client
-# config; dropping it in the same release that introduces `openclink` would break
-# all of them at once, as a command-not-found inside an MCP client. Removing it is
-# a separate, deliberate decision.
+# Kept through the rename (#94). Every install instruction published before it
+# ended in `pal-mcp-server`, as does whatever users already pasted into their own
+# client config; dropping it in the same release that introduces `openclink` would
+# break all of them at once, as a command-not-found inside an MCP client. Removing
+# it is a separate, deliberate decision.
 pal-mcp-server = "server:run"
 
 [tool.black]

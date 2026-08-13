@@ -11,7 +11,7 @@ This fork is run **agent-primary** under the T4 operating standard. **At session
    boundary (after writing code → `simplify`; before merge → `code-review` + `scrutinize`; touched a
    security boundary → `security-review`). A check at task start does not discharge a later trigger.
 2. Read **`Obsidian-OpenClink/Home.md`** (memory vault index — open only the notes your task touches), **`docs/OPEN-WORK-LEDGER.md`** (open work), and **`DONE.md`** (what shipped + how it was validated).
-3. Then the specific GitHub issue you're picking up (`gh issue view <n> --repo xenodeve/pal-mcp-server`).
+3. Then the specific GitHub issue you're picking up (`gh issue view <n> --repo xenodeve/openclink`).
 
 Non-negotiables (details in `docs/agents/`): **issue → PR gate** (no PR without a referenced issue);
 **bilingual TH+EN tracker bodies** (issue/PR only — see `docs/agents/issue-tracker.md`); **TDD**, and
@@ -310,7 +310,7 @@ grep "ERROR" logs/mcp_server.log | tail -20
 
 # Check virtual environment
 which python
-# Should show: .../pal-mcp-server/.openclink_venv/bin/python
+# Should show: .../openclink/.openclink_venv/bin/python
 ```
 
 #### Test Failures

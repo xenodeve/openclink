@@ -6,8 +6,8 @@ This guide covers deploying OpenClink using Docker and Docker Compose for produc
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/BeehiveInnovations/pal-mcp-server.git
-   cd pal-mcp-server
+   git clone https://github.com/xenodeve/openclink.git
+   cd openclink
    ```
 
 2. **Configure environment variables**:
@@ -346,9 +346,9 @@ Configure Claude Desktop to use the containerized server. **Choose one of the co
         "--rm",
         "-i",
         "--env-file",
-        "/absolute/path/to/pal-mcp-server/.env",
+        "/absolute/path/to/openclink/.env",
         "-v",
-        "/absolute/path/to/pal-mcp-server/logs:/app/logs",
+        "/absolute/path/to/openclink/logs:/app/logs",
         "openclink:latest"
       ]
     }
@@ -367,9 +367,9 @@ Configure Claude Desktop to use the containerized server. **Choose one of the co
         "--rm",
         "-i",
         "--env-file",
-        "C:/path/to/pal-mcp-server/.env",
+        "C:/path/to/openclink/.env",
         "-v",
-        "C:/path/to/pal-mcp-server/logs:/app/logs",
+        "C:/path/to/openclink/logs:/app/logs",
         "openclink:latest"
       ]
     }
@@ -387,7 +387,7 @@ Configure Claude Desktop to use the containerized server. **Choose one of the co
     "openclink": {
       "command": "docker-compose",
       "args": [
-        "-f", "/absolute/path/to/pal-mcp-server/docker-compose.yml",
+        "-f", "/absolute/path/to/openclink/docker-compose.yml",
         "run", "--rm", "openclink"
       ]
     }
@@ -422,7 +422,7 @@ Configure Claude Desktop to use the containerized server. **Choose one of the co
 ### Configuration Notes
 
 **Important notes:**
-- Replace `/absolute/path/to/pal-mcp-server` with the actual path to your project.
+- Replace `/absolute/path/to/openclink` with the actual path to your project.
 - Always use forward slashes `/` for Docker volumes, even on Windows.
 - Ensure the `.env` file exists and contains your API keys.
 - **Persistent volumes**: Docker Compose options (Options 2) automatically use the `openclink-config` named volume for persistent configuration storage.

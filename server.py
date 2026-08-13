@@ -1520,7 +1520,7 @@ async def main():
 
 
 def run():
-    """Console script entry point for openclink (and the kept `pal-mcp-server` alias)."""
+    """Console script entry point for openclink (and the kept `openclink` alias)."""
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

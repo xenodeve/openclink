@@ -7,9 +7,9 @@ metadata:
 
 On this machine there is **more than one OpenClink install**, and they don't share code:
 
-- **Claude Code's OpenClink** runs from a **`uv tool install`** (`~/AppData/Roaming/uv/tools/pal-mcp-server/`).
+- **Claude Code's OpenClink** runs from a **`uv tool install`** (`~/AppData/Roaming/uv/tools/openclink/`).
 - **Codex's OpenClink** runs from **`uvx --from git+…`** (per `~/.codex/config.toml`) — a separate cached env.
-- A third source-tree clone (`~/pal-mcp-server/.openclink_venv`) may also exist.
+- A third source-tree clone (`~/openclink/.openclink_venv`) may also exist.
 
 Consequences learned the hard way:
 
@@ -21,7 +21,7 @@ Consequences learned the hard way:
   instead (read last, survives reinstalls, **shared by all installs** → one activation covers both
   Claude Code's and Codex's OpenClink). See [[clink-zero-setup-discovery]].
 - On Windows a running OpenClink **locks** its install dir → kill the OpenClink process before reinstalling.
-- `uv cache clean pal-mcp-server` has hung repeatedly here; copying updated files straight into the
+- `uv cache clean openclink` has hung repeatedly here; copying updated files straight into the
   install (then restart) is a reliable fallback.
 - **The shared `~/.pal/cli_clients/` is loaded by every checkout, so a config for a CLI your working
   tree doesn't support takes the whole registry down — not just that client.** `_resolve_config`

@@ -110,9 +110,9 @@ class TestDockerClaudeDesktopIntegration:
                         "--rm",
                         "-i",
                         "--env-file",
-                        "C:/Users/User/pal-mcp-server/.env",
+                        "C:/Users/User/openclink/.env",
                         "-v",
-                        "C:/Users/User/pal-mcp-server/logs:/app/logs",
+                        "C:/Users/User/openclink/logs:/app/logs",
                         "openclink:latest",
                     ],
                 }

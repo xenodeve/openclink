@@ -90,7 +90,7 @@ def fetch_github_version() -> Optional[tuple[str, str]]:
         logger.warning("urllib not available, cannot check for updates")
         return None
 
-    github_url = "https://raw.githubusercontent.com/BeehiveInnovations/pal-mcp-server/main/config.py"
+    github_url = "https://raw.githubusercontent.com/xenodeve/openclink/main/config.py"
 
     try:
         # Set a 10-second timeout

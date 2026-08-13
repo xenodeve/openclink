@@ -123,8 +123,8 @@ OpenClink รองรับ **conversation threading** — CLI ของคุ�
 **ตัวเลือก A: clone + ตั้งค่าอัตโนมัติ** (แนะนำ)
 ```bash
 # fork นี้ (เพิ่ม antigravity / claude-9arm / model+effort ต่อ call)
-git clone https://github.com/xenodeve/pal-mcp-server.git
-cd pal-mcp-server
+git clone https://github.com/xenodeve/openclink.git
+cd openclink
 
 # จัดการให้หมด: setup, config, API key จาก environment
 # ตั้งค่าให้ Claude Desktop, Claude Code, Codex CLI, Qwen CLI อัตโนมัติ (Gemini CLI ปลดระวางแล้ว → ใช้ Antigravity)
@@ -138,7 +138,7 @@ cd pal-mcp-server
   "mcpServers": {
     "pal": {
       "command": "bash",
-      "args": ["-c", "for p in $(which uvx 2>/dev/null) $HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \"$p\" ] && exec \"$p\" --from git+https://github.com/xenodeve/pal-mcp-server.git pal-mcp-server; done; echo 'uvx not found' >&2; exit 1"],
+      "args": ["-c", "for p in $(which uvx 2>/dev/null) $HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \"$p\" ] && exec \"$p\" --from git+https://github.com/xenodeve/openclink.git openclink; done; echo 'uvx not found' >&2; exit 1"],
       "env": {
         "PATH": "/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin:~/.local/bin",
         "GEMINI_API_KEY": "your-key-here",

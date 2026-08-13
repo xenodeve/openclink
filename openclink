@@ -4,7 +4,7 @@
 # Get the directory of this script
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Change to the pal-mcp-server directory
+# Change to the openclink directory
 cd "$DIR"
 
 # Execute the Python server with all arguments passed through

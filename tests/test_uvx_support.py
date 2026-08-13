@@ -145,12 +145,18 @@ class TestUvxProjectConfiguration:
     def test_the_old_entry_point_still_runs_the_server(self):
         """`pal-mcp-server` must keep working through the rename (#94).
 
-        Every install instruction published so far ends in `pal-mcp-server` —
-        six copies across the two READMEs and docs/getting-started.md, plus
-        whatever users already pasted into their own client config. Dropping the
-        name in the same release that introduces `openclink` breaks all of them
-        at once, and the breakage surfaces as a command-not-found inside an MCP
-        client, which is where it is hardest to read.
+        Every install instruction published before the rename ended in
+        `pal-mcp-server` — six copies across the two READMEs and
+        docs/getting-started.md, plus whatever users already pasted into their own
+        client config. Dropping the name in the same release that introduces
+        `openclink` breaks all of them at once, and the breakage surfaces as a
+        command-not-found inside an MCP client, which is where it is hardest to
+        read.
+
+        This docstring and the assertions below were themselves mangled by the
+        rename sweep, which replaced the old name here too and left the test
+        asserting `openclink == openclink` — green, and proving nothing. A test
+        whose subject is a legacy name is exactly the shape a sweep destroys.
 
         Both names point at the same callable, so this costs one line and buys
         the transition. Removing it is a separate, deliberate decision.

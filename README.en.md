@@ -170,8 +170,8 @@ For best results when using [Codex CLI](https://developers.openai.com/codex/cli)
 **Option A: Clone and Automatic Setup** (recommended)
 ```bash
 # This fork (adds antigravity / claude-9arm / per-call model+effort):
-git clone https://github.com/xenodeve/pal-mcp-server.git
-cd pal-mcp-server
+git clone https://github.com/xenodeve/openclink.git
+cd openclink
 
 # Handles everything: setup, config, API keys from system environment.
 # Auto-configures Claude Desktop, Claude Code, Codex CLI, Qwen CLI (Gemini CLI retired → use Antigravity)
@@ -187,7 +187,7 @@ cd pal-mcp-server
   "mcpServers": {
     "pal": {
       "command": "bash",
-      "args": ["-c", "for p in $(which uvx 2>/dev/null) $HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \"$p\" ] && exec \"$p\" --from git+https://github.com/xenodeve/pal-mcp-server.git pal-mcp-server; done; echo 'uvx not found' >&2; exit 1"],
+      "args": ["-c", "for p in $(which uvx 2>/dev/null) $HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \"$p\" ] && exec \"$p\" --from git+https://github.com/xenodeve/openclink.git openclink; done; echo 'uvx not found' >&2; exit 1"],
       "env": {
         "PATH": "/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin:~/.local/bin",
         "GEMINI_API_KEY": "your-key-here",

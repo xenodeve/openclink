@@ -73,7 +73,7 @@
     Script Author      : GiGiDKR (https://github.com/GiGiDKR)
     Date               : 07-05-2025
     Version            : See config.py (__version__)
-    References         : https://github.com/BeehiveInnovations/pal-mcp-server
+    References         : https://github.com/xenodeve/openclink
 
 #>
 #Requires -Version 5.1
@@ -113,7 +113,7 @@ $script:LOG_DIR = "logs"
 $script:LOG_FILE = "mcp_server.log"
 # Every name this project has shipped under — see the note on LEGACY_MCP_NAMES in
 # run-server.sh. Extended on each rename, never replaced.
-$script:LegacyServerNames = @("zen", "zen-mcp", "zen-mcp-server", "zen_mcp", "zen_mcp_server", "pal", "pal-mcp", "pal-mcp-server", "pal_mcp", "pal_mcp_server")
+$script:LegacyServerNames = @("zen", "zen-mcp", "zen-mcp-server", "zen_mcp", "zen_mcp_server", "pal", "pal-mcp", "openclink", "pal_mcp", "pal_mcp_server")
 
 # ----------------------------------------------------------------------------
 # Utility Functions
@@ -410,7 +410,7 @@ function Cleanup-Docker {
     $containers = @(
         "gemini-mcp-server",
         "gemini-mcp-redis", 
-        "pal-mcp-server",
+        "openclink",
         "pal-mcp-redis",
         "pal-mcp-log-monitor"
     )
@@ -435,7 +435,7 @@ function Cleanup-Docker {
     }
     
     # Remove images
-    $images = @("gemini-mcp-server:latest", "pal-mcp-server:latest")
+    $images = @("gemini-mcp-server:latest", "openclink:latest")
     foreach ($image in $images) {
         try {
             $exists = docker images --format "{{.Repository}}:{{.Tag}}" | Where-Object { $_ -eq $image }
@@ -1545,7 +1545,7 @@ function Test-ClaudeCliIntegration {
 function Test-GeminiCliIntegration {
     param([string]$ScriptDir)
     
-    $openclinkWrapper = Join-Path $ScriptDir "pal-mcp-server.cmd"
+    $openclinkWrapper = Join-Path $ScriptDir "openclink.cmd"
     
     # Check if Gemini settings file exists (Windows path)
     $geminiConfig = "$env:USERPROFILE\.gemini\settings.json"
@@ -1588,7 +1588,7 @@ if exist ".openclink_venv\Scripts\python.exe" (
     python server.py %*
 )
 "@ | Out-File -FilePath $openclinkWrapper -Encoding ASCII
-            Write-Success "Created pal-mcp-server.cmd wrapper script"
+            Write-Success "Created openclink.cmd wrapper script"
         }
 
         if ($needsWrite) {
@@ -1622,7 +1622,7 @@ if exist ".openclink_venv\Scripts\python.exe" (
 )
 "@ | Out-File -FilePath $openclinkWrapper -Encoding ASCII
         
-        Write-Success "Created pal-mcp-server.cmd wrapper script"
+        Write-Success "Created openclink.cmd wrapper script"
     }
     
     # Update Gemini settings
@@ -1930,7 +1930,7 @@ EXAMPLES:
 .\run-server.ps1 -Docker              # Use Docker deployment
 .\run-server.ps1 -Docker -Follow      # Docker with log following
 
-For more information, visit: https://github.com/BeehiveInnovations/pal-mcp-server
+For more information, visit: https://github.com/xenodeve/openclink
 "@ -ForegroundColor White
 }
 
@@ -1940,7 +1940,7 @@ function Show-Version {
     Write-Host "OpenClink version: $version" -ForegroundColor Green
     Write-Host "PowerShell Setup Script for Windows" -ForegroundColor Cyan
     Write-Host "Author: GiGiDKR (https://github.com/GiGiDKR)" -ForegroundColor Gray
-    Write-Host "Project: BeehiveInnovations/pal-mcp-server" -ForegroundColor Gray
+    Write-Host "Project: xenodeve/openclink" -ForegroundColor Gray
 }
 
 # Show configuration instructions

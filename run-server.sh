@@ -40,7 +40,7 @@ readonly LOG_FILE="mcp_server.log"
 # this list strands them with the old entry sitting beside the new one — the
 # duplicate-server state this exists to prevent. Bare, hyphenated and underscored
 # forms are all listed because all three have appeared in real client configs.
-readonly LEGACY_MCP_NAMES=("zen" "zen-mcp" "zen-mcp-server" "zen_mcp" "zen_mcp_server" "pal" "pal-mcp" "pal-mcp-server" "pal_mcp" "pal_mcp_server")
+readonly LEGACY_MCP_NAMES=("zen" "zen-mcp" "zen-mcp-server" "zen_mcp" "zen_mcp_server" "pal" "pal-mcp" "openclink" "pal_mcp" "pal_mcp_server")
 
 # Determine portable arguments for sed -i (GNU vs BSD)
 declare -a SED_INPLACE_ARGS
@@ -760,7 +760,7 @@ setup_venv() {
                     print_error "Permission denied creating virtual environment"
                     echo ""
                     echo "Try running in a different directory:"
-                    echo "  cd ~ && git clone <repository-url> && cd pal-mcp-server && ./run-server.sh"
+                    echo "  cd ~ && git clone <repository-url> && cd openclink && ./run-server.sh"
                     echo ""
                     exit 1
                 else
@@ -1632,7 +1632,7 @@ EOF
 # Check and update Gemini CLI configuration
 check_gemini_cli_integration() {
     local script_dir="$1"
-    local openclink_wrapper="$script_dir/pal-mcp-server"
+    local openclink_wrapper="$script_dir/openclink"
 
     # Check if Gemini settings file exists
     local gemini_config="$HOME/.gemini/settings.json"
@@ -1727,7 +1727,7 @@ cd "$DIR"
 exec .openclink_venv/bin/python server.py "$@"
 EOF
         chmod +x "$openclink_wrapper"
-        print_success "Created pal-mcp-server wrapper script"
+        print_success "Created openclink wrapper script"
     fi
 
     # Update Gemini settings
@@ -1875,7 +1875,7 @@ PY
             echo ""
             echo "[mcp_servers.pal]"
             echo "command = \"bash\""
-            echo "args = [\"-c\", \"for p in \$(which uvx 2>/dev/null) \$HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \\\"\$p\\\" ] && exec \\\"\$p\\\" --from git+https://github.com/BeehiveInnovations/pal-mcp-server.git pal-mcp-server; done; echo 'uvx not found' >&2; exit 1\"]"
+            echo "args = [\"-c\", \"for p in \$(which uvx 2>/dev/null) \$HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \\\"\$p\\\" ] && exec \\\"\$p\\\" --from git+https://github.com/xenodeve/openclink.git pal-mcp-server; done; echo 'uvx not found' >&2; exit 1\"]"
             echo "tool_timeout_sec = 1200"
             echo ""
             echo "[mcp_servers.pal.env]"
@@ -1900,7 +1900,7 @@ PY
 cat <<'CODExEOF'
 [mcp_servers.pal]
 command = "sh"
-args = ["-c", "exec \$(which uvx 2>/dev/null || echo uvx) --from git+https://github.com/BeehiveInnovations/pal-mcp-server.git pal-mcp-server"]
+args = ["-c", "exec \$(which uvx 2>/dev/null || echo uvx) --from git+https://github.com/xenodeve/openclink.git pal-mcp-server"]
 tool_timeout_sec = 1200
 
 [mcp_servers.pal.env]
@@ -2406,7 +2406,7 @@ EOF
    {
      "mcpServers": {
        "pal": {
-         "command": "$script_dir/pal-mcp-server"
+         "command": "$script_dir/openclink"
        }
      }
    }
@@ -2452,7 +2452,7 @@ EOF
     cat << EOF
    [mcp_servers.pal]
    command = "bash"
-   args = ["-c", "for p in \$(which uvx 2>/dev/null) \$HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \\\"\$p\\\" ] && exec \\\"\$p\\\" --from git+https://github.com/BeehiveInnovations/pal-mcp-server.git pal-mcp-server; done; echo 'uvx not found' >&2; exit 1"]
+   args = ["-c", "for p in \$(which uvx 2>/dev/null) \$HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \\\"\$p\\\" ] && exec \\\"\$p\\\" --from git+https://github.com/xenodeve/openclink.git pal-mcp-server; done; echo 'uvx not found' >&2; exit 1"]
 
    [mcp_servers.pal.env]
    PATH = "/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin:\$HOME/.local/bin:\$HOME/.cargo/bin:\$HOME/bin"
@@ -2572,7 +2572,7 @@ show_help() {
     echo "  $0 --clear-cache Clear Python cache (fixes import issues)"
     echo ""
     echo "For more information, visit:"
-    echo "  https://github.com/BeehiveInnovations/pal-mcp-server"
+    echo "  https://github.com/xenodeve/openclink"
 }
 
 # Show version only

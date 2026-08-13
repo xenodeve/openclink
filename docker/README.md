@@ -4,7 +4,7 @@
 
 The Docker service, image, and named volume were renamed from the `pal-mcp` family
 to `openclink` (service `pal-mcp` → `openclink`, volume `pal-mcp-config` →
-`openclink-config`, image `pal-mcp-server:latest` → `openclink:latest`). Docker
+`openclink-config`, image `openclink:latest` → `openclink:latest`). Docker
 Compose does **not** carry data over automatically when a named volume is renamed
 — it will create a new, empty `openclink-config` volume, and your existing
 `pal-mcp-config` volume stays on disk untouched but unused.
@@ -252,9 +252,9 @@ docker run --rm -i --env-file .env openclink:latest 2>&1 | tee docker.log
         "--rm",
         "-i",
         "--env-file",
-        "/absolute/path/to/pal-mcp-server/.env",
+        "/absolute/path/to/openclink/.env",
         "-v",
-        "/absolute/path/to/pal-mcp-server/logs:/app/logs",
+        "/absolute/path/to/openclink/logs:/app/logs",
         "openclink:latest"
       ]
     }
@@ -274,9 +274,9 @@ docker run --rm -i --env-file .env openclink:latest 2>&1 | tee docker.log
         "--rm",
         "-i",
         "--env-file",
-        "C:/Users/YourName/path/to/pal-mcp-server/.env",
+        "C:/Users/YourName/path/to/openclink/.env",
         "-v",
-        "C:/Users/YourName/path/to/pal-mcp-server/logs:/app/logs",
+        "C:/Users/YourName/path/to/openclink/logs:/app/logs",
         "openclink:latest"
       ]
     }
@@ -293,7 +293,7 @@ docker run --rm -i --env-file .env openclink:latest 2>&1 | tee docker.log
       "command": "docker-compose",
       "args": [
         "-f",
-        "/absolute/path/to/pal-mcp-server/docker-compose.yml",
+        "/absolute/path/to/openclink/docker-compose.yml",
         "run",
         "--rm",
         "openclink"

@@ -81,22 +81,8 @@ EXEMPT_LINE = re.compile(
     r"|from the `pal-mcp` family|upgrading from the `pal-mcp` Docker names"
 )
 
-# Paths that still carry the repository's own name, which has NOT been renamed on
-# GitHub. `cd pal-mcp-server` is the directory `git clone` produces; a config
-# example pointing at `/path/to/pal-mcp-server/...` describes a real checkout.
-# Renaming these before the repository is renamed makes every one of them wrong.
-# This block is expected to disappear in one commit once that happens — it is a
-# dated exemption, not a permanent one.
-REPO_NAME_TIED = re.compile(
-    r"cd pal-mcp-server"
-    r"|/pal-mcp-server[/`\"']"
-    r"|~/pal-mcp-server"
-    r"|uv (tool (install|upgrade)|cache clean) pal-mcp-server"
-)
-
 # Three things that still say the old name for a reason, each with the reason.
-# Unlike REPO_NAME_TIED these are not waiting on the repository rename — they are
-# decisions in their own right, and each is tracked on #94.
+# Each is a decision in its own right, and each is tracked on #94.
 STILL_DECIDED_ELSEWHERE = re.compile(
     # The key a client files the server under. It is what makes tools appear as
     # `mcp__pal__<tool>`, and `xeno-skills` names that prefix 25 times across 10
@@ -119,6 +105,13 @@ STILL_DECIDED_ELSEWHERE = re.compile(
     r"|the two names must run the same server|install instruction published so far"
     # The migration note naming the image a user currently has.
     r"|image `pal-mcp-server:latest`"
+    # Two tests whose SUBJECT is a legacy name — they exist to prove the old
+    # spelling still works, so they must be able to write it. The rename sweep
+    # rewrote one of them into `assert scripts["openclink"] == scripts["openclink"]`,
+    # which is green and proves nothing; that is the shape this exemption protects.
+    r'|OLD = "PAL_MCP_FORCE_ENV_OVERRIDE"|is the exception, and the only one that matters'
+    r"|PAL_LEGACY_NAMES`, `PAL_WRAPPER|PAL_CODEX_CONFIG`\) are set and consumed"
+    r"|ended in `pal-mcp-server`|`pal-mcp-server` . six copies"
 )
 
 # The old product names, in every shape the previous rename had to handle:
@@ -140,41 +133,11 @@ def _stale_occurrences() -> list[str]:
         except (UnicodeDecodeError, OSError):
             continue  # binary or unreadable — not prose we renamed
         for n, line in enumerate(text.splitlines(), 1):
-            if EXEMPT_LINE.search(line) or REPO_NAME_TIED.search(line) or STILL_DECIDED_ELSEWHERE.search(line):
+            if EXEMPT_LINE.search(line) or STILL_DECIDED_ELSEWHERE.search(line):
                 continue
             if STALE_NAME.search(line):
                 hits.append(f"{rel}:{n}: {line.strip()[:110]}")
     return hits
-
-
-def _origin_url() -> str:
-    result = subprocess.run(["git", "remote", "get-url", "origin"], cwd=REPO, capture_output=True, text=True)
-    return result.stdout.strip() if result.returncode == 0 else ""
-
-
-def test_the_repo_name_exemption_retires_itself_when_the_repository_is_renamed():
-    """`REPO_NAME_TIED` is a dated exemption, and this is its expiry date.
-
-    Those lines are correct *because* the GitHub repository is still called
-    `pal-mcp-server`: `cd pal-mcp-server` is the directory `git clone` produces.
-    Renaming them early makes every one of them wrong.
-
-    But an exemption with no expiry is how a rename ends up permanently
-    half-done — the guard goes green, nobody is told anything is outstanding, and
-    the remaining work survives only in someone's memory. So the exemption is
-    tied to the fact that justifies it: when the repository is renamed, this test
-    fails and names the work.
-    """
-    origin = _origin_url()
-    if not origin:
-        pytest.skip("no git remote configured")
-    assert "pal-mcp-server" in origin, (
-        f"origin is now {origin!r} — the repository has been renamed, so the paths "
-        "exempted by REPO_NAME_TIED are no longer correct.\n"
-        "Sweep them (`cd pal-mcp-server`, `/path/to/pal-mcp-server/...`, "
-        "`uv tool install pal-mcp-server`, the root `pal-mcp-server` wrapper script) "
-        "and delete REPO_NAME_TIED — see #94."
-    )
 
 
 def test_no_live_surface_still_carries_the_old_product_name():

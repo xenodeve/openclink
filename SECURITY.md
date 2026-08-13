@@ -24,7 +24,7 @@ OpenClink is an open-source Model Context Protocol (MCP) server that acts as mid
 
 ### Preferred Method
 
-Use [GitHub Security Advisories](https://github.com/BeehiveInnovations/pal-mcp-server/security/advisories/new) to report vulnerabilities privately.
+Use [GitHub Security Advisories](https://github.com/xenodeve/openclink/security/advisories/new) to report vulnerabilities privately.
 
 ### What to Include
 

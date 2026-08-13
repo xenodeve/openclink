@@ -5,8 +5,8 @@ What the words mean here, so a fresh agent reads code and issues with the right 
 ## What this is
 
 A **Model Context Protocol (MCP) server** (Python, `server.py`) that lets one AI CLI orchestrate
-many models + other AI CLIs. This is **[xenodeve's fork](https://github.com/xenodeve/pal-mcp-server)**
-of [BeehiveInnovations/pal-mcp-server](https://github.com/BeehiveInnovations/pal-mcp-server)
+many models + other AI CLIs. This is **[xenodeve's fork](https://github.com/xenodeve/openclink)**
+of [xenodeve/openclink](https://github.com/xenodeve/openclink)
 (unmaintained upstream). Everything the fork adds is additive and listed in `CHANGES-FORK.md`.
 
 ## Ubiquitous language

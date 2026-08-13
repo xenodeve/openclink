@@ -4,8 +4,8 @@
   "comment3": "Use './run-server.sh -c' to display the correct configuration",
   "mcpServers": {
     "pal": {
-      "command": "/path/to/pal-mcp-server/.openclink_venv/bin/python",
-      "args": ["/path/to/pal-mcp-server/server.py"]
+      "command": "/path/to/openclink/.openclink_venv/bin/python",
+      "args": ["/path/to/openclink/server.py"]
     }
   }
 }

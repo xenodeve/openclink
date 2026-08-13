@@ -13,8 +13,8 @@ from clink.constants import (
     CONFIG_DIR,
     DEFAULT_TIMEOUT_SECONDS,
     INTERNAL_DEFAULTS,
-    PROJECT_ROOT,
     LEGACY_USER_CONFIG_DIR,
+    PROJECT_ROOT,
     USER_CONFIG_DIR,
     CLIInternalDefaults,
 )

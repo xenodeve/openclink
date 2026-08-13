@@ -1,6 +1,6 @@
 # Issue Tracker (fork)
 
-Issues live in **GitHub Issues** on `xenodeve/pal-mcp-server` (use the `gh` CLI). Issues were
+Issues live in **GitHub Issues** on `xenodeve/openclink` (use the `gh` CLI). Issues were
 disabled by default on the fork; they are now enabled. Issues are the source of truth for *what to
 do* and *its state* — reconcile session todos back to issues before the session ends.
 
@@ -26,10 +26,10 @@ Issue bodies, PRD bodies, and PR descriptions must be **bilingual — English + 
 ## `gh` quick reference
 
 ```bash
-gh issue list --repo xenodeve/pal-mcp-server
-gh issue create --repo xenodeve/pal-mcp-server --title "…" --body-file -   # bilingual body
-gh issue close <n> --repo xenodeve/pal-mcp-server --reason completed --comment "…evidence…"
-gh pr create --repo xenodeve/pal-mcp-server --base main --head <branch> --body-file -  # Closes #<n>
+gh issue list --repo xenodeve/openclink
+gh issue create --repo xenodeve/openclink --title "…" --body-file -   # bilingual body
+gh issue close <n> --repo xenodeve/openclink --reason completed --comment "…evidence…"
+gh pr create --repo xenodeve/openclink --base main --head <branch> --body-file -  # Closes #<n>
 ```
 
 Labels: see `triage-labels.md`.
