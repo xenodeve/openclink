@@ -19,6 +19,7 @@
 
 1. [SYSTEM_ARCHITECTURE_OVERVIEW.md](SYSTEM_ARCHITECTURE_OVERVIEW.md) — ภาพรวมทั้งระบบ ชั้น ความรับผิดชอบ และ seam ที่ไม่ได้อยู่ตรงที่มันดูเหมือนจะอยู่
 2. [GENERATED_STRUCTURE.md](GENERATED_STRUCTURE.md) — โครงสร้างที่วัดจากโค้ดจริง: กราฟ import, การข้ามชั้น, ฮับ, โมดูลที่ไม่มีเทสต์แตะ
+3. [findings/README.md](findings/README.md) — ชุดข้ออ้างดิบ 605 ข้อพร้อม `file:line` · **grep ที่นี่ก่อนสั่งสแกนใหม่**
 
 ## Subsystem Documentation
 
