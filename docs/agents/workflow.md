@@ -48,6 +48,15 @@ the **agent-enforcement layer**: the skills that decide how a master agent uses 
 | — | **#72** research: the capability matrix that sources #73's figures |
 | **#88** a `skills` parameter — PAL guarantees the skill floor the master is supposed to hand over | **#163** split the handoff: the floor becomes PAL's, the task-specific skill stays the master's, and `skills_added_by_default` is the master's own omission rate reported back to it |
 | **#89** the ultracode environment (epic) — `clink_phase`, structured returns, an on-disk journal, per-lane caps, and the three enforcement tiers | **#164** `clink-ultracode` — the phase shape, the economics, and the stopping rule; the skill that drives #89 |
+| **#96** the selection layer (PRD) — compute the delegation plan from measured data: which model and effort, **how many agents**, and each one's share of the scope | **#165** `t4-subagent` (PRD) — the rule that the master must not do cheap work itself, and the `PreToolUse` denial of a spawn carrying no plan identity |
+
+**#96 owns fan-out sizing outright.** #89's deliverable 3 and #164's economics section both describe it
+today; both defer to #96 rather than compute it, or the three drift into three answers — the defect
+`xeno-skills#74` already recorded for cost figures. #89 keeps the stopping rule, the per-lane
+ceilings and closing a lane on error. Its *"width is fixed at phase 0"* wording does not survive a
+phased run — this session's own ultracode run sized its second phase (28 agents) from what its first
+phase (6) produced — so the rule becomes **frozen per phase**, which still forbids growing a phase
+already under way.
 
 **The rule: when you change one side, check the other in the same session.** Specifically —
 
