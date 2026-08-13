@@ -8,4 +8,4 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DIR"
 
 # Execute the Python server with all arguments passed through
-exec .pal_venv/bin/python server.py "$@"
+exec .openclink_venv/bin/python server.py "$@"

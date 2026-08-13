@@ -2,7 +2,7 @@
 
 Google retired the Gemini CLI (June 2026) in favour of the Antigravity CLI, a Go binary
 invoked as `agy`. It only emits output to a real terminal: under a plain piped subprocess
-(how every MCP server, including PAL, normally spawns a CLI) it exits 0 with EMPTY stdout.
+(how every MCP server, including OpenClink, normally spawns a CLI) it exits 0 with EMPTY stdout.
 So this agent drives agy through a Windows ConPTY via `pywinpty` — agy sees a TTY, prints
 its plain-text reply, and we capture it; the `antigravity_text` parser strips the ANSI
 escape codes the terminal introduces. The prompt is passed as a positional argument
@@ -28,7 +28,7 @@ class AntigravityAgent(BaseCLIAgent):
     """Run `agy` inside a ConPTY and capture its plain-text output."""
 
     # agy's print mode emits prose and nothing else — there is no usage block to
-    # adapt, in any mode PAL runs. Declared rather than left to an empty field
+    # adapt, in any mode OpenClink runs. Declared rather than left to an empty field
     # map so a caller can tell this from an adapter nobody has written yet.
     USAGE_UNAVAILABLE = True
 
@@ -181,10 +181,10 @@ class AntigravityAgent(BaseCLIAgent):
     def _run_in_pty(self, command: list[str], env: dict[str, str], cwd: str | None, timeout: int) -> tuple[int, str]:
         """Spawn the CLI in a ConPTY and read until it exits. Blocking — call via to_thread."""
         try:
-            import winpty  # lazy import: PAL still starts (and other CLIs work) if pywinpty is absent
+            import winpty  # lazy import: OpenClink still starts (and other CLIs work) if pywinpty is absent
         except ImportError as exc:  # pragma: no cover
             raise CLIAgentError(
-                f"CLI '{self.client.name}' requires the 'pywinpty' package — add it to PAL's dependencies."
+                f"CLI '{self.client.name}' requires the 'pywinpty' package — add it to OpenClink's dependencies."
             ) from exc
 
         proc = winpty.PtyProcess.spawn(command, cwd=cwd, env=env, dimensions=(50, 200))

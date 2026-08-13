@@ -1,9 +1,9 @@
 ﻿<#
 .SYNOPSIS
-    Installation, configuration, and launch script for PAL MCP server on Windows.
+    Installation, configuration, and launch script for OpenClink on Windows.
 
 .DESCRIPTION
-    This PowerShell script prepares the environment for the PAL MCP server:
+    This PowerShell script prepares the environment for the OpenClink:
     - Installs and checks Python 3.10+ (with venv or uv if available)
     - Installs required Python dependencies
     - Configures environment files (.env)
@@ -17,7 +17,7 @@
     Shows script help.
 
 .PARAMETER Version
-    Shows PAL MCP server version.
+    Shows OpenClink version.
 
 .PARAMETER Follow
     Follows server logs in real time.
@@ -48,7 +48,7 @@
 
 .EXAMPLE
     .\run-server.ps1
-    Prepares the environment and starts the PAL MCP server.
+    Prepares the environment and starts the OpenClink.
 
     .\run-server.ps1 -Follow
     Follows server logs in real time.
@@ -93,7 +93,7 @@ param(
 )
 
 # ============================================================================
-# PAL MCP Server Setup Script for Windows
+# OpenClink Setup Script for Windows
 # 
 # A Windows-compatible setup script that handles environment setup, 
 # dependency installation, and configuration.
@@ -106,12 +106,14 @@ $ErrorActionPreference = "Stop"
 # Constants and Configuration  
 # ----------------------------------------------------------------------------
 
-$script:VENV_PATH = ".pal_venv"
+$script:VENV_PATH = ".openclink_venv"
 $script:DOCKER_CLEANED_FLAG = ".docker_cleaned"
 $script:DESKTOP_CONFIG_FLAG = ".desktop_configured"
 $script:LOG_DIR = "logs"
 $script:LOG_FILE = "mcp_server.log"
-$script:LegacyServerNames = @("zen", "zen-mcp", "zen-mcp-server", "zen_mcp", "zen_mcp_server")
+# Every name this project has shipped under — see the note on LEGACY_MCP_NAMES in
+# run-server.sh. Extended on each rename, never replaced.
+$script:LegacyServerNames = @("zen", "zen-mcp", "zen-mcp-server", "zen_mcp", "zen_mcp_server", "pal", "pal-mcp", "pal-mcp-server", "pal_mcp", "pal_mcp_server")
 
 # ----------------------------------------------------------------------------
 # Utility Functions
@@ -812,7 +814,7 @@ function Build-DockerImage {
     
     # Check if image exists
     try {
-        $imageExists = docker images --format "{{.Repository}}:{{.Tag}}" | Where-Object { $_ -eq "pal-mcp-server:latest" }
+        $imageExists = docker images --format "{{.Repository}}:{{.Tag}}" | Where-Object { $_ -eq "openclink:latest" }
         if ($imageExists -and !$Force) {
             Write-Success "Docker image already exists. Use -Force to rebuild."
             return $true
@@ -825,7 +827,7 @@ function Build-DockerImage {
     if ($Force -and $imageExists) {
         Write-Info "Forcing rebuild of Docker image..."
         try {
-            docker rmi pal-mcp-server:latest 2>$null
+            docker rmi openclink:latest 2>$null
         }
         catch {
             Write-Warning "Could not remove existing image, continuing..."
@@ -840,7 +842,7 @@ function Build-DockerImage {
             Write-Info "Building with development support..."
         }
         
-        docker build -t pal-mcp-server:latest .
+        docker build -t openclink:latest .
         if ($LASTEXITCODE -ne 0) {
             throw "Docker build failed"
         }
@@ -927,7 +929,7 @@ function Start-DockerServices {
         }
         
         # Start services
-        Write-Info "Starting PAL MCP Server with Docker Compose..."
+        Write-Info "Starting OpenClink with Docker Compose..."
         if (Test-Command "docker-compose") {
             if ($Follow) {
                 docker-compose up --build
@@ -951,10 +953,10 @@ function Start-DockerServices {
         
         if (!$Follow) {
             Write-Success "Docker services started successfully"
-            Write-Info "Container name: pal-mcp-server"
+            Write-Info "Container name: openclink"
             Write-Host ""
             Write-Host "To view logs: " -NoNewline
-            Write-Host "docker logs -f pal-mcp-server" -ForegroundColor Yellow
+            Write-Host "docker logs -f openclink" -ForegroundColor Yellow
             Write-Host "To stop: " -NoNewline
             Write-Host "docker-compose down" -ForegroundColor Yellow
         }
@@ -970,7 +972,7 @@ function Start-DockerServices {
 # Get Docker container status
 function Get-DockerStatus {
     try {
-        $containerStatus = docker ps --filter "name=pal-mcp-server" --format "{{.Status}}"
+        $containerStatus = docker ps --filter "name=openclink" --format "{{.Status}}"
         if ($containerStatus) {
             Write-Success "Container status: $containerStatus"
             return $true
@@ -1089,7 +1091,7 @@ $script:McpClientDefinitions = @(
 # Docker MCP configuration template (legacy, kept for backward compatibility)
 $script:DockerMcpConfig = @{
     command = "docker"
-    args    = @("exec", "-i", "pal-mcp-server", "python", "server.py")
+    args    = @("exec", "-i", "openclink", "python", "server.py")
     type    = "stdio"
 }
 
@@ -1102,7 +1104,7 @@ function Get-DockerMcpConfigRun {
     
     return @{
         command = "docker"
-        args    = @("run", "--rm", "-i", "--env-file", $envFile, "pal-mcp-server:latest", "python", "server.py")
+        args    = @("run", "--rm", "-i", "--env-file", $envFile, "openclink:latest", "python", "server.py")
         type    = "stdio"
     }
 }
@@ -1180,7 +1182,7 @@ function Get-ExistingMcpConfigType {
             return @{
                 Exists  = $false
                 Type    = "None"
-                Details = "PAL configuration not found"
+                Details = "OpenClink configuration not found"
             }
         }
         
@@ -1218,7 +1220,7 @@ function Get-ExistingMcpConfigType {
             $pythonType = "Python"
             $details = "Python virtual environment"
             
-            if ($palConfig.command.Contains(".pal_venv")) {
+            if ($palConfig.command.Contains(".openclink_venv")) {
                 $details = "Python (pal virtual environment)"
             }
             elseif ($palConfig.command.Contains("venv")) {
@@ -1363,7 +1365,7 @@ function Configure-McpClient {
     $newConfigType = if ($UseDocker) { "Docker" } else { "Python" }
     
     if ($existingConfig.Exists) {
-        Write-Info "Found existing PAL MCP configuration in $($Client.Name)"
+        Write-Info "Found existing OpenClink configuration in $($Client.Name)"
         Write-Info "  Current: $($existingConfig.Details)"
         Write-Info "  New: $newConfigType configuration"
         
@@ -1386,7 +1388,7 @@ function Configure-McpClient {
     }
     else {
         # User confirmation for new installation
-        $response = Read-Host "`nConfigure PAL MCP for $($Client.Name) (mode: $newConfigType)? (y/N)"
+        $response = Read-Host "`nConfigure OpenClink for $($Client.Name) (mode: $newConfigType)? (y/N)"
         if ($response -ne 'y' -and $response -ne 'Y') {
             Write-Info "Skipping $($Client.Name) integration"
             return
@@ -1543,7 +1545,7 @@ function Test-ClaudeCliIntegration {
 function Test-GeminiCliIntegration {
     param([string]$ScriptDir)
     
-    $palWrapper = Join-Path $ScriptDir "pal-mcp-server.cmd"
+    $openclinkWrapper = Join-Path $ScriptDir "pal-mcp-server.cmd"
     
     # Check if Gemini settings file exists (Windows path)
     $geminiConfig = "$env:USERPROFILE\.gemini\settings.json"
@@ -1570,22 +1572,22 @@ function Test-GeminiCliIntegration {
     $needsWrite = $legacyRemoved
 
     if ($palConfig) {
-        if ($palConfig.command -ne $palWrapper) {
-            $palConfig.command = $palWrapper
+        if ($palConfig.command -ne $openclinkWrapper) {
+            $palConfig.command = $openclinkWrapper
             $needsWrite = $true
         }
 
-        if (!(Test-Path $palWrapper)) {
+        if (!(Test-Path $openclinkWrapper)) {
             Write-Info "Creating wrapper script for Gemini CLI..."
             @"
 @echo off
 cd /d "%~dp0"
-if exist ".pal_venv\Scripts\python.exe" (
-    .pal_venv\Scripts\python.exe server.py %*
+if exist ".openclink_venv\Scripts\python.exe" (
+    .openclink_venv\Scripts\python.exe server.py %*
 ) else (
     python server.py %*
 )
-"@ | Out-File -FilePath $palWrapper -Encoding ASCII
+"@ | Out-File -FilePath $openclinkWrapper -Encoding ASCII
             Write-Success "Created pal-mcp-server.cmd wrapper script"
         }
 
@@ -1594,31 +1596,31 @@ if exist ".pal_venv\Scripts\python.exe" (
             $config | ConvertTo-Json -Depth 10 | Out-File $geminiConfig -Encoding UTF8
             Write-Success "Updated Gemini CLI configuration (cleaned legacy entries)"
             Write-Host "  Config: $geminiConfig" -ForegroundColor Gray
-            Write-Host "  Restart Gemini CLI to use PAL MCP Server" -ForegroundColor Gray
+            Write-Host "  Restart Gemini CLI to use OpenClink" -ForegroundColor Gray
         }
         return
     }
 
-    # Ask user if they want to add PAL to Gemini CLI
+    # Ask user if they want to add OpenClink to Gemini CLI
     Write-Host ""
-    $response = Read-Host "Configure PAL for Gemini CLI? (y/N)"
+    $response = Read-Host "Configure OpenClink for Gemini CLI? (y/N)"
     if ($response -ne 'y' -and $response -ne 'Y') {
         Write-Info "Skipping Gemini CLI integration"
         return
     }
     
     # Ensure wrapper script exists
-    if (!(Test-Path $palWrapper)) {
+    if (!(Test-Path $openclinkWrapper)) {
         Write-Info "Creating wrapper script for Gemini CLI..."
         @"
 @echo off
 cd /d "%~dp0"
-if exist ".pal_venv\Scripts\python.exe" (
-    .pal_venv\Scripts\python.exe server.py %*
+if exist ".openclink_venv\Scripts\python.exe" (
+    .openclink_venv\Scripts\python.exe server.py %*
 ) else (
     python server.py %*
 )
-"@ | Out-File -FilePath $palWrapper -Encoding ASCII
+"@ | Out-File -FilePath $openclinkWrapper -Encoding ASCII
         
         Write-Success "Created pal-mcp-server.cmd wrapper script"
     }
@@ -1637,7 +1639,7 @@ if exist ".pal_venv\Scripts\python.exe" (
         
         # Add pal server
         $palConfig = @{
-            command = $palWrapper
+            command = $openclinkWrapper
         }
         
         $config.mcpServers | Add-Member -MemberType NoteProperty -Name "pal" -Value $palConfig -Force
@@ -1647,7 +1649,7 @@ if exist ".pal_venv\Scripts\python.exe" (
         
         Write-Success "Successfully configured Gemini CLI"
         Write-Host "  Config: $geminiConfig" -ForegroundColor Gray
-        Write-Host "  Restart Gemini CLI to use PAL MCP Server" -ForegroundColor Gray
+        Write-Host "  Restart Gemini CLI to use OpenClink" -ForegroundColor Gray
         
     }
     catch {
@@ -1659,7 +1661,7 @@ if exist ".pal_venv\Scripts\python.exe" (
 {
   "mcpServers": {
     "pal": {
-      "command": "$palWrapper"
+      "command": "$openclinkWrapper"
     }
   }
 }
@@ -1810,7 +1812,7 @@ function Test-QwenCliIntegration {
         "AZURE_OPENAI_API_KEY", "AZURE_OPENAI_ENDPOINT", "AZURE_OPENAI_API_VERSION", "AZURE_OPENAI_ALLOWED_MODELS", "AZURE_MODELS_CONFIG_PATH",
         "CUSTOM_API_URL", "CUSTOM_API_KEY", "CUSTOM_MODEL_NAME", "DEFAULT_MODEL", "GOOGLE_ALLOWED_MODELS",
         "OPENAI_ALLOWED_MODELS", "OPENROUTER_ALLOWED_MODELS", "XAI_ALLOWED_MODELS", "DEFAULT_THINKING_MODE_THINKDEEP",
-        "DISABLED_TOOLS", "CONVERSATION_TIMEOUT_HOURS", "MAX_CONVERSATION_TURNS", "LOG_LEVEL", "PAL_MCP_FORCE_ENV_OVERRIDE"
+        "DISABLED_TOOLS", "CONVERSATION_TIMEOUT_HOURS", "MAX_CONVERSATION_TURNS", "LOG_LEVEL", "OPENCLINK_MCP_FORCE_ENV_OVERRIDE"
     )
 
     foreach ($key in $extraKeys) {
@@ -1832,7 +1834,7 @@ function Test-QwenCliIntegration {
         $skipPrompt = $true
     }
 
-    $prompt = "Configure PAL for Qwen CLI? (y/N)"
+    $prompt = "Configure OpenClink for Qwen CLI? (y/N)"
     if ($configStatus -eq "cleanup") {
         $prompt = "Remove legacy Qwen MCP entries and refresh configuration? (Y/n)"
     }
@@ -1883,7 +1885,7 @@ function Test-QwenCliIntegration {
 
         Write-Success "Successfully configured Qwen CLI"
         Write-Host "  Config: $configPath" -ForegroundColor Gray
-        Write-Host "  Restart Qwen CLI to use PAL MCP Server" -ForegroundColor Gray
+        Write-Host "  Restart Qwen CLI to use OpenClink" -ForegroundColor Gray
     }
     catch {
         Write-Error "Failed to update Qwen CLI configuration: $_"
@@ -1903,7 +1905,7 @@ function Test-QwenCliIntegration {
 # Show script help
 function Show-Help {
     Write-Host @"
-PAL MCP Server - Setup and Launch Script
+OpenClink - Setup and Launch Script
 
 USAGE:
 .\run-server.ps1 [OPTIONS]
@@ -1935,7 +1937,7 @@ For more information, visit: https://github.com/BeehiveInnovations/pal-mcp-serve
 # Show version information
 function Show-Version {
     $version = Get-Version
-    Write-Host "PAL MCP Server version: $version" -ForegroundColor Green
+    Write-Host "OpenClink version: $version" -ForegroundColor Green
     Write-Host "PowerShell Setup Script for Windows" -ForegroundColor Cyan
     Write-Host "Author: GiGiDKR (https://github.com/GiGiDKR)" -ForegroundColor Gray
     Write-Host "Project: BeehiveInnovations/pal-mcp-server" -ForegroundColor Gray
@@ -1976,7 +1978,7 @@ function Show-ConfigInstructions {
     Write-Host "✓ Qwen CLI" -ForegroundColor White
     Write-Host ""
     Write-Host "The script automatically detects and configures compatible clients." -ForegroundColor Gray
-    Write-Host "Restart your MCP clients after configuration to use the PAL MCP Server." -ForegroundColor Yellow
+    Write-Host "Restart your MCP clients after configuration to use the OpenClink." -ForegroundColor Yellow
 }
 
 # Show setup instructions
@@ -1990,11 +1992,11 @@ function Show-SetupInstructions {
     Write-Step "Setup Complete"
     
     if ($UseDocker) {
-        Write-Success "PAL MCP Server is configured for Docker deployment"
-        Write-Host "Docker command: docker exec -i pal-mcp-server python server.py" -ForegroundColor Cyan
+        Write-Success "OpenClink is configured for Docker deployment"
+        Write-Host "Docker command: docker exec -i openclink python server.py" -ForegroundColor Cyan
     }
     else {
-        Write-Success "PAL MCP Server is configured for Python virtual environment"
+        Write-Success "OpenClink is configured for Python virtual environment"
         Write-Host "Python: $PythonPath" -ForegroundColor Cyan
         Write-Host "Server: $ServerPath" -ForegroundColor Cyan
     }
@@ -2006,7 +2008,7 @@ function Show-SetupInstructions {
 
 # Start the server
 function Start-Server {
-    Write-Step "Starting PAL MCP Server"
+    Write-Step "Starting OpenClink"
     
     $pythonPath = "$VENV_PATH\Scripts\python.exe"
     if (!(Test-Path $pythonPath)) {
@@ -2131,7 +2133,7 @@ function Import-EnvFile {
 # Docker deployment workflow
 function Invoke-DockerWorkflow {
     Write-Step "Starting Docker Workflow"
-    Write-Host "PAL MCP Server" -ForegroundColor Green
+    Write-Host "OpenClink" -ForegroundColor Green
     Write-Host "=================" -ForegroundColor Cyan
     
     $version = Get-Version
@@ -2154,7 +2156,7 @@ function Invoke-DockerWorkflow {
     Show-SetupInstructions -UseDocker
     
     # Start Docker services
-    Write-Step "Starting PAL MCP Server"
+    Write-Step "Starting OpenClink"
     if ($Follow) {
         Write-Info "Starting server and following logs..."
         Start-DockerServices -Follow
@@ -2164,7 +2166,7 @@ function Invoke-DockerWorkflow {
     if (!(Start-DockerServices)) { exit 1 }
     
     Write-Host ""
-    Write-Success "PAL MCP Server is running in Docker!"
+    Write-Success "OpenClink is running in Docker!"
     Write-Host ""
     
     Write-Host "Next steps:" -ForegroundColor Cyan
@@ -2173,7 +2175,7 @@ function Invoke-DockerWorkflow {
     Write-Host ""
     Write-Host "Useful commands:" -ForegroundColor Cyan
     Write-Host "  View logs: " -NoNewline -ForegroundColor White
-    Write-Host "docker logs -f pal-mcp-server" -ForegroundColor Yellow
+    Write-Host "docker logs -f openclink" -ForegroundColor Yellow
     Write-Host "  Stop server: " -NoNewline -ForegroundColor White
     Write-Host "docker-compose down" -ForegroundColor Yellow
     Write-Host "  Restart server: " -NoNewline -ForegroundColor White
@@ -2183,7 +2185,7 @@ function Invoke-DockerWorkflow {
 # Python virtual environment deployment workflow
 function Invoke-PythonWorkflow {
     Write-Step "Starting Python Virtual Environment Workflow"
-    Write-Host "PAL MCP Server" -ForegroundColor Green
+    Write-Host "OpenClink" -ForegroundColor Green
     Write-Host "=================" -ForegroundColor Cyan
     
     $version = Get-Version

@@ -22,7 +22,7 @@ A consequence worth knowing: `requested_model` is now always present in a respon
 
 ### `antigravity` — Google's Antigravity CLI (`agy`) as a clink agent
 
-Google retired the Gemini CLI in mid-2026 in favor of Antigravity, a new closed-source Go binary invoked as `agy`. It only prints output when it thinks it's attached to a real terminal — a plain piped subprocess (the normal way every MCP server, including PAL, spawns a child CLI) gets back an empty stdout with exit code 0.
+Google retired the Gemini CLI in mid-2026 in favor of Antigravity, a new closed-source Go binary invoked as `agy`. It only prints output when it thinks it's attached to a real terminal — a plain piped subprocess (the normal way every MCP server, including OpenClink, spawns a child CLI) gets back an empty stdout with exit code 0.
 
 The fix is to drive `agy` through a real Windows pseudo-console (ConPTY) via [`pywinpty`](https://pypi.org/project/pywinpty/), so it believes it has a TTY and prints normally. New files:
 
@@ -103,8 +103,8 @@ same: codex nests the reply under `item`, keys usage at the event root, and repo
 OpenCode puts the reply in `part.text` on `type:"text"`, and the account in `part.tokens` on
 `type:"step_finish"` — plus a `part.cost` that no other client provides.
 
-**It reports the price of its own call.** `part.cost` arrives per step, so PAL needs no rate card to
-know what a call cost. That matters because PAL's own pricing layer is currently unreachable (#77) —
+**It reports the price of its own call.** `part.cost` arrives per step, so OpenClink needs no rate card to
+know what a call cost. That matters because OpenClink's own pricing layer is currently unreachable (#77) —
 no bundled config declares a `rate_card`, so `price_call` returns `no_rate_card` for every client.
 OpenCode hands over the number regardless; today it is published in parser metadata while
 `AgentOutput.cost` still reads `CostUnavailable(no_rate_card)`. Reconciling the two is #77's call.
@@ -173,13 +173,13 @@ of returning the fallback as success. Covered by `test_antigravity_places_model_
 
 ### Zero-setup CLI discovery + active `claude-9arm`
 
-Install PAL the normal way (README) and `codex`, `antigravity` (`agy`), and `claude-9arm` work
+Install OpenClink the normal way (README) and `codex`, `antigravity` (`agy`), and `claude-9arm` work
 **with no extra setup** — if the CLI is installed on the machine. How:
 
 - **Executable discovery** (`clink/discovery.py`, wired into the registry): a client's bare
   `command` (`agy`/`claude`/`codex`/`gemini`) is resolved to an absolute path via **PATH first,
   then per-CLI known install locations** (winget, `%LOCALAPPDATA%\agy\bin`, `npm`, …). This fixes
-  the common case where the editor launches PAL with a minimal `PATH` that omits user-profile
+  the common case where the editor launches OpenClink with a minimal `PATH` that omits user-profile
   install dirs. If nothing resolves, the bare name passes through and the **call fails with a
   clear "not found in PATH"** — a missing CLI is a graceful per-client error, not a load failure.
 - **`config_args` are `~`/`%VAR%`-expanded** at load, so a bundled preset can reference a
@@ -202,15 +202,15 @@ location (uv-tool vs uvx) has its own copy. Instead, put machine-specific activa
 `CLI_CLIENTS_CONFIG_PATH`). Configs there:
 
 - **persist across reinstalls** (they're outside the package), and
-- are read by **every** PAL instance on the machine — so a client activated once is available to
-  both your editor's PAL (a `uv tool install`) and another tool's PAL (e.g. Codex's `uvx --from
+- are read by **every** OpenClink instance on the machine — so a client activated once is available to
+  both your editor's OpenClink (a `uv tool install`) and another tool's OpenClink (e.g. Codex's `uvx --from
   git+…` launch) with no per-install setup.
 
 Use it for the two things the bundled config can't ship portably — an **absolute executable path**
-(when the CLI isn't on the PAL process's `PATH`) and **activating `claude-9arm`** against your
+(when the CLI isn't on the OpenClink process's `PATH`) and **activating `claude-9arm`** against your
 gateway. Drop-in examples (fill in your own paths / model):
 
-`~/.pal/cli_clients/antigravity.json` (absolute `agy` so it resolves regardless of PAL's PATH):
+`~/.pal/cli_clients/antigravity.json` (absolute `agy` so it resolves regardless of OpenClink's PATH):
 ```json
 { "name": "antigravity", "command": "C:/…/agy.exe", "additional_args": [],
   "roles": { "default": { "prompt_path": "systemprompts/clink/default.txt", "role_args": [] } } }
@@ -222,7 +222,7 @@ gateway. Drop-in examples (fill in your own paths / model):
   "roles": { "default": { "prompt_path": "systemprompts/clink/default.txt", "role_args": [] } } }
 ```
 Keep `prompt_path` **relative** (`systemprompts/clink/…`) so it resolves against each install's own
-package root, not a hard-coded location. Restart PAL after adding files (config is cached at start).
+package root, not a hard-coded location. Restart OpenClink after adding files (config is cached at start).
 
 ## Known gotchas carried over from development
 

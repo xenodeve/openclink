@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    Code quality checks script for PAL MCP server on Windows.
+    Code quality checks script for OpenClink on Windows.
 
 .DESCRIPTION
-    This PowerShell script performs code quality checks for the PAL MCP server project:
+    This PowerShell script performs code quality checks for the OpenClink project:
     - Runs static analysis and linting tools on the codebase
     - Ensures code style compliance and detects potential issues
     - Can be integrated into CI/CD pipelines or used locally before commits
@@ -61,23 +61,23 @@ function Write-Emoji {
     Write-ColorText $Text -Color $Color
 }
 
-Write-Emoji "🔍" "Running Code Quality Checks for PAL MCP Server" -Color Cyan
+Write-Emoji "🔍" "Running Code Quality Checks for OpenClink" -Color Cyan
 Write-ColorText "=================================================" -Color Cyan
 
 # Determine Python command
 $pythonCmd = $null
 $pipCmd = $null
 
-if (Test-Path ".pal_venv") {
+if (Test-Path ".openclink_venv") {
     if ($IsWindows -or $env:OS -eq "Windows_NT") {
-        if (Test-Path ".pal_venv\Scripts\python.exe") {
-            $pythonCmd = ".pal_venv\Scripts\python.exe"
-            $pipCmd = ".pal_venv\Scripts\pip.exe"
+        if (Test-Path ".openclink_venv\Scripts\python.exe") {
+            $pythonCmd = ".openclink_venv\Scripts\python.exe"
+            $pipCmd = ".openclink_venv\Scripts\pip.exe"
         }
     } else {
-        if (Test-Path ".pal_venv/bin/python") {
-            $pythonCmd = ".pal_venv/bin/python"
-            $pipCmd = ".pal_venv/bin/pip"
+        if (Test-Path ".openclink_venv/bin/python") {
+            $pythonCmd = ".openclink_venv/bin/python"
+            $pipCmd = ".openclink_venv/bin/pip"
         }
     }
     
@@ -108,11 +108,11 @@ foreach ($tool in $devTools) {
     
     # Check in venv
     if ($IsWindows -or $env:OS -eq "Windows_NT") {
-        if (Test-Path ".pal_venv\Scripts\$tool.exe") {
+        if (Test-Path ".openclink_venv\Scripts\$tool.exe") {
             $toolFound = $true
         }
     } else {
-        if (Test-Path ".pal_venv/bin/$tool") {
+        if (Test-Path ".openclink_venv/bin/$tool") {
             $toolFound = $true
         }
     }
@@ -152,15 +152,15 @@ if ($devDepsNeeded) {
 
 # Set tool paths
 if ($IsWindows -or $env:OS -eq "Windows_NT") {
-    $ruffCmd = if (Test-Path ".pal_venv\Scripts\ruff.exe") { ".pal_venv\Scripts\ruff.exe" } else { "ruff" }
-    $blackCmd = if (Test-Path ".pal_venv\Scripts\black.exe") { ".pal_venv\Scripts\black.exe" } else { "black" }
-    $isortCmd = if (Test-Path ".pal_venv\Scripts\isort.exe") { ".pal_venv\Scripts\isort.exe" } else { "isort" }
-    $pytestCmd = if (Test-Path ".pal_venv\Scripts\pytest.exe") { ".pal_venv\Scripts\pytest.exe" } else { "pytest" }
+    $ruffCmd = if (Test-Path ".openclink_venv\Scripts\ruff.exe") { ".openclink_venv\Scripts\ruff.exe" } else { "ruff" }
+    $blackCmd = if (Test-Path ".openclink_venv\Scripts\black.exe") { ".openclink_venv\Scripts\black.exe" } else { "black" }
+    $isortCmd = if (Test-Path ".openclink_venv\Scripts\isort.exe") { ".openclink_venv\Scripts\isort.exe" } else { "isort" }
+    $pytestCmd = if (Test-Path ".openclink_venv\Scripts\pytest.exe") { ".openclink_venv\Scripts\pytest.exe" } else { "pytest" }
 } else {
-    $ruffCmd = if (Test-Path ".pal_venv/bin/ruff") { ".pal_venv/bin/ruff" } else { "ruff" }
-    $blackCmd = if (Test-Path ".pal_venv/bin/black") { ".pal_venv/bin/black" } else { "black" }
-    $isortCmd = if (Test-Path ".pal_venv/bin/isort") { ".pal_venv/bin/isort" } else { "isort" }
-    $pytestCmd = if (Test-Path ".pal_venv/bin/pytest") { ".pal_venv/bin/pytest" } else { "pytest" }
+    $ruffCmd = if (Test-Path ".openclink_venv/bin/ruff") { ".openclink_venv/bin/ruff" } else { "ruff" }
+    $blackCmd = if (Test-Path ".openclink_venv/bin/black") { ".openclink_venv/bin/black" } else { "black" }
+    $isortCmd = if (Test-Path ".openclink_venv/bin/isort") { ".openclink_venv/bin/isort" } else { "isort" }
+    $pytestCmd = if (Test-Path ".openclink_venv/bin/pytest") { ".openclink_venv/bin/pytest" } else { "pytest" }
 }
 
 Write-Host ""
@@ -172,25 +172,25 @@ if (!$SkipLinting) {
 
     try {
         Write-Emoji "🔧" "Running ruff linting with auto-fix..." -Color Yellow
-        & $ruffCmd check --fix --exclude test_simulation_files --exclude .pal_venv
+        & $ruffCmd check --fix --exclude test_simulation_files --exclude .openclink_venv
         if ($LASTEXITCODE -ne 0) {
             throw "Ruff linting failed"
         }
 
         Write-Emoji "🎨" "Running black code formatting..." -Color Yellow
-        & $blackCmd . --exclude="test_simulation_files/" --exclude=".pal_venv/"
+        & $blackCmd . --exclude="test_simulation_files/" --exclude=".openclink_venv/"
         if ($LASTEXITCODE -ne 0) {
             throw "Black formatting failed"
         }
 
         Write-Emoji "📦" "Running import sorting with isort..." -Color Yellow
-        & $isortCmd . --skip-glob=".pal_venv/*" --skip-glob="test_simulation_files/*"
+        & $isortCmd . --skip-glob=".openclink_venv/*" --skip-glob="test_simulation_files/*"
         if ($LASTEXITCODE -ne 0) {
             throw "Import sorting failed"
         }
 
         Write-Emoji "✅" "Verifying all linting passes..." -Color Yellow
-        & $ruffCmd check --exclude test_simulation_files --exclude .pal_venv
+        & $ruffCmd check --exclude test_simulation_files --exclude .openclink_venv
         if ($LASTEXITCODE -ne 0) {
             throw "Final linting verification failed"
         }

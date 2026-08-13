@@ -10,7 +10,7 @@ class OpenCodeAgent(BaseCLIAgent):
 
     Behaviourally identical to the base today — `opencode run` takes the model as
     `-m provider/model`, which `BaseCLIAgent` already emits, and its reasoning
-    effort is a separate `--variant` flag that no PAL call sets yet. The class
+    effort is a separate `--variant` flag that no OpenClink call sets yet. The class
     exists as the declaration site for opencode's own usage vocabulary, which the
     fallback cannot express.
     """

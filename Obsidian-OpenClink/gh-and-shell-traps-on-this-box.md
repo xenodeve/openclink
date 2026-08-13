@@ -35,7 +35,7 @@ divergence that makes a stale `codex` answer a valid model with an HTTP 400 blam
 
 ### `.venv` has no `pip`
 
-Use `uv pip install --python .venv/Scripts/python.exe <pkg>`. Note the repo also documents `.pal_venv`
+Use `uv pip install --python .venv/Scripts/python.exe <pkg>`. Note the repo also documents `.openclink_venv`
 (what `run-server.sh` creates) while this checkout carries `.venv`, so a doc-following agent finds no
 venv and a `.venv`-finding agent gets an under-provisioned one. Neither is wrong, which is what makes
 it cost a session.

@@ -1,4 +1,4 @@
-# PAL MCP: Many Workflows. One Context.
+# OpenClink: Many Workflows. One Context.
 
 **🇹🇭 [ภาษาไทย](README.md) · 🇬🇧 English**
 
@@ -59,24 +59,24 @@ Continue with clink gemini - implement the recommended feature
 
 ---
 
-## Why PAL MCP?
+## Why OpenClink?
 
 **Why rely on one AI model when you can orchestrate them all?**
 
 A Model Context Protocol server that supercharges tools like [Claude Code](https://www.anthropic.com/claude-code), [Codex CLI](https://developers.openai.com/codex/cli), and IDE clients such
-as [Cursor](https://cursor.com) or the [Claude Dev VS Code extension](https://marketplace.visualstudio.com/items?itemName=Anthropic.claude-vscode). **PAL MCP connects your favorite AI tool
+as [Cursor](https://cursor.com) or the [Claude Dev VS Code extension](https://marketplace.visualstudio.com/items?itemName=Anthropic.claude-vscode). **OpenClink connects your favorite AI tool
 to multiple AI models** for enhanced code analysis, problem-solving, and collaborative development.
 
 ### True AI Collaboration with Conversation Continuity
 
-PAL supports **conversation threading** so your CLI can **discuss ideas with multiple AI models, exchange reasoning, get second opinions, and even run collaborative debates between models** to help you reach deeper insights and better solutions.
+OpenClink supports **conversation threading** so your CLI can **discuss ideas with multiple AI models, exchange reasoning, get second opinions, and even run collaborative debates between models** to help you reach deeper insights and better solutions.
 
 Your CLI always stays in control but gets perspectives from the best AI for each subtask. Context carries forward seamlessly across tools and models, enabling complex workflows like: code reviews with multiple models → automated planning → implementation → pre-commit validation.
 
 > **You're in control.** Your CLI of choice orchestrates the AI team, but you decide the workflow. Craft powerful prompts that bring in Gemini Pro, GPT 5, Flash, or local offline models exactly when needed.
 
 <details>
-<summary><b>Reasons to Use PAL MCP</b></summary>
+<summary><b>Reasons to Use OpenClink</b></summary>
 
 A typical workflow with Claude Code as an example:
 
@@ -126,7 +126,7 @@ and review into consideration to aid with its final pre-commit review.
 **Think of it as Claude Code _for_ Claude Code.** This MCP isn't magic. It's just **super-glue**.
 
 > **Remember:** Claude stays in full control — but **YOU** call the shots.
-> PAL is designed to have Claude engage other models only when needed — and to follow through with meaningful back-and-forth.
+> OpenClink is designed to have Claude engage other models only when needed — and to follow through with meaningful back-and-forth.
 > **You're** the one who crafts the powerful prompt that makes Claude bring in Gemini, Flash, O3 — or fly solo.
 > You're the guide. The prompter. The puppeteer.
 > #### You are the AI - **Actually Intelligent**.
@@ -213,7 +213,7 @@ cd pal-mcp-server
 
 ## Provider Configuration
 
-PAL activates any provider that has credentials in your `.env`. See `.env.example` for deeper customization.
+OpenClink activates any provider that has credentials in your `.env`. See `.env.example` for deeper customization.
 
 ## Core Tools
 
@@ -362,11 +362,11 @@ DISABLED_TOOLS=
 <details>
 <summary><b>API Lookup Tool</b> - Current vs outdated API documentation</summary>
 
-**Without PAL - outdated APIs:**
+**Without OpenClink - outdated APIs:**
 
 [API without PAL](https://github.com/user-attachments/assets/01a79dc9-ad16-4264-9ce1-76a56c3580ee)
 
-**With PAL - current APIs:**
+**With OpenClink - current APIs:**
 
 [API with PAL](https://github.com/user-attachments/assets/5c847326-4b66-41f7-8f30-f380453dce22)
 
@@ -375,11 +375,11 @@ DISABLED_TOOLS=
 <details>
 <summary><b>Challenge Tool</b> - Critical thinking vs reflexive agreement</summary>
 
-**Without PAL:**
+**Without OpenClink:**
 
 ![without_pal@2x](https://github.com/user-attachments/assets/64f3c9fb-7ca9-4876-b687-25e847edfd87)
 
-**With PAL:**
+**With OpenClink:**
 
 ![with_pal@2x](https://github.com/user-attachments/assets/9d72f444-ba53-4ab1-83e5-250062c6ee70)
 

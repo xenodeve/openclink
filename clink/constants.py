@@ -11,7 +11,14 @@ DEFAULT_STREAM_LIMIT = 10 * 1024 * 1024  # 10MB per stream
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 BUILTIN_PROMPTS_DIR = PROJECT_ROOT / "systemprompts" / "clink"
 CONFIG_DIR = PROJECT_ROOT / "conf" / "cli_clients"
-USER_CONFIG_DIR = Path.home() / ".pal" / "cli_clients"
+USER_CONFIG_DIR = Path.home() / ".openclink" / "cli_clients"
+# Where user overrides lived before the rename (#94). Still searched, because this
+# directory is outside the repository and no sweep can migrate it: pointing only at
+# the new path does not error, it silently stops applying whatever the user wrote.
+# On this fork that is concrete — the documented Windows fix for cursor
+# (`"env": {"SHELL": "cmd.exe"}`) lives in such a file, and losing it turns every
+# cursor delegation into a text-only responder that answers with exit 0.
+LEGACY_USER_CONFIG_DIR = Path.home() / ".pal" / "cli_clients"
 
 
 @dataclass(frozen=True)

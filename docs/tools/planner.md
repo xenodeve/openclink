@@ -19,7 +19,7 @@ The planner tool enables step-by-step thinking with incremental plan building:
 
 #### Pro Tip
 Claude supports `sub-tasks` where it will spawn and run separate background tasks. You can ask Claude to 
-run PAL's planner with two separate ideas. Then when it's done, use PAL's `consensus` tool to pass the entire
+run OpenClink's planner with two separate ideas. Then when it's done, use OpenClink's `consensus` tool to pass the entire
 plan and get expert perspective from two powerful AI models on which one to work on first! Like performing **AB** testing
 in one-go without the wait!
 
@@ -73,7 +73,7 @@ Develop a plan using pal for implementing CI/CD pipelines across our development
 
 ## Continue With a New Plan
 
-Like all other tools in PAL, you can `continue` with a new plan using the output from a previous plan by simply saying
+Like all other tools in OpenClink, you can `continue` with a new plan using the output from a previous plan by simply saying
 
 ```
 Continue with pal's consensus tool and find out what o3:for and flash:against think of the plan 

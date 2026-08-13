@@ -26,7 +26,7 @@ Measured 2026-08-01: `uv pip install -r requirements.txt -r requirements-dev.txt
 attribute remains on the object. Every test module that imports `server.py` therefore fails at
 **collection**, so the unit suite cannot run at all.
 
-Why it stays hidden: the PAL that actually answers MCP calls on this machine was installed earlier
+Why it stays hidden: the OpenClink that actually answers MCP calls on this machine was installed earlier
 against `mcp` 1.x and keeps working, so the breakage is invisible until somebody builds a fresh
 environment — a new contributor, CI, or an agent setting up to run tests. There is **no `uv.lock`**,
 so nothing pins the resolution.

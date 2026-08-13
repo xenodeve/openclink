@@ -5,11 +5,11 @@
 
 ## Context
 
-Installing PAL and having `codex` / `antigravity` / `claude-9arm` work should require **no extra
+Installing OpenClink and having `codex` / `antigravity` / `claude-9arm` work should require **no extra
 setup**; a CLI that isn't installed should surface a clear "not found", not a load failure. Two
-obstacles: (1) editors launch PAL with a minimal `PATH` that omits user-profile install dirs
+obstacles: (1) editors launch OpenClink with a minimal `PATH` that omits user-profile install dirs
 (winget, `%LOCALAPPDATA%\agy\bin`, npm), so a bundled config's bare command fails to resolve; (2)
-`claude-9arm` needs a gateway `--settings` path + model, and there are **multiple separate PAL
+`claude-9arm` needs a gateway `--settings` path + model, and there are **multiple separate OpenClink
 installs** on a machine (a `uv tool` install for the editor, a `uvx` env for Codex) — editing one
 install's `conf/` is ephemeral (a reinstall wipes it) and doesn't reach the other.
 
@@ -27,7 +27,7 @@ escape hatch.
   stays as the generic template.
 - Machine-specific overrides live in **`~/.pal/cli_clients/*.json`** (`USER_CONFIG_DIR`,
   `clink/constants.py:14`), read **last** by `registry._iter_config_files` so they override the
-  bundled config, survive reinstalls, and are **shared by every PAL install** on the machine.
+  bundled config, survive reinstalls, and are **shared by every OpenClink install** on the machine.
 
 ## Consequences
 

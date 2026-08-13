@@ -16,7 +16,7 @@ truth. Every code change maps to an issue you're allowed to work (authored by us
 
 - Quality gate before a PR: `./code_quality_checks.sh` (ruff lint+format, tests).
 - Tests: `python -m pytest tests/` (unit) · `simulator_tests/` for end-to-end harness runs.
-- Env: `source .pal_venv/bin/activate` (managed venv) or `uv` per the README.
+- Env: `source .openclink_venv/bin/activate` (managed venv) or `uv` per the README.
 - Non-standard: `agy` (Antigravity) needs a real ConPTY on Windows — see `CHANGES-FORK.md` before
   touching `clink/agents/antigravity.py`.
 
@@ -46,7 +46,7 @@ the **agent-enforcement layer**: the skills that decide how a master agent uses 
 | **#20** subagent lifetime — no fixed deadline, process-tree ownership, cancel/reap | **#74** master-agent pre-delegation checklist — acceptance, feasibility, containment, failure semantics, verification |
 | **#21** report the cost of every call — usage, resolved model/effort, credits | **#73** route on measured cost — refresh the figures, name every scale, contract-test them |
 | — | **#72** research: the capability matrix that sources #73's figures |
-| **#88** a `skills` parameter — PAL guarantees the skill floor the master is supposed to hand over | **#163** split the handoff: the floor becomes PAL's, the task-specific skill stays the master's, and `skills_added_by_default` is the master's own omission rate reported back to it |
+| **#88** a `skills` parameter — OpenClink guarantees the skill floor the master is supposed to hand over | **#163** split the handoff: the floor becomes OpenClink's, the task-specific skill stays the master's, and `skills_added_by_default` is the master's own omission rate reported back to it |
 | **#89** the ultracode environment (epic) — `clink_phase`, structured returns, an on-disk journal, per-lane caps, and the three enforcement tiers | **#164** `clink-ultracode` — the phase shape, the economics, and the stopping rule; the skill that drives #89 |
 | **#96** the selection layer (PRD) — compute the delegation plan from measured data: which model and effort, **how many agents**, and each one's share of the scope | **#165** `t4-subagent` (PRD) — the rule that the master must not do cheap work itself, and the `PreToolUse` denial of a spawn carrying no plan identity |
 

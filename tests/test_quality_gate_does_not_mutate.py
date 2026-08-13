@@ -27,7 +27,7 @@ REPO = Path(__file__).resolve().parent.parent
 SCRIPT = REPO / "code_quality_checks.sh"
 
 # The exclusions the gate itself uses; the check must cover the same tree.
-EXCLUDES = ["--exclude", "test_simulation_files/", "--exclude", r"\.pal_venv/", "--exclude", r"\.venv/"]
+EXCLUDES = ["--exclude", "test_simulation_files/", "--exclude", r"\.openclink_venv/", "--exclude", r"\.venv/"]
 
 
 def _script() -> str:

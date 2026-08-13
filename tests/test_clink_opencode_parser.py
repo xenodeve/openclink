@@ -61,9 +61,9 @@ def test_step_finish_tokens_are_published_for_the_usage_adapter():
 
 
 def test_the_cli_prices_its_own_call_and_the_number_survives():
-    """OpenCode reports `cost` per call, so PAL needs no rate card for it.
+    """OpenCode reports `cost` per call, so OpenClink needs no rate card for it.
 
-    Issue #77 is open precisely because PAL's pricing layer is unreachable
+    Issue #77 is open precisely because OpenClink's pricing layer is unreachable
     without one. Dropping this field would discard the only client that
     sidesteps that problem.
     """
@@ -71,7 +71,7 @@ def test_the_cli_prices_its_own_call_and_the_number_survives():
     assert parsed.metadata["cost"] == pytest.approx(0.00851956)
 
 
-# Recorded verbatim 2026-08-11 from a REAL agentic call through PAL's own path —
+# Recorded verbatim 2026-08-11 from a REAL agentic call through OpenClink's own path —
 # `agent.run(...)` against opencode 1.18.15, asking it to read a file with its own
 # tool. The tool call makes the run take two steps, and each step closes with its
 # own `step_finish`.
@@ -105,7 +105,7 @@ def test_tokens_are_summed_across_every_step_not_taken_from_the_last():
 
 
 def test_cost_is_summed_across_every_step():
-    """Same argument, and the field PAL cannot currently derive itself.
+    """Same argument, and the field OpenClink cannot currently derive itself.
 
     The last step cost 0.000248 of a call that cost 0.007392 — reporting it
     alone under-states the call by 96.6%.

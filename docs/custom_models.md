@@ -1,6 +1,6 @@
 # Custom Models & API Setup
 
-This guide covers setting up multiple AI model providers including OpenRouter, custom API endpoints, and local model servers. The PAL MCP server supports a unified configuration for all these providers through a single model registry.
+This guide covers setting up multiple AI model providers including OpenRouter, custom API endpoints, and local model servers. The OpenClink supports a unified configuration for all these providers through a single model registry.
 
 ## Supported Providers
 
@@ -35,7 +35,7 @@ This guide covers setting up multiple AI model providers including OpenRouter, c
 
 ## Model Aliases
 
-PAL ships multiple registries:
+OpenClink ships multiple registries:
 
 - `conf/openai_models.json` – native OpenAI catalogue (override with `OPENAI_MODELS_CONFIG_PATH`)
 - `conf/gemini_models.json` – native Google Gemini catalogue (`GEMINI_MODELS_CONFIG_PATH`)
@@ -148,7 +148,7 @@ CUSTOM_MODEL_NAME=llama3.2                          # Default model to use
 
 **Local Model Connection**
 
-The PAL MCP server runs natively, so you can use standard localhost URLs to connect to local models:
+The OpenClink runs natively, so you can use standard localhost URLs to connect to local models:
 
 ```bash
 # For Ollama, vLLM, LM Studio, etc. running on your machine

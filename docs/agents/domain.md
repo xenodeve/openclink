@@ -1,4 +1,4 @@
-# Domain — PAL MCP Server (fork)
+# Domain — OpenClink (fork)
 
 What the words mean here, so a fresh agent reads code and issues with the right model.
 

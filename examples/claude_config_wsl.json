@@ -6,7 +6,7 @@
     "pal": {
       "command": "wsl.exe",
       "args": [
-        "/path/to/pal-mcp-server/.pal_venv/bin/python",
+        "/path/to/pal-mcp-server/.openclink_venv/bin/python",
         "/path/to/pal-mcp-server/server.py"
       ]
     }

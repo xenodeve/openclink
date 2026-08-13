@@ -324,7 +324,7 @@ def test_a_cli_that_reports_no_usage_says_so_explicitly():
 
 def test_an_unwritten_adapter_stays_silent_rather_than_claiming_unavailable():
     # The distinction the whole marker exists for. "No adapter yet" is a fact
-    # about PAL; "the CLI reports nothing" is a fact about the CLI. Collapsing
+    # about OpenClink; "the CLI reports nothing" is a fact about the CLI. Collapsing
     # them would let an unfinished adapter read as a finished one.
     accounting = _accounting(_agent(_NoAdapterYetAgent, "someone-new", "codex_jsonl"), {})
     assert "usage_unavailable" not in accounting

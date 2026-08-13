@@ -1,4 +1,4 @@
-# PAL MCP: หลายเวิร์กโฟลว์ บริบทเดียว
+# OpenClink: หลายเวิร์กโฟลว์ บริบทเดียว
 
 **🇹🇭 ภาษาไทย · 🇬🇧 [English](README.en.md)**
 
@@ -64,20 +64,20 @@ clink antigravity model="Claude Opus 4.6 (Thinking)"      → ขอความ
 
 ---
 
-## ทำไมต้อง PAL MCP?
+## ทำไมต้อง OpenClink?
 
 **ในเมื่อคุณสั่งการทุกโมเดลพร้อมกันได้ ทำไมต้องพึ่งโมเดลเดียว?**
 
-PAL เป็นเซิร์ฟเวอร์ Model Context Protocol ที่เสริมพลังเครื่องมืออย่าง [Claude Code](https://www.anthropic.com/claude-code), [Codex CLI](https://developers.openai.com/codex/cli) และ IDE เช่น [Cursor](https://cursor.com) — **เชื่อมเครื่องมือ AI ที่คุณชอบเข้ากับหลายโมเดล** เพื่อวิเคราะห์โค้ด แก้ปัญหา และพัฒนาแบบร่วมมือกันได้ลึกขึ้น
+OpenClink เป็นเซิร์ฟเวอร์ Model Context Protocol ที่เสริมพลังเครื่องมืออย่าง [Claude Code](https://www.anthropic.com/claude-code), [Codex CLI](https://developers.openai.com/codex/cli) และ IDE เช่น [Cursor](https://cursor.com) — **เชื่อมเครื่องมือ AI ที่คุณชอบเข้ากับหลายโมเดล** เพื่อวิเคราะห์โค้ด แก้ปัญหา และพัฒนาแบบร่วมมือกันได้ลึกขึ้น
 
 ### ร่วมมือกับ AI จริง ด้วยบริบทที่ต่อเนื่อง
 
-PAL รองรับ **conversation threading** — CLI ของคุณจึงถกไอเดียกับหลายโมเดล แลกเหตุผล ขอ second opinion หรือจัดดีเบตระหว่างโมเดลได้ CLI ของคุณคุมทุกอย่าง แต่ได้มุมมองจาก AI ที่เหมาะกับแต่ละงานย่อย บริบทไหลต่อข้ามเครื่องมือ/โมเดล เปิดทางเวิร์กโฟลว์ซับซ้อน เช่น review หลายโมเดล → วางแผน → ลงมือ → ตรวจก่อน commit
+OpenClink รองรับ **conversation threading** — CLI ของคุณจึงถกไอเดียกับหลายโมเดล แลกเหตุผล ขอ second opinion หรือจัดดีเบตระหว่างโมเดลได้ CLI ของคุณคุมทุกอย่าง แต่ได้มุมมองจาก AI ที่เหมาะกับแต่ละงานย่อย บริบทไหลต่อข้ามเครื่องมือ/โมเดล เปิดทางเวิร์กโฟลว์ซับซ้อน เช่น review หลายโมเดล → วางแผน → ลงมือ → ตรวจก่อน commit
 
 > **คุณคือคนคุม** — CLI ของคุณสั่งการทีม AI แต่คุณตัดสินใจเวิร์กโฟลว์เอง เขียนพรอมป์ตให้ดึง Gemini Pro, GPT-5, Flash หรือโมเดลบนเครื่องมาใช้ตอนที่ต้องการ
 
 <details>
-<summary><b>เหตุผลที่ควรใช้ PAL MCP</b></summary>
+<summary><b>เหตุผลที่ควรใช้ OpenClink</b></summary>
 
 - **Multi-Model Orchestration** — ประสานหลายโมเดล (Gemini Pro, O3, GPT-5 และ 50+ โมเดล) เลือกตัวที่เหมาะกับแต่ละงาน
 - **Context Revival** — แม้ context ของ CLI หลักจะรีเซ็ต ก็ให้โมเดลอื่น "เตือนความจำ" เพื่อคุยต่อได้ไร้รอยต่อ

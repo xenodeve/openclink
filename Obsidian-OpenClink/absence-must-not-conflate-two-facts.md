@@ -1,6 +1,6 @@
 ---
 name: absence-must-not-conflate-two-facts
-description: "In the clink accounting block, a marker means a fact about the CLI or the call; a fact about PAL's own configuration stays silent — three fields already follow this and a fourth must too"
+description: "In the clink accounting block, a marker means a fact about the CLI or the call; a fact about OpenClink's own configuration stays silent — three fields already follow this and a fourth must too"
 metadata:
   type: project
 ---
@@ -12,14 +12,14 @@ catching a violation in review, hours after the first.
 | The fact is about… | What the caller sees | Why |
 |---|---|---|
 | **the CLI, or this call** | an explicit marker | the caller must be able to act on it |
-| **PAL's own configuration** | **nothing at all** | it would be present on every response until someone configures it, and a marker present on everything marks nothing |
+| **OpenClink's own configuration** | **nothing at all** | it would be present on every response until someone configures it, and a marker present on everything marks nothing |
 
 Worked examples, all on `main`:
 
 - `usage_unavailable: true` — **emitted.** The CLI genuinely reports no usage (`cursor`, `antigravity`
   declare `USAGE_UNAVAILABLE`). A fact about the CLI.
 - **an adapter nobody has written yet — silent.** `USAGE_FIELD_MAP` empty and no declaration means
-  PAL has not done the work. Marking it would make an unfinished adapter look like a finished one.
+  OpenClink has not done the work. Marking it would make an unfinished adapter look like a finished one.
 - `cost_unavailable: "model_not_priced" | "model_unresolved" | "no_usage_reported"` — **emitted.**
   Each is a fact about this call, and each can only arise once a rate card exists.
 - `cost_unavailable: "no_rate_card"` — **suppressed** in `tools/clink.py`, and this is the one that

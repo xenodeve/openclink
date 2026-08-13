@@ -33,7 +33,7 @@ class TestUvxEnvironmentHandling:
 
             with tempfile.NamedTemporaryFile("w", delete=False) as tmp_env:
                 temp_env_path = Path(tmp_env.name)
-                tmp_env.write("PAL_MCP_FORCE_ENV_OVERRIDE=false\n")
+                tmp_env.write("OPENCLINK_MCP_FORCE_ENV_OVERRIDE=false\n")
 
             try:
                 importlib.reload(env_config)
@@ -82,7 +82,7 @@ class TestUvxEnvironmentHandling:
     def test_environment_variables_still_work_without_dotenv(self):
         """Test that environment variables work even when dotenv is not available."""
         # Set a test environment variable
-        test_key = "TEST_PAL_MCP_VAR"
+        test_key = "TEST_OPENCLINK_MCP_VAR"
         test_value = "test_value_123"
 
         with mock.patch.dict(os.environ, {test_key: test_value}):
@@ -133,14 +133,42 @@ class TestUvxProjectConfiguration:
 
         # Essential fields for uvx
         assert "name" in project
-        assert project["name"] == "pal-mcp-server"
+        assert project["name"] == "openclink"
         assert "dependencies" in project
         assert "requires-python" in project
 
         # Script entry point for uvx
         assert "scripts" in project
-        assert "pal-mcp-server" in project["scripts"]
-        assert project["scripts"]["pal-mcp-server"] == "server:run"
+        assert "openclink" in project["scripts"]
+        assert project["scripts"]["openclink"] == "server:run"
+
+    def test_the_old_entry_point_still_runs_the_server(self):
+        """`pal-mcp-server` must keep working through the rename (#94).
+
+        Every install instruction published so far ends in `pal-mcp-server` —
+        six copies across the two READMEs and docs/getting-started.md, plus
+        whatever users already pasted into their own client config. Dropping the
+        name in the same release that introduces `openclink` breaks all of them
+        at once, and the breakage surfaces as a command-not-found inside an MCP
+        client, which is where it is hardest to read.
+
+        Both names point at the same callable, so this costs one line and buys
+        the transition. Removing it is a separate, deliberate decision.
+        """
+        try:
+            import tomllib
+        except ImportError:
+            try:
+                import tomli as tomllib
+            except ImportError:
+                pytest.skip("tomllib/tomli not available for TOML parsing")
+
+        pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
+        with open(pyproject_path, "rb") as f:
+            scripts = tomllib.load(f)["project"]["scripts"]
+
+        assert "pal-mcp-server" in scripts, "the previous entry point was dropped without a deprecation period"
+        assert scripts["pal-mcp-server"] == scripts["openclink"], "the two names must run the same server"
 
     def test_pyproject_dependencies_match_requirements(self):
         """Test that pyproject.toml dependencies align with requirements.txt."""

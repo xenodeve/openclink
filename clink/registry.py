@@ -14,6 +14,7 @@ from clink.constants import (
     DEFAULT_TIMEOUT_SECONDS,
     INTERNAL_DEFAULTS,
     PROJECT_ROOT,
+    LEGACY_USER_CONFIG_DIR,
     USER_CONFIG_DIR,
     CLIInternalDefaults,
 )
@@ -105,6 +106,11 @@ class ClinkRegistry:
             search_paths.append(env_path)
 
         # 3. User overrides in ~/.pal/cli_clients
+        # Legacy first, current second: a later file overriding an earlier one is
+        # how this loop already resolves duplicates, so listing the current
+        # directory last means an override the user just wrote beats a stale one
+        # left behind in the pre-rename location (#94).
+        search_paths.append(LEGACY_USER_CONFIG_DIR)
         search_paths.append(USER_CONFIG_DIR)
 
         seen: set[Path] = set()
@@ -190,7 +196,7 @@ class ClinkRegistry:
         if tokens:
             # Resolve a bare command name to an absolute path via PATH + known install
             # locations, so bundled configs work with zero setup even when the CLI isn't
-            # on PAL's process PATH. Unresolved names pass through → clear call-time error.
+            # on OpenClink's process PATH. Unresolved names pass through → clear call-time error.
             tokens[0] = resolve_cli_command(tokens[0])
         return tokens
 

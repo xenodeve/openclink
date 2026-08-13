@@ -1,6 +1,6 @@
-# Getting Started with PAL MCP Server
+# Getting Started with OpenClink
 
-This guide walks you through setting up the PAL MCP Server from scratch, including installation, configuration, and first usage.
+This guide walks you through setting up the OpenClink from scratch, including installation, configuration, and first usage.
 
 ## Prerequisites
 
@@ -148,7 +148,7 @@ PATH = "/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin:$HOME/.local/bin:$HOME/.c
 GEMINI_API_KEY = "your_api_key_here"
 ```
 
-Enable Codex's built-in web-search tool so PAL's `apilookup` instructions can execute successfully:
+Enable Codex's built-in web-search tool so OpenClink's `apilookup` instructions can execute successfully:
 
 ```toml
 [tools]
@@ -192,7 +192,7 @@ Edit `~/.config/opencode/opencode.json`:
     "pal": {
       "type": "local",
       "command": [
-        "/path/to/pal-mcp-server/.pal_venv/bin/python",
+        "/path/to/pal-mcp-server/.openclink_venv/bin/python",
         "/path/to/pal-mcp-server/server.py"
       ],
       "cwd": "/path/to/pal-mcp-server",
@@ -209,7 +209,7 @@ Add any other API keys you rely on (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`, etc.
 
 #### IDE Clients (Cursor & VS Code)
 
-PAL works in GUI IDEs that speak MCP. The configuration mirrors the CLI examples above—point the client at the `uvx` launcher and set any required environment variables.
+OpenClink works in GUI IDEs that speak MCP. The configuration mirrors the CLI examples above—point the client at the `uvx` launcher and set any required environment variables.
 
 **Cursor IDE**
 
@@ -305,7 +305,7 @@ CUSTOM_MODEL_NAME=llama3.2                   # Default model name
 
 ## Prevent Client Timeouts
 
-Some MCP clients default to short timeouts and can disconnect from PAL during long tool runs. Configure each client with a generous ceiling (we recommend at least five minutes); the PAL setup script now writes a 20-minute tool timeout for Codex so upstream providers contacted by the server have time to respond.
+Some MCP clients default to short timeouts and can disconnect from OpenClink during long tool runs. Configure each client with a generous ceiling (we recommend at least five minutes); the OpenClink setup script now writes a 20-minute tool timeout for Codex so upstream providers contacted by the server have time to respond.
 
 ### Claude Code & Claude Desktop
 
@@ -320,7 +320,7 @@ Claude reads MCP-related environment variables either from your shell or from `~
 }
 ```
 
-You can scope this block at the top level of `settings.json` (applies to every session) or under a specific `mcpServers.<name>.env` entry if you only want it for PAL (the server name may still be `pal` while configurations catch up). The values are in milliseconds. Note: Claude’s SSE transport still enforces an internal ceiling of roughly five minutes; long-running HTTP/SSE servers may need retries until Anthropic ships their fix.
+You can scope this block at the top level of `settings.json` (applies to every session) or under a specific `mcpServers.<name>.env` entry if you only want it for OpenClink (the server name may still be `pal` while configurations catch up). The values are in milliseconds. Note: Claude’s SSE transport still enforces an internal ceiling of roughly five minutes; long-running HTTP/SSE servers may need retries until Anthropic ships their fix.
 
 ### Codex CLI
 
@@ -372,7 +372,7 @@ Versions 0.2.1 and newer currently ignore values above ~60 seconds for some tran
 3. Try: `"Use pal to chat about Python best practices"`
 
 ### For Gemini CLI:
-**Note**: While PAL MCP connects to Gemini CLI, tool invocation isn't working correctly yet. See [Gemini CLI Setup](gemini-setup.md) for updates.
+**Note**: While OpenClink connects to Gemini CLI, tool invocation isn't working correctly yet. See [Gemini CLI Setup](gemini-setup.md) for updates.
 
 ### For Qwen Code CLI:
 1. Restart the Qwen Code CLI if it's running (`qwen exit`).
@@ -399,7 +399,7 @@ Versions 0.2.1 and newer currently ignore values above ~60 seconds for some tran
 
 **Note**: Codex CLI provides excellent MCP integration with automatic environment variable configuration when using the setup script.
 
-## Step 5: Start Using PAL
+## Step 5: Start Using OpenClink
 
 ### Basic Usage Patterns:
 
@@ -444,7 +444,7 @@ Versions 0.2.1 and newer currently ignore values above ~60 seconds for some tran
 
 **For clone installations:**
 - Run `./run-server.sh` again to verify setup
-- Check virtual environment: `which python` should show `.pal_venv/bin/python`
+- Check virtual environment: `which python` should show `.openclink_venv/bin/python`
 
 ### API Key Issues
 
