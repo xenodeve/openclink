@@ -47,6 +47,9 @@ EXCLUDED_PATHS = (
     "docs/reports/",
     "docs/name-change.md",
     "tests/test_product_name.py",
+    # Same reason as the line above: this file's entire subject is the old key and
+    # when it may be deleted, so it necessarily writes the name it governs.
+    "tests/test_mcp_server_key.py",
 )
 
 # A line is exempt when it is a URL, or when it belongs to the deliberate

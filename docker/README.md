@@ -4,7 +4,7 @@
 
 The Docker service, image, and named volume were renamed from the `pal-mcp` family
 to `openclink` (service `pal-mcp` → `openclink`, volume `pal-mcp-config` →
-`openclink-config`, image `openclink:latest` → `openclink:latest`). Docker
+`openclink-config`, image `pal-mcp-server:latest` → `openclink:latest`). Docker
 Compose does **not** carry data over automatically when a named volume is renamed
 — it will create a new, empty `openclink-config` volume, and your existing
 `pal-mcp-config` volume stays on disk untouched but unused.
