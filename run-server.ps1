@@ -113,7 +113,9 @@ $script:LOG_DIR = "logs"
 $script:LOG_FILE = "mcp_server.log"
 # Every name this project has shipped under — see the note on LEGACY_MCP_NAMES in
 # run-server.sh. Extended on each rename, never replaced.
-$script:LegacyServerNames = @("zen", "zen-mcp", "zen-mcp-server", "zen_mcp", "zen_mcp_server", "pal", "pal-mcp", "openclink", "pal_mcp", "pal_mcp_server")
+# See the note on LEGACY_MCP_NAMES in run-server.sh: only genuinely stale names
+# belong here. `pal` is deliberately absent, and `openclink` must never appear.
+$script:LegacyServerNames = @("zen", "zen-mcp", "zen-mcp-server", "zen_mcp", "zen_mcp_server")
 
 # ----------------------------------------------------------------------------
 # Utility Functions
@@ -1186,24 +1188,24 @@ function Get-ExistingMcpConfigType {
             }
         }
         
-        $palConfig = $targetObject.$palKey
+        $openclinkConfig = $targetObject.$palKey
         
         # Analyze configuration type
-        if ($palConfig.command -eq "docker") {
+        if ($openclinkConfig.command -eq "docker") {
             $dockerType = "Unknown"
             $details = "Docker configuration"
             
-            if ($palConfig.args -and $palConfig.args.Count -gt 0) {
-                if ($palConfig.args[0] -eq "run") {
+            if ($openclinkConfig.args -and $openclinkConfig.args.Count -gt 0) {
+                if ($openclinkConfig.args[0] -eq "run") {
                     $dockerType = "Docker Run"
                     $details = "Docker run (dedicated container)"
                 }
-                elseif ($palConfig.args[0] -eq "exec") {
+                elseif ($openclinkConfig.args[0] -eq "exec") {
                     $dockerType = "Docker Exec"
                     $details = "Docker exec (existing container)"
                 }
                 else {
-                    $details = "Docker ($($palConfig.args[0]))"
+                    $details = "Docker ($($openclinkConfig.args[0]))"
                 }
             }
             
@@ -1212,18 +1214,18 @@ function Get-ExistingMcpConfigType {
                 Type    = "Docker"
                 SubType = $dockerType
                 Details = $details
-                Command = $palConfig.command
-                Args    = $palConfig.args
+                Command = $openclinkConfig.command
+                Args    = $openclinkConfig.args
             }
         }
-        elseif ($palConfig.command -and $palConfig.command.EndsWith("python.exe")) {
+        elseif ($openclinkConfig.command -and $openclinkConfig.command.EndsWith("python.exe")) {
             $pythonType = "Python"
             $details = "Python virtual environment"
             
-            if ($palConfig.command.Contains(".openclink_venv")) {
+            if ($openclinkConfig.command.Contains(".openclink_venv")) {
                 $details = "Python (pal virtual environment)"
             }
-            elseif ($palConfig.command.Contains("venv")) {
+            elseif ($openclinkConfig.command.Contains("venv")) {
                 $details = "Python (virtual environment)"
             }
             else {
@@ -1235,17 +1237,17 @@ function Get-ExistingMcpConfigType {
                 Type    = "Python"
                 SubType = $pythonType
                 Details = $details
-                Command = $palConfig.command
-                Args    = $palConfig.args
+                Command = $openclinkConfig.command
+                Args    = $openclinkConfig.args
             }
         }
         else {
             return @{
                 Exists  = $true
                 Type    = "Unknown"
-                Details = "Unknown configuration type: $($palConfig.command)"
-                Command = $palConfig.command
-                Args    = $palConfig.args
+                Details = "Unknown configuration type: $($openclinkConfig.command)"
+                Command = $openclinkConfig.command
+                Args    = $openclinkConfig.args
             }
         }
         
@@ -1528,7 +1530,7 @@ function Test-ClaudeCliIntegration {
     
     try {
         $claudeConfig = claude mcp list 2>$null
-        if ($claudeConfig -match "pal") {
+        if ($claudeConfig -match "openclink|pal") {
             Write-Success "Claude CLI already configured for pal server"
         }
         else {
@@ -1568,12 +1570,12 @@ function Test-GeminiCliIntegration {
     }
 
     $legacyRemoved = Remove-LegacyServerKeys $config.mcpServers
-    $palConfig = $config.mcpServers.pal
+    $openclinkConfig = $config.mcpServers.pal
     $needsWrite = $legacyRemoved
 
-    if ($palConfig) {
-        if ($palConfig.command -ne $openclinkWrapper) {
-            $palConfig.command = $openclinkWrapper
+    if ($openclinkConfig) {
+        if ($openclinkConfig.command -ne $openclinkWrapper) {
+            $openclinkConfig.command = $openclinkWrapper
             $needsWrite = $true
         }
 
@@ -1638,11 +1640,11 @@ if exist ".openclink_venv\Scripts\python.exe" (
         }
         
         # Add pal server
-        $palConfig = @{
+        $openclinkConfig = @{
             command = $openclinkWrapper
         }
         
-        $config.mcpServers | Add-Member -MemberType NoteProperty -Name "pal" -Value $palConfig -Force
+        $config.mcpServers | Add-Member -MemberType NoteProperty -Name "openclink" -Value $openclinkConfig -Force
         
         # Write updated config
         $config | ConvertTo-Json -Depth 10 | Out-File $geminiConfig -Encoding UTF8
@@ -1660,7 +1662,7 @@ if exist ".openclink_venv\Scripts\python.exe" (
         Write-Host @"
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "command": "$openclinkWrapper"
     }
   }
@@ -1745,11 +1747,11 @@ function Test-QwenCliIntegration {
             if ($config.ContainsKey('mcpServers') -and $config['mcpServers'] -is [System.Collections.IDictionary]) {
                 $servers = $config['mcpServers']
                 $legacyRemoved = (Remove-LegacyServerKeys $servers) -or $legacyRemoved
-                if ($servers.Contains('pal') -and $servers['pal'] -is [System.Collections.IDictionary]) {
-                    $palConfig = $servers['pal']
-                    $commandMatches = ($palConfig['command'] -eq $PythonPath)
+                if ($servers.Contains('openclink') -and $servers['openclink'] -is [System.Collections.IDictionary]) {
+                    $openclinkConfig = $servers['openclink']
+                    $commandMatches = ($openclinkConfig['command'] -eq $PythonPath)
 
-                    $argsValue = $palConfig['args']
+                    $argsValue = $openclinkConfig['args']
                     $argsList = @()
                     if ($argsValue -is [System.Collections.IEnumerable] -and $argsValue -isnot [string]) {
                         $argsList = @($argsValue)
@@ -1760,8 +1762,8 @@ function Test-QwenCliIntegration {
                     $argsMatches = ($argsList.Count -eq 1 -and $argsList[0] -eq $ServerPath)
 
                     $cwdValue = $null
-                    if ($palConfig.Contains('cwd')) {
-                        $cwdValue = $palConfig['cwd']
+                    if ($openclinkConfig.Contains('cwd')) {
+                        $cwdValue = $openclinkConfig['cwd']
                     }
                     $cwdMatches = ([string]::IsNullOrEmpty($cwdValue) -or $cwdValue -eq $scriptDir)
 
@@ -1868,17 +1870,17 @@ function Test-QwenCliIntegration {
             $config['mcpServers'] = @{}
         }
 
-        $palConfig = [ordered]@{
+        $openclinkConfig = [ordered]@{
             command = $PythonPath
             args    = @($ServerPath)
             cwd     = $scriptDir
         }
 
         if ($envMap.Count -gt 0) {
-            $palConfig['env'] = $envMap
+            $openclinkConfig['env'] = $envMap
         }
 
-        $config['mcpServers']['pal'] = $palConfig
+        $config['mcpServers']['openclink'] = $openclinkConfig
 
         $json = ($config | ConvertTo-Json -Depth 20)
         Set-Content -Path $configPath -Value $json -Encoding UTF8

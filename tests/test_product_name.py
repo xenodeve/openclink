@@ -18,13 +18,15 @@ destroying facts, not renaming a product:
   the old names. Rewriting them makes the record lie.
 - `docs/name-change.md` — the document whose subject IS the naming history. It
   should gain a paragraph about this rename, not have its existing text replaced.
-- URLs — `github.com/.../pal-mcp-server` addresses a repository that still has
-  that name, and the upstream `zen-mcp-server` issue links in
+- URLs — the upstream `zen-mcp-server` issue links in
   `tests/test_path_traversal_security.py` cite where a vulnerability was actually
-  reported. Both must stay literal until the repository itself is renamed.
-- The legacy-name arrays in `run-server.sh` / `run-server.ps1` — they match the
-  old names ON PURPOSE, so setup can find and remove stale registrations. They
-  must be extended with the `pal` forms, never emptied.
+  reported, and the `LICENSE` and fork-attribution lines name the project this
+  one forked from. All must stay literal.
+- The legacy-name arrays in `run-server.sh` / `run-server.ps1` — they match old
+  names ON PURPOSE, so setup can remove stale registrations. A name belongs there
+  only once nothing addresses it: `zen` qualifies, `pal` does not yet, because
+  skills still call `mcp__pal__<tool>`. `tests/test_mcp_server_key.py` owns that
+  distinction and asserts both halves of it.
 - This file — it necessarily contains the names it forbids.
 """
 
@@ -192,7 +194,16 @@ def test_the_legacy_name_arrays_still_carry_the_previous_names(script: str, decl
         None,
     )
     assert line is not None, f"{script} no longer declares {declaration!r} — the legacy-cleanup list is gone"
-    for legacy in ("zen", "pal"):
-        assert re.search(rf'["\']{legacy}["\']', line), (
-            f"{script}: {declaration.strip()} does not list '{legacy}'.\n" f"  found: {line.strip()}"
-        )
+    assert re.search(
+        r'["\']zen["\']', line
+    ), f"{script}: {declaration.strip()} does not list 'zen'.\n  found: {line.strip()}"
+    # `pal` is deliberately NOT here, and this test used to require it. That was
+    # wrong: the list says what to DELETE, and skills still call `mcp__pal__<tool>`,
+    # so deleting that entry breaks the callers. The rule is not "every old name"
+    # but "every name nothing addresses any more" — `zen` qualifies, `pal` does not
+    # yet. `tests/test_mcp_server_key.py` owns that decision and asserts the
+    # opposite of what this test originally did.
+    assert not re.search(r'["\']pal["\']', line), (
+        f"{script} lists 'pal' as a name to delete while skills still address it — "
+        f"see tests/test_mcp_server_key.py.\n  found: {line.strip()}"
+    )

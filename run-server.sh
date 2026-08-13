@@ -40,7 +40,13 @@ readonly LOG_FILE="mcp_server.log"
 # this list strands them with the old entry sitting beside the new one — the
 # duplicate-server state this exists to prevent. Bare, hyphenated and underscored
 # forms are all listed because all three have appeared in real client configs.
-readonly LEGACY_MCP_NAMES=("zen" "zen-mcp" "zen-mcp-server" "zen_mcp" "zen_mcp_server" "pal" "pal-mcp" "openclink" "pal_mcp" "pal_mcp_server")
+# Registrations this setup should REMOVE, because nothing addresses them any more.
+# Extended on each rename, never replaced -- but a name only belongs here once it
+# is genuinely stale. `pal` is deliberately ABSENT: skills still call
+# `mcp__pal__<tool>`, so deleting that entry would break the callers. It joins this
+# list once xeno-skills stops naming that prefix (#94).
+# `openclink` must never appear here -- it is the entry this script creates.
+readonly LEGACY_MCP_NAMES=("zen" "zen-mcp" "zen-mcp-server" "zen_mcp" "zen_mcp_server")
 
 # Determine portable arguments for sed -i (GNU vs BSD)
 declare -a SED_INPLACE_ARGS
@@ -1281,9 +1287,9 @@ check_claude_cli_integration() {
         claude mcp remove "$legacy_name" -s user >/dev/null 2>&1 || true
     done
 
-    # Check if pal is registered
+    # Check if this server is registered, under either name.
     local mcp_list=$(claude mcp list 2>/dev/null)
-    if echo "$mcp_list" | grep -q "pal"; then
+    if echo "$mcp_list" | grep -qE "openclink|pal"; then
         # Check if it's using the old Docker command
         if echo "$mcp_list" | grep -E "zen.*docker|zen.*compose" &>/dev/null; then
             print_warning "Found old Docker-based Zen registration, updating..."
@@ -1452,10 +1458,12 @@ try:
     with open('$config_path', 'r') as f:
         config = json.load(f)
 
-    # Remove pal from mcpServers if it exists
-    if 'mcpServers' in config and 'pal' in config['mcpServers']:
-        del config['mcpServers']['pal']
-        print('Removed old OpenClink configuration')
+    # Remove this server's entry under either name it has been written under.
+    servers = config.get('mcpServers') or {}
+    for key in ('openclink', 'pal'):
+        if key in servers:
+            del servers[key]
+            print('Removed ' + key + ' configuration')
 
     with open('$temp_file', 'w') as f:
         json.dump(config, f, indent=2)
@@ -1524,7 +1532,7 @@ except Exception:
 if env_dict:
     openclink_config['env'] = env_dict
 
-config['mcpServers']['pal'] = openclink_config
+config['mcpServers']['openclink'] = openclink_config
 
 with open('$temp_file', 'w') as f:
     json.dump(config, f, indent=2)
@@ -1573,7 +1581,7 @@ except:
 if env_dict:
     openclink_config['env'] = env_dict
 
-config['mcpServers']['pal'] = openclink_config
+config['mcpServers']['openclink'] = openclink_config
 
 with open('$temp_file', 'w') as f:
     json.dump(config, f, indent=2)
@@ -1616,7 +1624,7 @@ with open('$temp_file', 'w') as f:
         cat << EOF
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "command": "$python_cmd",
       "args": ["$server_path"]$(if [[ -n "$example_env" ]]; then echo ","; fi)$(if [[ -n "$example_env" ]]; then echo "
       \"env\": {
@@ -1677,12 +1685,12 @@ for key in legacy:
     if servers.pop(key, None) is not None:
         changed = True
 
-pal_cfg = servers.get("pal")
-if isinstance(pal_cfg, dict):
+openclink_cfg = servers.get("openclink")
+if isinstance(openclink_cfg, dict):
     has_pal = True
-    if pal_cfg.get("command") != wrapper:
-        pal_cfg["command"] = wrapper
-        servers["pal"] = pal_cfg
+    if openclink_cfg.get("command") != wrapper:
+        openclink_cfg["command"] = wrapper
+        servers["openclink"] = openclink_cfg
         changed = True
 
 if changed:
@@ -1751,7 +1759,7 @@ try:
         config['mcpServers'] = {}
 
     # Add pal server
-    config['mcpServers']['pal'] = {
+    config['mcpServers']['openclink'] = {
         'command': '$openclink_wrapper'
     }
 
@@ -1774,7 +1782,7 @@ except Exception as e:
         cat << EOF
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "command": "$openclink_wrapper"
     }
   }
@@ -2069,7 +2077,7 @@ print_qwen_manual_instructions() {
         cat << EOF
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "command": "$python_cmd",
       "args": ["$server_path"],
       "cwd": "$script_dir",
@@ -2082,7 +2090,7 @@ EOF
         cat << EOF
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "command": "$python_cmd",
       "args": ["$server_path"],
       "cwd": "$script_dir"
@@ -2178,7 +2186,7 @@ servers = data.get('mcpServers')
 if not isinstance(servers, dict):
     sys.exit(3)
 
-config = servers.get('pal')
+config = servers.get('openclink')
 if not isinstance(config, dict):
     sys.exit(3)
 
@@ -2280,7 +2288,7 @@ openclink_config = {
 if env_map:
     openclink_config['env'] = env_map
 
-servers['pal'] = openclink_config
+servers['openclink'] = openclink_config
 
 config_path.parent.mkdir(parents=True, exist_ok=True)
 tmp_path = config_path.with_suffix(config_path.suffix + '.tmp')
@@ -2362,7 +2370,7 @@ display_config_instructions() {
         cat << EOF
    {
      "mcpServers": {
-       "pal": {
+       "openclink": {
          "command": "$python_cmd",
          "args": ["$server_path"],
          "cwd": "$script_dir",
@@ -2377,7 +2385,7 @@ EOF
         cat << EOF
    {
      "mcpServers": {
-       "pal": {
+       "openclink": {
          "command": "$python_cmd",
          "args": ["$server_path"],
          "cwd": "$script_dir"
@@ -2405,7 +2413,7 @@ EOF
     cat << EOF
    {
      "mcpServers": {
-       "pal": {
+       "openclink": {
          "command": "$script_dir/openclink"
        }
      }
@@ -2420,7 +2428,7 @@ EOF
         cat << EOF
    {
      "mcpServers": {
-       "pal": {
+       "openclink": {
          "command": "$python_cmd",
          "args": ["$server_path"],
          "cwd": "$script_dir",
@@ -2435,7 +2443,7 @@ EOF
         cat << EOF
    {
      "mcpServers": {
-       "pal": {
+       "openclink": {
          "command": "$python_cmd",
          "args": ["$server_path"],
          "cwd": "$script_dir"
