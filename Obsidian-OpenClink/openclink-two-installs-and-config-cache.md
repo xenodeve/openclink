@@ -1,6 +1,6 @@
 ---
-name: pal-two-installs-and-config-cache
-description: "Claude Code's OpenClink (uv-tool) vs Codex's OpenClink (uvx) are separate installs; ~/.pal is shared; config cached at start; reinstall wipes site-packages conf"
+name: openclink-two-installs-and-config-cache
+description: "Claude Code's OpenClink (uv-tool) vs Codex's OpenClink (uvx) are separate installs; ~/.openclink is shared (the pre-rename ~/.pal is still read too); config cached at start; reinstall wipes site-packages conf"
 metadata:
   type: reference
 ---
@@ -17,13 +17,15 @@ Consequences learned the hard way:
   **restart** (kill the process + reconnect / restart the editor) — a `/mcp` *reconnect* alone
   attaches to the still-running old process.
 - **A `uv tool install --force` / uvx refresh wipes the site-packages `conf/` and code** back to the
-  fetched commit — any manual edit there is lost. Put machine-specific configs in `~/.pal/cli_clients/`
-  instead (read last, survives reinstalls, **shared by all installs** → one activation covers both
-  Claude Code's and Codex's OpenClink). See [[clink-zero-setup-discovery]].
+  fetched commit — any manual edit there is lost. Put machine-specific configs in
+  `~/.openclink/cli_clients/` instead (read last, survives reinstalls, **shared by all installs** → one
+  activation covers both Claude Code's and Codex's OpenClink; the pre-rename `~/.pal/cli_clients/` is
+  still read too, so an override written before the rename keeps applying). See
+  [[clink-zero-setup-discovery]].
 - On Windows a running OpenClink **locks** its install dir → kill the OpenClink process before reinstalling.
 - `uv cache clean openclink` has hung repeatedly here; copying updated files straight into the
   install (then restart) is a reliable fallback.
-- **The shared `~/.pal/cli_clients/` is loaded by every checkout, so a config for a CLI your working
+- **The shared `~/.openclink/cli_clients/` is loaded by every checkout, so a config for a CLI your working
   tree doesn't support takes the whole registry down — not just that client.** `_resolve_config`
   (`clink/registry.py:137`) raises `RegistryLoadError: CLI '<name>' is not supported by clink` when
   the name is absent from `INTERNAL_DEFAULTS` (`clink/constants.py`), and because `server.py` builds

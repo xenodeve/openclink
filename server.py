@@ -164,7 +164,7 @@ else:
 
 # Create the MCP server instance with a unique name identifier
 # This name is used by MCP clients to identify and connect to this specific server
-server: Server = Server("pal-server")
+server: Server = Server("openclink-server")
 
 
 # Constants for tool filtering

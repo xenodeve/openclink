@@ -17,7 +17,7 @@ Result: You get outdated APIs for iOS 18, not the iOS 26 effect you're after
 
 <div align="center">
     
-[API without PAL](https://github.com/user-attachments/assets/01a79dc9-ad16-4264-9ce1-76a56c3580ee)
+[API without OpenClink](https://github.com/user-attachments/assets/01a79dc9-ad16-4264-9ce1-76a56c3580ee)
  
 </div>
 
@@ -36,7 +36,7 @@ Result: You get the correct, current APIs that work with today's iOS version
 
 <div align="center">
 
-[API with PAL](https://github.com/user-attachments/assets/5c847326-4b66-41f7-8f30-f380453dce22)
+[API with OpenClink](https://github.com/user-attachments/assets/5c847326-4b66-41f7-8f30-f380453dce22)
 
 </div>
 

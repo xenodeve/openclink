@@ -149,7 +149,7 @@ The Docker setup includes persistent volumes to preserve data between container 
 
 ### How Persistent Volumes Work
 
-The `openclink` service (used by `pal-docker-compose` and Docker Compose commands) mounts the named volume `openclink-config` persistently. All data placed in `/app/conf` inside the container is preserved between runs thanks to this Docker volume.
+The `openclink` service (used by `docker-compose.yml` and Docker Compose commands) mounts the named volume `openclink-config` persistently. All data placed in `/app/conf` inside the container is preserved between runs thanks to this Docker volume.
 
 In the `docker-compose.yml` file, you will find:
 
@@ -245,7 +245,7 @@ docker run --rm -i --env-file .env openclink:latest 2>&1 | tee docker.log
 ```json
 {
   "servers": {
-    "pal-docker": {
+    "openclink-docker": {
       "command": "docker",
       "args": [
         "run",
@@ -267,7 +267,7 @@ docker run --rm -i --env-file .env openclink:latest 2>&1 | tee docker.log
 ```json
 {
   "servers": {
-    "pal-docker": {
+    "openclink-docker": {
       "command": "docker",
       "args": [
         "run",
@@ -289,7 +289,7 @@ docker run --rm -i --env-file .env openclink:latest 2>&1 | tee docker.log
 ```json
 {
   "servers": {
-    "pal-docker": {
+    "openclink-docker": {
       "command": "docker-compose",
       "args": [
         "-f",

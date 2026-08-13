@@ -1448,7 +1448,7 @@ check_claude_desktop_integration() {
             # Create backup
             cp "$config_path" "${config_path}.backup_$(date +%Y%m%d_%H%M%S)"
 
-            # Remove old pal config using a more robust approach
+            # Remove old server config using a more robust approach
             local temp_file=$(mktemp)
             python3 -c "
 import json
@@ -1511,7 +1511,7 @@ for container in ('mcpServers', 'servers'):
         for key in legacy_keys:
             servers.pop(key, None)
 
-# Add pal server
+# Add openclink server
 openclink_config = {
     'command': '$python_cmd',
     'args': ['$server_path']
@@ -1560,7 +1560,7 @@ import sys
 
 config = {'mcpServers': {}}
 
-# Add pal server
+# Add openclink server
 openclink_config = {
     'command': '$python_cmd',
     'args': ['$server_path']
@@ -1649,7 +1649,7 @@ check_gemini_cli_integration() {
         return 0
     fi
 
-    # Clean up legacy zen entries and detect existing pal configuration
+    # Clean up legacy zen entries and detect existing openclink configuration
     local legacy_names_csv
     legacy_names_csv=$(IFS=,; echo "${LEGACY_MCP_NAMES[*]}")
 
@@ -1666,7 +1666,7 @@ legacy = [n for n in os.environ.get("OPENCLINK_LEGACY_NAMES", "").split(",") if 
 wrapper = os.environ["OPENCLINK_WRAPPER"]
 
 changed = False
-has_pal = False
+has_openclink = False
 
 try:
     data = json.loads(config_path.read_text())
@@ -1687,7 +1687,7 @@ for key in legacy:
 
 openclink_cfg = servers.get("openclink")
 if isinstance(openclink_cfg, dict):
-    has_pal = True
+    has_openclink = True
     if openclink_cfg.get("command") != wrapper:
         openclink_cfg["command"] = wrapper
         servers["openclink"] = openclink_cfg
@@ -1697,18 +1697,18 @@ if changed:
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(json.dumps(data, indent=2))
 
-status = ("CHANGED" if changed else "UNCHANGED") + ":" + ("HAS_PAL" if has_pal else "NO_PAL")
+status = ("CHANGED" if changed else "UNCHANGED") + ":" + ("HAS_OPENCLINK" if has_openclink else "NO_OPENCLINK")
 sys.stdout.write(status)
 sys.exit(0)
 PY
     ) || true
 
     local gemini_changed=false
-    local gemini_has_pal=false
+    local gemini_has_openclink=false
     [[ "$gemini_status" == CHANGED:* ]] && gemini_changed=true
-    [[ "$gemini_status" == *:HAS_PAL ]] && gemini_has_pal=true
+    [[ "$gemini_status" == *:HAS_OPENCLINK ]] && gemini_has_openclink=true
 
-    if [[ "$gemini_has_pal" == true ]]; then
+    if [[ "$gemini_has_openclink" == true ]]; then
         if [[ "$gemini_changed" == true ]]; then
             print_success "Removed legacy Gemini MCP entries"
         fi
@@ -1744,7 +1744,7 @@ EOF
     # Create backup
     cp "$gemini_config" "${gemini_config}.backup_$(date +%Y%m%d_%H%M%S)"
 
-    # Add pal configuration using Python for proper JSON handling
+    # Add openclink configuration using Python for proper JSON handling
     local temp_file=$(mktemp)
     python3 -c "
 import json
@@ -1758,7 +1758,7 @@ try:
     if 'mcpServers' not in config:
         config['mcpServers'] = {}
 
-    # Add pal server
+    # Add openclink server
     config['mcpServers']['openclink'] = {
         'command': '$openclink_wrapper'
     }
@@ -2217,14 +2217,14 @@ PYCONF
     echo ""
 
     if [[ $config_status -eq 4 ]]; then
-        print_warning "Found existing Qwen CLI pal configuration with different settings."
+        print_warning "Found existing Qwen CLI openclink configuration with different settings."
     elif [[ $config_status -eq 5 ]]; then
         print_warning "Unable to parse Qwen CLI settings; replacing with a fresh entry may help."
     fi
 
     local prompt="Configure OpenClink for Qwen CLI? (Y/n): "
     if [[ $config_status -eq 4 || $config_status -eq 5 ]]; then
-        prompt="Update Qwen CLI pal configuration? (Y/n): "
+        prompt="Update Qwen CLI openclink configuration? (Y/n): "
     fi
 
     read -p "$prompt" -n 1 -r

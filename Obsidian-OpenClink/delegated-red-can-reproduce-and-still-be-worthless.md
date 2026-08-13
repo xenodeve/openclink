@@ -10,7 +10,7 @@ metadata:
 Measured 2026-08-05, and the controlled comparison is what makes it worth keeping: the *same* model
 (`gpt-5.6-luna`, `high`), the *same* prompt shape, two leaves dispatched **at the same moment**.
 
-- **`pal#26` — a code leaf.** Returned a good test: it asserted on the dict `_call_accounting`
+- **`openclink#26` — a code leaf.** Returned a good test: it asserted on the dict `_call_accounting`
   returns, so its failures were behavioural (`KeyError` on a missing key); it hand-computed five
   figures, all five of which recomputed correctly; and it included a real control asserting the new
   keys are *absent* on the untouched path.

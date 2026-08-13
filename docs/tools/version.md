@@ -7,7 +7,7 @@ The `version` tool provides information about the OpenClink version, configurati
 ## Usage
 
 ```
-"Get pal to show its version"
+"Get openclink to show its version"
 ```
 
 ## Key Features

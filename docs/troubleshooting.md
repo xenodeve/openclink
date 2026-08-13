@@ -6,8 +6,8 @@ If you're experiencing issues with the OpenClink, follow these steps:
 
 ### 1. Check MCP Connection
 
-Open Claude Desktop and type `/mcp` to see if pal is connected:
-- ✅ If pal appears in the list, the connection is working
+Open Claude Desktop and type `/mcp` to see if openclink is connected:
+- ✅ If openclink appears in the list, the connection is working
 - ❌ If not listed or shows an error, continue to step 2
 
 ### 2. Launch Claude with Debug Mode

@@ -14,10 +14,10 @@
 
 <div align="center">
 
-  <em>Your AI's PAL – a Provider Abstraction Layer</em><br />
+  <em>One CLI, every model — bridged by clink.</em><br />
   <sub><a href="docs/name-change.md">Formerly known as Zen MCP</a></sub>
 
-  [PAL in action](https://github.com/user-attachments/assets/0d26061e-5f21-4ab1-b7d0-f883ddc2c3da)
+  [OpenClink in action](https://github.com/user-attachments/assets/0d26061e-5f21-4ab1-b7d0-f883ddc2c3da)
 
 👉 **[Watch more examples](#-watch-tools-in-action)**
 
@@ -185,7 +185,7 @@ cd openclink
 // Don't forget to add your API keys under env
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "command": "bash",
       "args": ["-c", "for p in $(which uvx 2>/dev/null) $HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \"$p\" ] && exec \"$p\" --from git+https://github.com/xenodeve/openclink.git openclink; done; echo 'uvx not found' >&2; exit 1"],
       "env": {
@@ -201,9 +201,9 @@ cd openclink
 
 **3. Start Using!**
 ```
-"Use pal to analyze this code for security issues with gemini pro"
+"Use openclink to analyze this code for security issues with gemini pro"
 "Debug this error with o3 and then get flash to suggest optimizations"
-"Plan the migration strategy with pal, get consensus from multiple models"
+"Plan the migration strategy with openclink, get consensus from multiple models"
 "clink with cli_name=\"gemini\" role=\"planner\" to draft a phased rollout plan"
 ```
 
@@ -281,7 +281,7 @@ DISABLED_TOOLS=
 // In ~/.claude/settings.json or .mcp.json
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "env": {
         // Tool configuration
         "DISABLED_TOOLS": "refactor,testgen,secaudit,docgen,tracer",
@@ -308,7 +308,7 @@ DISABLED_TOOLS=
 // Remove or empty the DISABLED_TOOLS to enable everything
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "env": {
         "DISABLED_TOOLS": ""
       }
@@ -344,7 +344,7 @@ DISABLED_TOOLS=
 
 **Multi-model consensus debate:**
 
-[PAL Consensus Debate](https://github.com/user-attachments/assets/76a23dd5-887a-4382-9cf0-642f5cf6219e)
+[OpenClink Consensus Debate](https://github.com/user-attachments/assets/76a23dd5-887a-4382-9cf0-642f5cf6219e)
 
 </details>
 
@@ -364,11 +364,11 @@ DISABLED_TOOLS=
 
 **Without OpenClink - outdated APIs:**
 
-[API without PAL](https://github.com/user-attachments/assets/01a79dc9-ad16-4264-9ce1-76a56c3580ee)
+[API without OpenClink](https://github.com/user-attachments/assets/01a79dc9-ad16-4264-9ce1-76a56c3580ee)
 
 **With OpenClink - current APIs:**
 
-[API with PAL](https://github.com/user-attachments/assets/5c847326-4b66-41f7-8f30-f380453dce22)
+[API with OpenClink](https://github.com/user-attachments/assets/5c847326-4b66-41f7-8f30-f380453dce22)
 
 </details>
 

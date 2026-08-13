@@ -267,14 +267,14 @@ Source: `docs/reports/2026-07-16-clink-brainstorm-gap-analysis.md` (codex + clau
 
 ### Other
 
-- 🔴 **An unknown CLI in `~/.pal/cli_clients/` fails the whole registry, not just that client.**
+- 🔴 **An unknown CLI in `~/.openclink/cli_clients/` (or the pre-rename `~/.pal/cli_clients/`, still read too) fails the whole registry, not just that client.**
   `_resolve_config` (`clink/registry.py:137`) raises when a config's name is absent from
   `INTERNAL_DEFAULTS`; `server.py` builds the registry at import, so `pytest` dies at collection
   across every suite that imports the server. Reproduced 2026-08-01 (7 collection errors, 0 tests
   run) from a stale `cursor.json` override against a branch predating `main`'s cursor support.
   Fail-closed is defensible, but the blast radius should be one client — consider warn-and-skip for
   a *user-dir* config, keeping the hard error for a bundled one. See
-  [[pal-two-installs-and-config-cache]].
+  [[openclink-two-installs-and-config-cache]].
 - 🔴 **Two venv names coexist on a dev box.** `run-server.sh` / `run-server.ps1` (and therefore
   `CLAUDE.md` / `AGENTS.md`) use `.openclink_venv`, but this checkout carries a `.venv` that those scripts
   never created — and it had no `pytest` until 2026-08-01. An agent that follows the docs finds no
@@ -288,7 +288,8 @@ Source: `docs/reports/2026-07-16-clink-brainstorm-gap-analysis.md` (codex + clau
   there's no opt-in live test that drives `agy` and asserts the selected model reaches the backend.
   See `docs/reports/2026-07-16-clink-antigravity-model-override-investigation.md` (acceptance criteria).
 - 🔴 **Config activation persistence, revisited** — zero-setup discovery + the bundled active
-  `claude-9arm.json` cover the common case; the `~/.pal/cli_clients/` user-dir override is the
+  `claude-9arm.json` cover the common case; the `~/.openclink/cli_clients/` user-dir override (the
+  pre-rename `~/.pal/cli_clients/` is still read too) is the
   escape hatch for custom gateways/paths. No open code item; documented in `CHANGES-FORK.md`.
 
 ## Shipped & closed

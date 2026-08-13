@@ -31,7 +31,7 @@ I implement first?
 ```
 
 ```
-Use pal's planner and show me how to add real-time notifications to our mobile app
+Use openclink's planner and show me how to add real-time notifications to our mobile app
 ```
 
 ```
@@ -55,11 +55,11 @@ Using planner, plan the architecture for a new real-time chat system with 100k c
 ```
 
 ```
-Create a plan using pal for migrating our React app from JavaScript to TypeScript
+Create a plan using openclink for migrating our React app from JavaScript to TypeScript
 ```
 
 ```
-Develop a plan using pal for implementing CI/CD pipelines across our development teams
+Develop a plan using openclink for implementing CI/CD pipelines across our development teams
 ```
 
 ## Best Practices
@@ -76,7 +76,7 @@ Develop a plan using pal for implementing CI/CD pipelines across our development
 Like all other tools in OpenClink, you can `continue` with a new plan using the output from a previous plan by simply saying
 
 ```
-Continue with pal's consensus tool and find out what o3:for and flash:against think of the plan 
+Continue with openclink's consensus tool and find out what o3:for and flash:against think of the plan 
 ```
 
 You can mix and match and take one output and feed it into another, continuing from where you left off using a different 

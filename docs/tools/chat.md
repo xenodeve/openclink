@@ -101,7 +101,7 @@ See the [Configuration Guide](../configuration.md#code-generation-capability) fo
 
 **Basic Development Chat:**
 ```
-"Chat with pal about the best approach for user authentication in my React app"
+"Chat with openclink about the best approach for user authentication in my React app"
 ```
 
 **Technology Comparison:**

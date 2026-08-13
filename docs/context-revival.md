@@ -51,7 +51,7 @@ The following video demonstartes `continuation` via a casual `continue with gemi
 Here's how this works in practice with a modern AI/ML workflow:
 
 **Session 1 - Claude's Initial Context (before reset):**
-You: "Help me design a RAG system for our customer support chatbot. I want to integrate vector embeddings with real-time retrieval. think deeply with pal using 03 after you've come up with a detailed plan."
+You: "Help me design a RAG system for our customer support chatbot. I want to integrate vector embeddings with real-time retrieval. think deeply with openclink using 03 after you've come up with a detailed plan."
 
 Claude: "I'll analyze your requirements and design a comprehensive RAG architecture..."
 → Uses [`thinkdeep`](../README.md#1-chat---general-development-chat--collaborative-thinking) to brainstorm the overall approach

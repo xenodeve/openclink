@@ -151,7 +151,7 @@ These only apply to models that support customizing token usage for extended thi
 "Get o3 to do a security review of auth/ with thinking mode high"
 
 # Complex debugging, letting claude pick the best model
-"Use pal to debug this race condition with max thinking mode"
+"Use openclink to debug this race condition with max thinking mode"
 
 # Architecture analysis with Gemini 3.0 Pro
 "Analyze the entire src/ directory architecture with high thinking using pro"
@@ -308,15 +308,15 @@ Take a look at these log files saved under subfolder/diagnostics.log there's a b
 crashes at launch. Think hard and go over each line, tallying it with corresponding code within the project. After
 you've performed initial investigation, ask gemini pro to analyze the log files and the related code where you 
 suspect lies the bug and then formulate and implement a bare minimal fix. Must not regress. Perform a precommit
-with pal in the end using gemini pro to confirm we're okay to publish the fix 
+with openclink in the end using gemini pro to confirm we're okay to publish the fix 
 ```
 
 ### Refactor → Review → Implement → Test
 ```
-Use pal to analyze this legacy authentication module for decomposition opportunities. The code is getting hard to 
+Use openclink to analyze this legacy authentication module for decomposition opportunities. The code is getting hard to 
 maintain and we need to break it down. Use gemini pro with high thinking mode to identify code smells and suggest 
 a modernization strategy. After reviewing the refactoring plan, implement the changes step by step and then 
-generate comprehensive tests with pal to ensure nothing breaks.
+generate comprehensive tests with openclink to ensure nothing breaks.
 ```
 
 ### Tool Selection Guidance
@@ -352,7 +352,7 @@ The OpenClink supports vision-capable models for analyzing images, diagrams, scr
 **Usage Examples:**
 ```bash
 # Debug with error screenshots
-"Use pal to debug this error with the stack trace screenshot and error.py"
+"Use openclink to debug this error with the stack trace screenshot and error.py"
 
 # Architecture analysis with diagrams  
 "Analyze this system architecture diagram with gemini pro for bottlenecks"

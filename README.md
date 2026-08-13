@@ -14,10 +14,10 @@
 
 <div align="center">
 
-  <em>PAL ของ AI คุณ — Provider Abstraction Layer</em><br />
+  <em>CLI เดียว เชื่อมทุกโมเดล ด้วย clink</em><br />
   <sub><a href="docs/name-change.md">เดิมชื่อ Zen MCP</a></sub>
 
-  [PAL in action](https://github.com/user-attachments/assets/0d26061e-5f21-4ab1-b7d0-f883ddc2c3da)
+  [OpenClink in action](https://github.com/user-attachments/assets/0d26061e-5f21-4ab1-b7d0-f883ddc2c3da)
 
 👉 **[ดูตัวอย่างเพิ่มเติม](#-ดูเครื่องมือทำงานจริง)**
 
@@ -136,7 +136,7 @@ cd openclink
 // เพิ่มใน ~/.claude/settings.json หรือ .mcp.json — อย่าลืมใส่ API key ใต้ env
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "command": "bash",
       "args": ["-c", "for p in $(which uvx 2>/dev/null) $HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \"$p\" ] && exec \"$p\" --from git+https://github.com/xenodeve/openclink.git openclink; done; echo 'uvx not found' >&2; exit 1"],
       "env": {
@@ -152,7 +152,7 @@ cd openclink
 
 **3. เริ่มใช้!**
 ```
-"ใช้ pal วิเคราะห์โค้ดนี้หาช่องโหว่ความปลอดภัยด้วย gemini pro"
+"ใช้ openclink วิเคราะห์โค้ดนี้หาช่องโหว่ความปลอดภัยด้วย gemini pro"
 "debug error นี้ด้วย o3 แล้วให้ flash แนะนำการ optimize"
 "clink with cli_name=\"antigravity\" role=\"planner\" ช่วยร่างแผน rollout แบบเป็นเฟส"
 ```
@@ -213,7 +213,7 @@ DISABLED_TOOLS=
 <details>
 <summary><b>Consensus Tool</b> — ดีเบตหลายโมเดล</summary>
 
-[PAL Consensus Debate](https://github.com/user-attachments/assets/76a23dd5-887a-4382-9cf0-642f5cf6219e)
+[OpenClink Consensus Debate](https://github.com/user-attachments/assets/76a23dd5-887a-4382-9cf0-642f5cf6219e)
 </details>
 
 <details>

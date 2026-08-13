@@ -106,7 +106,7 @@ A subtle but critical issue spotted by Gemini that both Claude + O3 missed. This
 ## Example Prompts
 
 ```
-Use pal and perform a thorough precommit ensuring there aren't any new regressions or bugs introduced
+Use openclink and perform a thorough precommit ensuring there aren't any new regressions or bugs introduced
 ```
 
 ## Key Features
@@ -155,7 +155,7 @@ Use pal and perform a thorough precommit ensuring there aren't any new regressio
 
 **Basic Pre-commit Validation:**
 ```
-"Use pal precommit to validate my changes before committing"
+"Use openclink precommit to validate my changes before committing"
 ```
 
 **Security-Focused Validation:**

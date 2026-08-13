@@ -192,9 +192,9 @@ CUSTOM_MODEL_NAME=your-loaded-model
 # OpenRouter models:
 "Use opus for deep analysis"         # → anthropic/claude-opus-4
 "Use sonnet to review this code"     # → anthropic/claude-sonnet-4
-"Use pro via pal to analyze this"    # → google/gemini-2.5-pro
-"Use gpt4o via pal to analyze this"  # → openai/gpt-4o
-"Use mistral via pal to optimize"    # → mistral/mistral-large
+"Use pro via openclink to analyze this"    # → google/gemini-2.5-pro
+"Use gpt4o via openclink to analyze this"  # → openai/gpt-4o
+"Use mistral via openclink to optimize"    # → mistral/mistral-large
 
 # Local models (with custom URL configured):
 "Use local-llama to analyze this code"     # → llama3.2 (local)
@@ -204,13 +204,13 @@ CUSTOM_MODEL_NAME=your-loaded-model
 **Using full model names:**
 ```
 # OpenRouter models:
-"Use anthropic/claude-opus-4 via pal for deep analysis"
-"Use openai/gpt-4o via pal to debug this"
-"Use deepseek/deepseek-coder via pal to generate code"
+"Use anthropic/claude-opus-4 via openclink for deep analysis"
+"Use openai/gpt-4o via openclink to debug this"
+"Use deepseek/deepseek-coder via openclink to generate code"
 
 # Local/custom models:
-"Use llama3.2 via pal to review this"
-"Use meta-llama/Llama-2-7b-chat-hf via pal to analyze"
+"Use llama3.2 via openclink to review this"
+"Use meta-llama/Llama-2-7b-chat-hf via openclink to analyze"
 ```
 
 **For OpenRouter:** Check current model pricing at [openrouter.ai/models](https://openrouter.ai/models).  

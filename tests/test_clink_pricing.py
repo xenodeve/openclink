@@ -85,7 +85,7 @@ def test_an_unreported_class_is_not_an_unpriced_one():
     [
         pytest.param(None, "gpt-5.6-luna", TokenUsage(input_tokens=1), "no_rate_card", id="client-has-no-card"),
         pytest.param(CARD, "gpt-9-unreleased", TokenUsage(input_tokens=1), "model_not_priced", id="unknown-model"),
-        pytest.param(CARD, None, TokenUsage(input_tokens=1), "model_unresolved", id="model-unknown-to-pal"),
+        pytest.param(CARD, None, TokenUsage(input_tokens=1), "model_unresolved", id="model-unknown-to-openclink"),
         pytest.param(CARD, "gpt-5.6-luna", None, "no_usage_reported", id="nothing-to-price"),
     ],
 )

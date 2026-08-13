@@ -105,7 +105,7 @@ class ClinkRegistry:
             env_path = Path(env_path_raw).expanduser()
             search_paths.append(env_path)
 
-        # 3. User overrides in ~/.pal/cli_clients
+        # 3. User overrides in ~/.openclink/cli_clients (and the pre-rename ~/.pal/cli_clients)
         # Legacy first, current second: a later file overriding an earlier one is
         # how this loop already resolves duplicates, so listing the current
         # directory last means an override the user just wrote beats a stale one

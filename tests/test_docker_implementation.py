@@ -187,7 +187,7 @@ class TestMCPIntegration:
         # Expected MCP configuration
         expected_config = {
             "servers": {
-                "pal-docker": {
+                "openclink-docker": {
                     "command": "docker",
                     "args": [
                         "run",
@@ -208,7 +208,7 @@ class TestMCPIntegration:
 
         # Check structure
         assert "servers" in expected_config
-        docker_server = expected_config["servers"]["pal-docker"]
+        docker_server = expected_config["servers"]["openclink-docker"]
         assert docker_server["command"] == "docker"
         assert "run" in docker_server["args"]
         assert "--rm" in docker_server["args"]

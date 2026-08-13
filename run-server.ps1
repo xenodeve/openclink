@@ -1048,7 +1048,7 @@ $script:McpClientDefinitions = @(
         DetectionPath  = "$env:APPDATA\Claude\claude_desktop_config.json"
         DetectionType  = "Path"
         ConfigPath     = "$env:APPDATA\Claude\claude_desktop_config.json"
-        ConfigJsonPath = "mcpServers.pal"
+        ConfigJsonPath = "mcpServers.openclink"
         NeedsConfigDir = $true
     },
     @{
@@ -1056,7 +1056,7 @@ $script:McpClientDefinitions = @(
         DetectionCommand = "code"
         DetectionType    = "Command"
         ConfigPath       = "$env:APPDATA\Code\User\settings.json"
-        ConfigJsonPath   = "mcp.servers.pal"
+        ConfigJsonPath   = "mcp.servers.openclink"
         IsVSCode         = $true
     },
     @{
@@ -1064,7 +1064,7 @@ $script:McpClientDefinitions = @(
         DetectionCommand = "code-insiders"
         DetectionType    = "Command"
         ConfigPath       = "$env:APPDATA\Code - Insiders\User\mcp.json"
-        ConfigJsonPath   = "servers.pal"
+        ConfigJsonPath   = "servers.openclink"
         IsVSCodeInsiders = $true
     },
     @{
@@ -1072,21 +1072,21 @@ $script:McpClientDefinitions = @(
         DetectionCommand = "cursor"
         DetectionType    = "Command"
         ConfigPath       = "$env:USERPROFILE\.cursor\mcp.json"
-        ConfigJsonPath   = "mcpServers.pal"
+        ConfigJsonPath   = "mcpServers.openclink"
     },
     @{
         Name           = "Windsurf"
         DetectionPath  = "$env:USERPROFILE\.codeium\windsurf"
         DetectionType  = "Path"
         ConfigPath     = "$env:USERPROFILE\.codeium\windsurf\mcp_config.json"
-        ConfigJsonPath = "mcpServers.pal"
+        ConfigJsonPath = "mcpServers.openclink"
     },
     @{
         Name           = "Trae"
         DetectionPath  = "$env:APPDATA\Trae"
         DetectionType  = "Path"
         ConfigPath     = "$env:APPDATA\Trae\User\mcp.json"
-        ConfigJsonPath = "mcpServers.pal"
+        ConfigJsonPath = "mcpServers.openclink"
     }
 )
 
@@ -1133,7 +1133,7 @@ function Test-McpJsonFormat {
 function Test-VSCodeInsidersFormat {
     param([hashtable]$Client)
     
-    return $Client.IsVSCodeInsiders -eq $true -and $Client.ConfigJsonPath -eq "servers.pal"
+    return $Client.IsVSCodeInsiders -eq $true -and $Client.ConfigJsonPath -eq "servers.openclink"
 }
 
 # Analyze existing MCP configuration to determine type (Python or Docker)
@@ -1223,7 +1223,7 @@ function Get-ExistingMcpConfigType {
             $details = "Python virtual environment"
             
             if ($openclinkConfig.command.Contains(".openclink_venv")) {
-                $details = "Python (pal virtual environment)"
+                $details = "Python (OpenClink virtual environment)"
             }
             elseif ($openclinkConfig.command.Contains("venv")) {
                 $details = "Python (virtual environment)"
@@ -1570,7 +1570,7 @@ function Test-GeminiCliIntegration {
     }
 
     $legacyRemoved = Remove-LegacyServerKeys $config.mcpServers
-    $openclinkConfig = $config.mcpServers.pal
+    $openclinkConfig = $config.mcpServers.openclink
     $needsWrite = $legacyRemoved
 
     if ($openclinkConfig) {
@@ -1639,7 +1639,7 @@ if exist ".openclink_venv\Scripts\python.exe" (
             $config.mcpServers = [ordered]@{}
         }
         
-        # Add pal server
+        # Add openclink server
         $openclinkConfig = @{
             command = $openclinkWrapper
         }
@@ -1691,7 +1691,7 @@ function Show-QwenManualConfig {
 
         Write-Host "{" -ForegroundColor Yellow
         Write-Host "  \"mcpServers\": {" -ForegroundColor Yellow
-        Write-Host "    \"pal\": {" -ForegroundColor Yellow
+        Write-Host "    \"openclink\": {" -ForegroundColor Yellow
         Write-Host "      \"command\": \"$PythonPath\"," -ForegroundColor Yellow
         Write-Host "      \"args\": [\"$ServerPath\"]," -ForegroundColor Yellow
         Write-Host "      \"cwd\": \"$ScriptDir\"," -ForegroundColor Yellow
@@ -1705,7 +1705,7 @@ function Show-QwenManualConfig {
     else {
         Write-Host "{" -ForegroundColor Yellow
         Write-Host "  \"mcpServers\": {" -ForegroundColor Yellow
-        Write-Host "    \"pal\": {" -ForegroundColor Yellow
+        Write-Host "    \"openclink\": {" -ForegroundColor Yellow
         Write-Host "      \"command\": \"$PythonPath\"," -ForegroundColor Yellow
         Write-Host "      \"args\": [\"$ServerPath\"]," -ForegroundColor Yellow
         Write-Host "      \"cwd\": \"$ScriptDir\"" -ForegroundColor Yellow
@@ -1827,7 +1827,7 @@ function Test-QwenCliIntegration {
     }
 
     if ($configStatus -eq "match") {
-        Write-Success "Qwen CLI already configured for pal server"
+        Write-Success "Qwen CLI already configured for openclink server"
         return
     }
 
@@ -1841,7 +1841,7 @@ function Test-QwenCliIntegration {
         $prompt = "Remove legacy Qwen MCP entries and refresh configuration? (Y/n)"
     }
     elseif ($configStatus -eq "mismatch" -or $configStatus -eq "invalid") {
-        $prompt = "Update Qwen CLI pal configuration? (y/N)"
+        $prompt = "Update Qwen CLI openclink configuration? (y/N)"
     }
 
     if (-not $skipPrompt) {

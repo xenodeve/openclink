@@ -25,9 +25,10 @@ escape hatch.
   portable).
 - `conf/cli_clients/claude-9arm.json` ships **active** (this fork's 9arm Qwen gateway); `.example`
   stays as the generic template.
-- Machine-specific overrides live in **`~/.pal/cli_clients/*.json`** (`USER_CONFIG_DIR`,
+- Machine-specific overrides live in **`~/.openclink/cli_clients/*.json`** (`USER_CONFIG_DIR`,
   `clink/constants.py:14`), read **last** by `registry._iter_config_files` so they override the
   bundled config, survive reinstalls, and are **shared by every OpenClink install** on the machine.
+  The pre-rename `~/.pal/cli_clients/` (`LEGACY_USER_CONFIG_DIR`) is still read too, checked first.
 
 ## Consequences
 
@@ -36,8 +37,8 @@ escape hatch.
 - `discovery.py`'s known locations are **Windows-tuned**; on other OSes it degrades to PATH-only until
   per-OS candidates are added (open work).
 - Shipping `claude-9arm` active bakes this fork's 9arm gateway convention into the bundled config;
-  other gateways use the `.example` or a `~/.pal` override.
-- Editing site-packages `conf/` is discouraged (reinstall-wiped, per-install) — prefer `~/.pal`.
+  other gateways use the `.example` or a `~/.openclink` override.
+- Editing site-packages `conf/` is discouraged (reinstall-wiped, per-install) — prefer `~/.openclink`.
 
 Related: [ADR 0002](0002-per-call-model-effort-per-backend.md); memory
-[[pal-two-installs-and-config-cache]], [[clink-zero-setup-discovery]].
+[[openclink-two-installs-and-config-cache]], [[clink-zero-setup-discovery]].

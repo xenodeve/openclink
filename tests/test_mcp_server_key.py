@@ -89,3 +89,28 @@ def test_zen_is_still_cleaned_up_because_that_one_really_is_stale(script: str):
     assert re.search(
         r"""["']zen["']""", declaration
     ), f"{script}: the legacy-name list no longer removes 'zen' registrations.\n  found: {declaration.strip()}"
+
+
+def test_both_setup_scripts_register_the_same_key():
+    """Windows and Unix must not hand out different tool prefixes.
+
+    `run-server.ps1` drives the GUI clients (Claude Desktop, VS Code, Cursor,
+    Windsurf, Trae) from a `ConfigJsonPath` table, and `run-server.sh` writes the
+    same entry directly. They are two implementations of one contract, and nothing
+    made them agree: a Windows user would get `mcp__pal__<tool>` while everyone
+    else got `mcp__openclink__<tool>`, from the same release.
+
+    The failure is invisible on either machine alone -- each script is
+    self-consistent -- so only a test that reads both catches it.
+    """
+    paths = [
+        ln.split("=", 1)[1].strip().strip('"')
+        for ln in _text("run-server.ps1").splitlines()
+        if "ConfigJsonPath" in ln and "=" in ln and '"' in ln
+    ]
+    assert paths, "run-server.ps1 no longer declares any ConfigJsonPath entries"
+    stale = [p for p in paths if p.endswith(".pal")]
+    assert not stale, (
+        f"{len(stale)} of {len(paths)} client entries in run-server.ps1 still register under "
+        f"`pal` while run-server.sh writes `openclink`: {stale}"
+    )

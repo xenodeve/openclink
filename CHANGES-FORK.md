@@ -64,7 +64,7 @@ Fixed args are `-p --trust --output-format text`:
 
 If the parent process exports `SHELL=…/bash.exe` — which an MCP client may well do — `cursor-agent` runs its internal commands through bash, they are Windows-shaped, and every tool call dies. `Read`, `Shell`, `Grep`, `Glob` and MCP access all fail, and the agent then answers **from the prompt text alone with exit 0**, so the reply looks legitimate while the client is effectively text-only.
 
-Fix it per machine rather than in the shipped preset, since the correct value is platform-specific — drop a `conf/cli_clients/cursor.json` into `~/.pal/cli_clients/` (that directory is a search path, and unlike `site-packages` it survives `uv tool upgrade`):
+Fix it per machine rather than in the shipped preset, since the correct value is platform-specific — drop a `conf/cli_clients/cursor.json` into `~/.openclink/cli_clients/` (that directory is a search path — the pre-rename `~/.pal/cli_clients/` is still read too — and unlike `site-packages` it survives `uv tool upgrade`):
 
 ```json
 { "name": "cursor", "command": "cursor-agent",
@@ -192,14 +192,16 @@ Install OpenClink the normal way (README) and `codex`, `antigravity` (`agy`), an
 Net: a fresh `uv tool install` / `uvx` launch exposes all four/five clients; the ones whose CLI is
 present run, the rest report "not found" when called.
 
-### Overriding paths/gateways in `~/.pal/cli_clients/` (survives reinstalls, shared across installs)
+### Overriding paths/gateways in `~/.openclink/cli_clients/` (survives reinstalls, shared across installs)
 
 Editing the bundled `conf/cli_clients/*.json` inside an installed package (site-packages) is
 **ephemeral** — `uv tool install --force` / a `uvx` refresh overwrites it, and each install
 location (uv-tool vs uvx) has its own copy. Instead, put machine-specific activations in the
 **user config dir the registry already reads last (so it overrides the bundled config):
-`~/.pal/cli_clients/*.json`** (`USER_CONFIG_DIR` in `clink/constants.py`; also honored:
-`CLI_CLIENTS_CONFIG_PATH`). Configs there:
+`~/.openclink/cli_clients/*.json`** (`USER_CONFIG_DIR` in `clink/constants.py`; the pre-rename
+`~/.pal/cli_clients/` — `LEGACY_USER_CONFIG_DIR`, checked first — is still read too, so an
+override written before the rename keeps applying; also honored: `CLI_CLIENTS_CONFIG_PATH`).
+Configs there:
 
 - **persist across reinstalls** (they're outside the package), and
 - are read by **every** OpenClink instance on the machine — so a client activated once is available to
@@ -210,12 +212,12 @@ Use it for the two things the bundled config can't ship portably — an **absolu
 (when the CLI isn't on the OpenClink process's `PATH`) and **activating `claude-9arm`** against your
 gateway. Drop-in examples (fill in your own paths / model):
 
-`~/.pal/cli_clients/antigravity.json` (absolute `agy` so it resolves regardless of OpenClink's PATH):
+`~/.openclink/cli_clients/antigravity.json` (absolute `agy` so it resolves regardless of OpenClink's PATH):
 ```json
 { "name": "antigravity", "command": "C:/…/agy.exe", "additional_args": [],
   "roles": { "default": { "prompt_path": "systemprompts/clink/default.txt", "role_args": [] } } }
 ```
-`~/.pal/cli_clients/claude-9arm.json` (activate the Claude-Code-through-a-gateway client):
+`~/.openclink/cli_clients/claude-9arm.json` (activate the Claude-Code-through-a-gateway client):
 ```json
 { "name": "claude-9arm", "command": "C:/…/claude.exe",
   "additional_args": ["--settings","C:/…/your-gateway.json","--model","<gateway-model-id>"],

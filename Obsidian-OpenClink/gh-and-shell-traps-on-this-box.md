@@ -31,7 +31,7 @@ body short enough to be worth inlining** — the failure mode is silent truncati
 Use PowerShell with the absolute path: `'C:\Program Files\GitHub CLI\gh.exe'`. This is one instance of
 the wider fact that **the Bash tool and the PowerShell tool resolve different binaries** — the same
 divergence that makes a stale `codex` answer a valid model with an HTTP 400 blaming the model. See
-[[pal-two-installs-and-config-cache]].
+[[openclink-two-installs-and-config-cache]].
 
 ### `.venv` has no `pip`
 

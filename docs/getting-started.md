@@ -77,7 +77,7 @@ Choose your AI coding assistant and add the corresponding configuration:
 ```json
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "command": "sh",
       "args": [
         "-c", 
@@ -98,7 +98,7 @@ Create `.mcp.json` in your project root:
 ```json
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "command": "sh", 
       "args": [
         "-c",
@@ -119,7 +119,7 @@ Edit `~/.gemini/settings.json`:
 ```json
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "command": "sh",
       "args": [
         "-c",
@@ -164,7 +164,7 @@ Create or edit `~/.qwen/settings.json`:
 ```json
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "command": "bash",
       "args": [
         "-c",
@@ -189,7 +189,7 @@ Edit `~/.config/opencode/opencode.json`:
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "pal": {
+    "openclink": {
       "type": "local",
       "command": [
         "/path/to/openclink/.openclink_venv/bin/python",
@@ -343,7 +343,7 @@ Gemini uses a single `timeout` field per server inside `~/.gemini/settings.json`
 ```json
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "command": "uvx",
       "args": ["openclink"],
       "timeout": 300000
@@ -364,36 +364,36 @@ Versions 0.2.1 and newer currently ignore values above ~60 seconds for some tran
 ### For Claude Desktop:
 1. Restart Claude Desktop
 2. Open a new conversation
-3. Try: `"Use pal to list available models"`
+3. Try: `"Use openclink to list available models"`
 
 ### For Claude Code CLI:
 1. Exit any existing Claude session
 2. Run `claude` from your project directory  
-3. Try: `"Use pal to chat about Python best practices"`
+3. Try: `"Use openclink to chat about Python best practices"`
 
 ### For Gemini CLI:
 **Note**: While OpenClink connects to Gemini CLI, tool invocation isn't working correctly yet. See [Gemini CLI Setup](gemini-setup.md) for updates.
 
 ### For Qwen Code CLI:
 1. Restart the Qwen Code CLI if it's running (`qwen exit`).
-2. Run `qwen mcp list --scope user` and confirm `pal` shows `CONNECTED`.
-3. Try: `"/mcp"` to inspect available tools or `"Use pal to analyze this repo"`.
+2. Run `qwen mcp list --scope user` and confirm `openclink` shows `CONNECTED`.
+3. Try: `"/mcp"` to inspect available tools or `"Use openclink to analyze this repo"`.
 
 ### For OpenCode CLI:
 1. Restart OpenCode (or run `OpenCode: Reload Config`).
-2. Open **Settings › Tools › MCP** and confirm `pal` is enabled.
-3. Start a new chat and try: `"Use pal to list available models"`.
+2. Open **Settings › Tools › MCP** and confirm `openclink` is enabled.
+3. Start a new chat and try: `"Use openclink to list available models"`.
 
 ### For Codex CLI:
 1. Restart Codex CLI if running
 2. Open a new conversation
-3. Try: `"Use pal to list available models"`
+3. Try: `"Use openclink to list available models"`
 
 ### Test Commands:
 ```
-"Use pal to list available models"
-"Chat with pal about the best approach for API design"
-"Use pal thinkdeep with gemini pro about scaling strategies"  
+"Use openclink to list available models"
+"Chat with openclink about the best approach for API design"
+"Use openclink thinkdeep with gemini pro about scaling strategies"  
 "Debug this error with o3: [paste error]"
 ```
 
@@ -405,21 +405,21 @@ Versions 0.2.1 and newer currently ignore values above ~60 seconds for some tran
 
 **Let Claude pick the model:**
 ```
-"Use pal to analyze this code for security issues"
-"Debug this race condition with pal"
-"Plan the database migration with pal"
+"Use openclink to analyze this code for security issues"
+"Debug this race condition with openclink"
+"Plan the database migration with openclink"
 ```
 
 **Specify the model:**
 ```  
-"Use pal with gemini pro to review this complex algorithm"
-"Debug with o3 using pal for logical analysis"
-"Get flash to quickly format this code via pal"
+"Use openclink with gemini pro to review this complex algorithm"
+"Debug with o3 using openclink for logical analysis"
+"Get flash to quickly format this code via openclink"
 ```
 
 **Multi-model workflows:**
 ```
-"Use pal to get consensus from pro and o3 on this architecture"
+"Use openclink to get consensus from pro and o3 on this architecture"
 "Code review with gemini, then precommit validation with o3"  
 "Analyze with flash, then deep dive with pro if issues found"
 ```
@@ -435,7 +435,7 @@ Versions 0.2.1 and newer currently ignore values above ~60 seconds for some tran
 
 ## Common Issues and Solutions
 
-### "pal not found" or "command not found"
+### "openclink not found" or "command not found"
 
 **For uvx installations:**
 - Ensure `uv` is installed and in PATH
@@ -454,7 +454,7 @@ Versions 0.2.1 and newer currently ignore values above ~60 seconds for some tran
 - Check for extra spaces or quotes around keys
 
 **"Model not available":**
-- Run `"Use pal to list available models"` to see what's configured
+- Run `"Use openclink to list available models"` to see what's configured
 - Check model restrictions in environment variables
 - Verify API key has access to requested models
 

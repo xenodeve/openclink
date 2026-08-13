@@ -18,7 +18,7 @@ This guide explains how to configure PAL MCP Server to work with [Gemini CLI](ht
 ```json
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "command": "/path/to/openclink/openclink"
     }
   }

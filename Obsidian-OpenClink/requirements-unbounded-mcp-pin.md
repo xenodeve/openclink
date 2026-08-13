@@ -38,5 +38,5 @@ both; `tests/test_dependency_pins.py` is the guard that enforces it. A fresh env
 trusted until there is a `uv.lock` (still absent), so when a fresh install misbehaves, check the
 resolved version first: `python -c "import importlib.metadata as m; print(m.version('mcp'))"`.
 
-Related: [[pal-two-installs-and-config-cache]] (a stale user CLI config produces a *different*
+Related: [[openclink-two-installs-and-config-cache]] (a stale user CLI config produces a *different*
 collection failure that masks this one — clear that before concluding the pin is at fault).
