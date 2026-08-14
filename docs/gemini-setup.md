@@ -3,7 +3,7 @@
 > **Note**: While OpenClink connects successfully to Gemini CLI, tool invocation is not working
 > correctly yet. We'll update this guide once the integration is fully functional.
 
-This guide explains how to configure PAL MCP Server to work with [Gemini CLI](https://github.com/google-gemini/gemini-cli).
+This guide explains how to configure OpenClink to work with [Gemini CLI](https://github.com/google-gemini/gemini-cli).
 
 ## Prerequisites
 

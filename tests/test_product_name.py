@@ -52,15 +52,33 @@ EXCLUDED_PATHS = (
     "tests/test_mcp_server_key.py",
 )
 
-# A line is exempt when it is a URL, or when it belongs to the deliberate
-# legacy-cleanup machinery. Both are checked per line rather than per file, so a
-# stale name elsewhere in the same file is still caught.
+# An ADDRESS. The old name inside one of these must stay literal or the link
+# stops resolving — and that argument covers the characters of the address and
+# nothing else, so this is matched as a SPAN and exempts only names inside it.
+#
+# It used to be one of the alternatives in EXEMPT_LINE below, which made it
+# line-scoped: any link anywhere on a line exempted the whole line. That is how
+# `docs/gemini-setup.md` kept "configure PAL MCP Server" in its opening sentence
+# while the guard reported green — the exemption was bought by a link to
+# google-gemini/gemini-cli at the far end of the same line.
+ADDRESS_SPAN = re.compile(r"(?:git\+)?https?://\S+" r"|\b(?:github|githubusercontent|star-history)\.com/\S*")
+
+# A line is exempt when it belongs to the deliberate legacy-cleanup machinery, or
+# when naming the old thing IS the line's job. Checked per line rather than per
+# file, so a stale name elsewhere in the same file is still caught.
 EXEMPT_LINE = re.compile(
-    r"github\.com/"  # any repository URL
-    r"|githubusercontent\.com/"
     # `gh --repo xenodeve/pal-mcp-server` addresses the actual repository, which
-    # still has that name. Same rule as a URL: it is an address, not a product name.
-    r"|--repo "
+    # still has that name. Same rule as an address: it is not a product name.
+    r"--repo "
+    # The upstream project's real, current name, used as the display text of a
+    # fork-attribution link (and as a star-history query parameter). It is a
+    # different project — renaming it here would credit a repository that does
+    # not exist. Previously exempt only because a URL sat on the same line.
+    r"|BeehiveInnovations/pal-mcp-server"
+    # The kept `pal-mcp-server` console script, named after the `--from <URL>` it
+    # is invoked with. The address ends at `openclink.git`; the entry point is the
+    # next token, outside it, so it needs its own reason to stay.
+    r"|openclink\.git pal-mcp-server"
     # The `pal-mcp-server` console script kept on purpose, and the comment above it.
     r"|pal-mcp-server = \"server:run\"|already pasted into their own client"
     # The Docker migration note in `docker/README.md` must name the literal old
@@ -78,8 +96,6 @@ EXEMPT_LINE = re.compile(
     # OpenClink", which states nothing. The sweep agent made exactly that edit
     # and reverted it; encoding the rule means the next one need not rediscover it.
     r"|[Ff]ormerly known as|เดิมชื่อ"
-    # Another host addressing the repository by its real name.
-    r"|star-history\.com"
     # The Docker migration note's own heading and opening sentence name the old
     # family so a user can recognise what they have. Same argument as the volume
     # literal above.
@@ -129,6 +145,22 @@ def _tracked_files() -> list[str]:
     return [p for p in out.splitlines() if p and not any(p.startswith(x) or p == x for x in EXCLUDED_PATHS)]
 
 
+def _line_carries_a_stale_name(line: str) -> bool:
+    """Does this one line still name the old product, after exemptions?
+
+    Extracted so the exemption rules can be tested against a literal line rather
+    than only through a whole-repository walk. A rule that is only ever exercised
+    by the walk is one nobody can write a regression test for.
+    """
+    if EXEMPT_LINE.search(line) or STILL_DECIDED_ELSEWHERE.search(line):
+        return False
+    addresses = [m.span() for m in ADDRESS_SPAN.finditer(line)]
+    return any(
+        not any(start <= hit.start() and hit.end() <= end for start, end in addresses)
+        for hit in STALE_NAME.finditer(line)
+    )
+
+
 def _stale_occurrences() -> list[str]:
     hits: list[str] = []
     for rel in _tracked_files():
@@ -138,9 +170,7 @@ def _stale_occurrences() -> list[str]:
         except (UnicodeDecodeError, OSError):
             continue  # binary or unreadable — not prose we renamed
         for n, line in enumerate(text.splitlines(), 1):
-            if EXEMPT_LINE.search(line) or STILL_DECIDED_ELSEWHERE.search(line):
-                continue
-            if STALE_NAME.search(line):
+            if _line_carries_a_stale_name(line):
                 hits.append(f"{rel}:{n}: {line.strip()[:110]}")
     return hits
 
@@ -153,6 +183,39 @@ def test_no_live_surface_still_carries_the_old_product_name():
         "belongs in EXCLUDED_PATHS/EXEMPT_LINE above — decide which, per line.\n\n"
         + "\n".join(hits[:40])
         + (f"\n… and {len(hits) - 40} more" if len(hits) > 40 else "")
+    )
+
+
+def test_a_url_exempts_only_the_name_inside_it_not_the_whole_line():
+    """An unrelated link must not buy the rest of the line an exemption.
+
+    The URL rule exists because `github.com/BeehiveInnovations/pal-mcp-server` is
+    an ADDRESS — it must stay literal or it stops resolving. That argument covers
+    the characters inside the URL and nothing else.
+
+    Applied per line it covered everything, and `docs/gemini-setup.md` opened with
+    "This guide explains how to configure PAL MCP Server to work with [Gemini
+    CLI](https://github.com/google-gemini/gemini-cli)" — a live product name in the
+    first sentence a reader sees, exempted by a link to somebody else's repository
+    at the far end of the line. The guard reported green.
+
+    Both directions are pinned. Narrowing the rule until it exempts nothing would
+    also pass a one-sided version of this test, and would then force every genuine
+    upstream URL to be rewritten.
+    """
+    stale_outside = (
+        "This guide explains how to configure PAL MCP Server to work with "
+        "[Gemini CLI](https://github.com/google-gemini/gemini-cli)."
+    )
+    assert _line_carries_a_stale_name(stale_outside), (
+        "a stale product name outside the URL was exempted by the URL — "
+        "the exemption is being applied to the line instead of to the address"
+    )
+
+    stale_inside_only = "> **This is a fork** of [upstream](https://github.com/BeehiveInnovations/pal-mcp-server)"
+    assert not _line_carries_a_stale_name(stale_inside_only), (
+        "the old name inside a repository URL was flagged — that address must stay "
+        "literal or the link stops resolving"
     )
 
 
