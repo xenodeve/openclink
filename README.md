@@ -15,7 +15,7 @@
 <div align="center">
 
   <em>CLI เดียว เชื่อมทุกโมเดล ด้วย clink</em><br />
-  <sub><a href="docs/name-change.md">เดิมชื่อ Zen MCP</a></sub>
+  <sub><a href="docs/name-change.md">เดิมชื่อ PAL MCP และก่อนหน้านั้นคือ Zen MCP</a></sub>
 
   [OpenClink in action](https://github.com/user-attachments/assets/0d26061e-5f21-4ab1-b7d0-f883ddc2c3da)
 

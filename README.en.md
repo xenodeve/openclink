@@ -15,7 +15,7 @@
 <div align="center">
 
   <em>One CLI, every model — bridged by clink.</em><br />
-  <sub><a href="docs/name-change.md">Formerly known as Zen MCP</a></sub>
+  <sub><a href="docs/name-change.md">Formerly known as PAL MCP, and Zen MCP before that</a></sub>
 
   [OpenClink in action](https://github.com/user-attachments/assets/0d26061e-5f21-4ab1-b7d0-f883ddc2c3da)
 
