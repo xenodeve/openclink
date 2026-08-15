@@ -147,6 +147,15 @@ def test_no_config_file_client_is_still_registered_under_pal():
 
     The failure is invisible on either machine alone, because each script is
     self-consistent, so only a test that reads both catches it.
+
+    **Scope, after a correction.** This test also asserted that `run-server.sh`
+    never writes a `pal` entry at all. That was too strong and it was wrong: an
+    entry the user ALREADY has must be refreshed to the current interpreter, or
+    it keeps naming the pre-rename virtualenv and rots silently. The distinction
+    is create-vs-refresh, not written-vs-not, and
+    `tests/test_registration_freshness.py` owns it -- it requires each such write
+    to sit behind a membership guard. Duplicating a weaker version of that rule
+    here is how the two ended up contradicting each other.
     """
     paths = [
         ln.split("=", 1)[1].strip().strip('"')
@@ -158,14 +167,6 @@ def test_no_config_file_client_is_still_registered_under_pal():
     assert not stale, (
         f"{len(stale)} of {len(paths)} client entries in run-server.ps1 still register under "
         f"`pal` while run-server.sh writes `openclink`: {stale}"
-    )
-
-    writes_pal = re.findall(
-        r"""\[["']mcpServers["']\]\[["']pal["']\]|servers\[["']pal["']\]\s*=""", _text("run-server.sh")
-    )
-    assert not writes_pal, (
-        f"run-server.sh writes {len(writes_pal)} config-file entries under `pal` while "
-        "run-server.ps1 writes `openclink` — the same split, the other way round"
     )
 
 

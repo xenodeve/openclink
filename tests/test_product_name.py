@@ -126,6 +126,14 @@ STILL_DECIDED_ELSEWHERE = re.compile(
     r"|the two names must run the same server|install instruction published so far"
     # The migration note naming the image a user currently has.
     r"|image `pal-mcp-server:latest`"
+    # Two comments in `run-server.sh` explaining why the registration freshness
+    # check must compare the interpreter: the virtualenv moved and `server.py`
+    # did not, so a path-only match leaves the old entry pointing at a directory
+    # setup no longer installs into. Both sentences are ABOUT the old name --
+    # substitute it and one reads "moved from .openclink_venv to
+    # .openclink_venv" and the other stops identifying what is still on disk.
+    # Same shape as the Docker migration note above, and as `Formerly known as`.
+    r"|from `\.pal_venv` to|\.pal_venv is still on disk"
     # Two tests whose SUBJECT is a legacy name — they exist to prove the old
     # spelling still works, so they must be able to write it. The rename sweep
     # rewrote one of them into `assert scripts["openclink"] == scripts["openclink"]`,

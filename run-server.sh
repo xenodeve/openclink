@@ -1321,9 +1321,16 @@ check_claude_cli_integration() {
                 return 1
             fi
         else
-            # Verify the registered path matches current setup
+            # Verify the registered command matches current setup -- the
+            # INTERPRETER as well as the script. Matching `$server_path` alone was
+            # harmless while the virtualenv kept its name; this rename moved it
+            # from `.pal_venv` to `.openclink_venv` and left `server.py` where it
+            # was, so a path-only match declares every existing registration
+            # current and leaves it running an env setup no longer installs into.
+            # Nothing errors -- the old directory is still on disk -- which is why
+            # this needs an assertion rather than a report (#94).
             local expected_cmd="$python_cmd $server_path"
-            if echo "$mcp_list" | grep -F "$server_path" &>/dev/null; then
+            if echo "$mcp_list" | grep -F "$expected_cmd" &>/dev/null; then
                 return 0
             else
                 print_warning "OpenClink registered with different path, updating..."
@@ -1517,6 +1524,17 @@ if env_dict:
     openclink_config['env'] = env_dict
 
 config['mcpServers']['openclink'] = openclink_config
+
+# An existing 'pal' entry is the one skills still address, and it names the
+# pre-rename virtualenv that setup no longer installs into. Refreshed to the same
+# command rather than deleted (that breaks the callers) or left alone (that lets
+# it rot silently, because .pal_venv is still on disk so nothing errors).
+# GUARDED: refreshed only when already present, never created -- registering
+# every client under both names would put a second copy of every tool in front of
+# users who never had 'pal'. Delete this block at cutover, when 'pal' joins
+# LEGACY_MCP_NAMES (#94).
+if 'pal' in config['mcpServers']:
+    config['mcpServers']['pal'] = dict(openclink_config)
 
 with open('$temp_file', 'w') as f:
     json.dump(config, f, indent=2)
@@ -1746,6 +1764,11 @@ try:
     config['mcpServers']['openclink'] = {
         'command': '$openclink_wrapper'
     }
+
+    # Same rule as the Claude Desktop path: refresh an existing 'pal' entry to the
+    # current command, never create one. See the note there (#94).
+    if 'pal' in config['mcpServers']:
+        config['mcpServers']['pal'] = dict(config['mcpServers']['openclink'])
 
     with open('$temp_file', 'w') as f:
         json.dump(config, f, indent=2)
@@ -2273,6 +2296,11 @@ if env_map:
     openclink_config['env'] = env_map
 
 servers['openclink'] = openclink_config
+
+# Same rule as the Claude Desktop path: refresh an existing 'pal' entry to the
+# current command, never create one. See the note there (#94).
+if 'pal' in servers:
+    servers['pal'] = dict(openclink_config)
 
 config_path.parent.mkdir(parents=True, exist_ok=True)
 tmp_path = config_path.with_suffix(config_path.suffix + '.tmp')

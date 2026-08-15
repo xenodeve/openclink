@@ -1165,7 +1165,7 @@ function Get-ExistingMcpConfigType {
         
         # Navigate to pal configuration
         $pathParts = $Client.ConfigJsonPath.Split('.')
-        $palKey = $pathParts[-1]
+        $serverKey = $pathParts[-1]
         $parentPath = $pathParts[0..($pathParts.Length - 2)]
         
         $targetObject = $content
@@ -1180,7 +1180,7 @@ function Get-ExistingMcpConfigType {
             $targetObject = $targetObject.$key
         }
         
-        if (!$targetObject.PSObject.Properties[$palKey]) {
+        if (!$targetObject.PSObject.Properties[$serverKey]) {
             return @{
                 Exists  = $false
                 Type    = "None"
@@ -1188,7 +1188,7 @@ function Get-ExistingMcpConfigType {
             }
         }
         
-        $openclinkConfig = $targetObject.$palKey
+        $openclinkConfig = $targetObject.$serverKey
         
         # Analyze configuration type
         if ($openclinkConfig.command -eq "docker") {
@@ -1459,7 +1459,7 @@ function Configure-McpClient {
 
         # Navigate and set configuration
         $pathParts = $Client.ConfigJsonPath.Split('.')
-        $palKey = $pathParts[-1]
+        $serverKey = $pathParts[-1]
         $parentPath = $pathParts[0..($pathParts.Length - 2)]
         
         $targetObject = $config
@@ -1473,10 +1473,20 @@ function Configure-McpClient {
         # Remove legacy zen entries to avoid duplicate or broken MCP servers
         $legacyRemoved = Remove-LegacyServerKeys $targetObject
         if ($legacyRemoved) {
-            Write-Info "Removed legacy MCP entries (zen → pal)"
+            Write-Info "Removed stale MCP entries left by an earlier release"
         }
 
-        $targetObject | Add-Member -MemberType NoteProperty -Name $palKey -Value $serverConfig -Force
+        $targetObject | Add-Member -MemberType NoteProperty -Name $serverKey -Value $serverConfig -Force
+
+        # Same rule as run-server.sh: an existing `pal` entry is what skills still
+        # address, and it names the pre-rename virtualenv that setup no longer
+        # installs into. Refresh it to the current command rather than delete it
+        # (that breaks the callers) or leave it (that lets it rot silently).
+        # GUARDED: refreshed only when already present, never created. Remove this
+        # block at cutover, when `pal` joins $script:LegacyServerNames (#94).
+        if ($targetObject.PSObject.Properties["pal"]) {
+            $targetObject | Add-Member -MemberType NoteProperty -Name "pal" -Value $serverConfig -Force
+        }
 
         # Write config
         $config | ConvertTo-Json -Depth 10 | Out-File $configPath -Encoding UTF8
