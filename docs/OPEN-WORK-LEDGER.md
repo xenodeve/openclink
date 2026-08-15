@@ -10,6 +10,31 @@ protocol in `docs/agents/` and the entry map (`using-t4`).
 
 ## Active
 
+### 🟡 The rename shipped; the tool prefix is the one piece left (2026-08-16, #94 → #122)
+
+**OpenClink is live on `main` at `7effad8`** (PR #114, 22 commits, 176 files; PR #86 / OpenCode client rode
+along as an ancestor and merged with it). `pal-mcp-server` is taken on PyPI at 10.4.3 by an unrelated project,
+which is what made the name the blocker under #93.
+
+**What is NOT done, and must not be rushed: `mcp__pal__<tool>`.** The Claude and Codex CLIs are still registered
+as `pal`, because `xeno-skills` names that prefix 25 times and its skills run inside those two. Every other
+client moved to `openclink` already. `pal` is deliberately absent from `LEGACY_MCP_NAMES` (the list setup
+*deletes*), and an existing `pal` entry is refreshed to the current command rather than left to rot.
+
+Order: **`xeno-skills#206` merges → users actually pull → only then** move the CLIs, add `pal` to the cleanup
+list, delete the two refresh blocks, and invert the two tests. Doing it at merge time breaks anyone mid-upgrade.
+Full criteria in **#122**. The signal is `tests/test_mcp_server_key.py` and `tests/test_registration_freshness.py`,
+which carry the inversion in their docstrings — not anyone's memory.
+
+**Both review gates were paid before merge and found four defects**, the sharpest being a latent bug the rename
+activated: the registration freshness check compared `server.py`'s path and never the interpreter, so moving
+`VENV_PATH` from `.pal_venv` to `.openclink_venv` left every existing registration pointing at a virtualenv
+setup no longer installs into — silently, because the old directory is still on disk. Detail in `DONE.md`.
+
+Also filed: **#121** — the #63 fix ("the quality gate reports, it does not rewrite") landed on
+`code_quality_checks.sh` only, and its guard reads only that file, so on Windows the gate still rewrites
+tracked files.
+
 ### ✅ The #36 hooks layer is now pinned by tests (2026-08-09, #83)
 
 The #36 layer shipped with manual demonstrations and **zero committed tests**. Retroactive TDD landed as PR #84

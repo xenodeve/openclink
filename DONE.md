@@ -3,6 +3,64 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-16 — the project is OpenClink (#94, PR #114, merged at `7effad8`)
+
+Renamed from PAL MCP. `pal-mcp-server` is taken on PyPI at 10.4.3 by something that is not this
+project, so the name was the blocker under #93 for anyone installing without cloning. 22 commits,
+176 files. PR #86 (OpenCode client, #85) rode along — its branch was an ancestor — and merged with it.
+
+**The rename was the easy half.** Three things live outside the repository and could not be
+substituted: `~/.pal/cli_clients` (user overrides, recommended by `CHANGES-FORK.md` precisely because
+it survives `uv tool upgrade`), the `PAL_MCP_*` env vars in people's `.env`, and the tool prefix
+`mcp__pal__<tool>`, which `xeno-skills` names 25 times. All three still work; the prefix moves in a
+sequenced cutover tracked separately.
+
+**Validated** — 1119 passed, 4 skipped. `bash -n`, PowerShell's own parser, `black`, `isort` clean.
+**CI did not run**: the account is billing-locked and every job failed in 2–3 seconds without
+starting. The local suite is the evidence, and it is the only evidence.
+
+**Both review gates were paid before merge, and neither came back clean.** Four defects, each fixed
+with the assertion that would have caught it:
+
+- **A second cleanup list, at a deletion site, deleting the one name the first list spares.** #94 said
+  "reuse `LEGACY_MCP_NAMES`; do not invent a second one". Three of four sites obeyed; the fourth
+  hardcoded `for key in ('openclink', 'pal')`. The existing test read the *declaration line*, which
+  this deletion never consulted. The new one anchors on the deletion *statement*.
+- **`~/.pal/cli_clients` was read in silence**, against an acceptance criterion that says "without
+  being told". Now a `warning`, not a `debug` — the registry loads at server start, where the default
+  level hides it from exactly the user who needs it.
+- **The freshness check compared `server.py`, never the interpreter.** `expected_cmd` was computed and
+  thrown away. Latent on `main` and harmless there; this rename moved `VENV_PATH` from `.pal_venv` to
+  `.openclink_venv` and left `server.py` in place, so every existing registration was declared current
+  and left on a virtualenv setup no longer installs into. Nothing errors — the old directory is still
+  on disk. `tests/test_registration_freshness.py`.
+- **Nothing refreshed an existing `pal` entry.** Now refreshed to the current command, *guarded* so it
+  is never created; unguarded it registers every client under both names. In `run-server.ps1` too,
+  because fixing only the `.sh` rebuilds the split fixed earlier in the same branch.
+
+**Two reported findings did not survive verification**, and that is the point of verifying: the
+"two different keys per client" split is deliberate and both scripts agree (line by line), and my own
+worry that removing the hardcoded delete stranded a Docker `pal` was wrong — the ordinary path never
+removed it either.
+
+**What the guards now cover, and what they missed first.** `tests/test_product_name.py` walks every
+tracked file; it shipped with a pattern that never matched the bare word `pal` (293 occurrences
+survived a green run) and with a URL exemption applied per *line*, so a link to somebody else's
+repository exempted a live product name at the other end of the sentence. Both closed.
+`tests/test_embedded_python_parses.py` compiles all ten Python blocks embedded in `run-server.sh` — a
+syntax error there does not fail setup, because `|| true` and `2>/dev/null` swallow it. Its coverage
+assertion exists because two separate extractors written for that job found 1-of-4 and 6-of-10 and
+both printed success.
+
+**Counts** — all five patterns from the issue are at zero on the live surface; the remainder is quoted
+history, the guards themselves, three deliberate back-compat shims, and the upstream project's own
+name. Per-file breakdown, and why the issue's own baseline turned out not to be reproducible:
+https://github.com/xenodeve/openclink/issues/94#issuecomment-5304165489
+
+**Still open, deliberately** — the Claude and Codex CLIs remain registered as `pal`, because that is
+where the skills calling `mcp__pal__` run. They move only after `xeno-skills#206` merges *and* users
+pull it. `tests/test_mcp_server_key.py` requires both halves to flip together.
+
 ## 2026-08-09 — the hooks layer finally has tests (retroactive TDD, #83, PR #84)
 
 The #36 layer (earlier today) shipped with manual demonstrations and zero committed tests — a future edit could

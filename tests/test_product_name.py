@@ -14,8 +14,9 @@ mode of a rename is not a wrong constant, it is a sweep that missed a shape.
 history or references to other projects. A sweep that "fixed" them would be
 destroying facts, not renaming a product:
 
-- `CHANGELOG.md`, `Documents/`, `docs/reports/` — records of what happened under
-  the old names. Rewriting them makes the record lie.
+- `CHANGELOG.md`, `DONE.md`, `Documents/`, `docs/reports/` — records of what
+  happened under the old names. Rewriting them makes the record lie, and the ship
+  log's entry for this very rename cannot say what it renamed without naming it.
 - `docs/name-change.md` — the document whose subject IS the naming history. It
   should gain a paragraph about this rename, not have its existing text replaced.
 - URLs — the upstream `zen-mcp-server` issue links in
@@ -43,10 +44,18 @@ REPO = Path(__file__).parent.parent
 # Paths whose whole purpose is to record history or point at another project.
 EXCLUDED_PATHS = (
     "CHANGELOG.md",
+    # The ship log. Same argument as CHANGELOG.md: it records what was validated
+    # under each name, including the entry for the rename itself, which cannot
+    # say what it renamed without writing the old name.
+    "DONE.md",
     "Documents/",
     "docs/reports/",
     "docs/name-change.md",
     "tests/test_product_name.py",
+    # Its subject IS the pre-rename virtualenv — why moving `.pal_venv` while
+    # leaving `server.py` in place stranded every existing registration. Same
+    # reason as the two files below.
+    "tests/test_registration_freshness.py",
     # Same reason as the line above: this file's entire subject is the old key and
     # when it may be deleted, so it necessarily writes the name it governs.
     "tests/test_mcp_server_key.py",
@@ -134,6 +143,10 @@ STILL_DECIDED_ELSEWHERE = re.compile(
     # .openclink_venv" and the other stops identifying what is still on disk.
     # Same shape as the Docker migration note above, and as `Formerly known as`.
     r"|from `\.pal_venv` to|\.pal_venv is still on disk"
+    # `pal-mcp-server` on PyPI belongs to an unrelated project at 10.4.3, and
+    # that fact is the whole reason this rename happened. It names somebody
+    # else's package, so it is an address in the same sense a URL is.
+    r"|is taken on PyPI"
     # Two tests whose SUBJECT is a legacy name — they exist to prove the old
     # spelling still works, so they must be able to write it. The rename sweep
     # rewrote one of them into `assert scripts["openclink"] == scripts["openclink"]`,
@@ -145,7 +158,15 @@ STILL_DECIDED_ELSEWHERE = re.compile(
 
 # The old product names, in every shape the previous rename had to handle:
 # bare, hyphenated, underscored, and the capitalised user-facing form.
-STALE_NAME = re.compile(r"pal[-_]mcp[-_]server|pal[-_]mcp\b|PAL[ _]MCP|\bpal_venv\b|PAL_[A-Z]", re.IGNORECASE)
+#
+# `(?-i:...)` on the env-var alternative is load-bearing. Under the file-wide
+# IGNORECASE it read as `pal_<letter>` and matched ordinary identifiers —
+# `pal_entry`, `pal_key` — so a test named
+# `test_an_existing_pal_entry_is_refreshed` was reported as a live occurrence of
+# the product name. Env vars are SHOUTY; the alternative that hunts them should
+# be too, or the guard cries wolf and the next reader widens an exemption instead
+# of fixing the pattern.
+STALE_NAME = re.compile(r"pal[-_]mcp[-_]server|pal[-_]mcp\b|PAL[ _]MCP|\bpal_venv\b|(?-i:PAL_[A-Z])", re.IGNORECASE)
 
 
 def _tracked_files() -> list[str]:
