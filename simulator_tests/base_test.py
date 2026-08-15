@@ -43,10 +43,10 @@ class BaseSimulatorTest:
         if os.path.exists(venv_python):
             return venv_python
 
-        # Try .pal_venv as fallback
-        pal_venv_python = os.path.join(current_dir, ".pal_venv", "bin", "python")
-        if os.path.exists(pal_venv_python):
-            return pal_venv_python
+        # Try .openclink_venv as fallback
+        openclink_venv_python = os.path.join(current_dir, ".openclink_venv", "bin", "python")
+        if os.path.exists(openclink_venv_python):
+            return openclink_venv_python
 
         # Fallback to system python if venv doesn't exist
         self.logger.warning("Virtual environment not found, using system python")

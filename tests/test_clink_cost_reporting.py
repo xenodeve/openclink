@@ -104,7 +104,7 @@ def test_a_client_with_no_rate_card_still_loads_and_runs():
     assert accounting["normalized_usage"]["input_tokens"] == 100_000
     assert "cost" not in accounting
     # And SILENT, not marked unavailable. "Nobody has configured a rate card"
-    # is a fact about PAL, exactly like "nobody has written this adapter" in
+    # is a fact about OpenClink, exactly like "nobody has written this adapter" in
     # #24 slice 4 - and that was deliberately left silent so that a marker
     # always means a fact about the CLI or the call. Marking it here would put
     # `cost_unavailable` on every response of every client, which is how a

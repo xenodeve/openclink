@@ -1,5 +1,5 @@
 """
-Tool implementations for PAL MCP Server
+Tool implementations for OpenClink
 """
 
 from .analyze import AnalyzeTool

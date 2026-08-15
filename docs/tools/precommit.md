@@ -32,7 +32,7 @@ After Claude completes the investigation (unless precommit_type is **internal**)
 - Default validation type is **external** (uses expert model for additional review)
 - To skip expert validation, explicitly request "don't use any other model" or set precommit_type to "internal"
 - **CRITICAL**: Minimum 3 steps are enforced - tool will prevent setting `next_step_required=false` before final step
-- **MANDATORY**: Changeset file (pal_precommit.changeset) must be created for external validation
+- **MANDATORY**: Changeset file (openclink_precommit.changeset) must be created for external validation
 
 ## Model Recommendation
 
@@ -101,12 +101,12 @@ Then it shared the changes and relevant code with Gemini 3.0 Pro - the following
   - Fix Required: Apply the same defensive pattern to the missed location
 ```
 
-A subtle but critical issue spotted by Gemini that both Claude + O3 missed. This is the power of running these workflows with PAL.
+A subtle but critical issue spotted by Gemini that both Claude + O3 missed. This is the power of running these workflows with OpenClink.
 
 ## Example Prompts
 
 ```
-Use pal and perform a thorough precommit ensuring there aren't any new regressions or bugs introduced
+Use openclink and perform a thorough precommit ensuring there aren't any new regressions or bugs introduced
 ```
 
 ## Key Features
@@ -155,7 +155,7 @@ Use pal and perform a thorough precommit ensuring there aren't any new regressio
 
 **Basic Pre-commit Validation:**
 ```
-"Use pal precommit to validate my changes before committing"
+"Use openclink precommit to validate my changes before committing"
 ```
 
 **Security-Focused Validation:**

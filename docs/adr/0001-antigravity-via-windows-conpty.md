@@ -7,7 +7,7 @@
 
 Google retired the Gemini CLI in mid-2026 in favor of **Antigravity** (`agy`, a closed-source Go
 binary). `agy` only emits output when it believes it's attached to a real terminal: under a plain
-piped subprocess — the way every MCP server, including PAL's `BaseCLIAgent`
+piped subprocess — the way every MCP server, including OpenClink's `BaseCLIAgent`
 (`clink/agents/base.py`, `asyncio.create_subprocess_exec`), spawns a child CLI — it exits 0 with
 **empty stdout**. So the upstream plain-pipe path cannot capture any `agy` output.
 

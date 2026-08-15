@@ -39,7 +39,7 @@ class CallCost:
 
 
 # Named because the tool treats this reason differently from the others: it is a
-# fact about PAL's configuration rather than about the CLI or the call, so it is
+# fact about OpenClink's configuration rather than about the CLI or the call, so it is
 # not projected to the caller. A literal spelled in two files would drift.
 NO_RATE_CARD = "no_rate_card"
 

@@ -1,4 +1,4 @@
-# PAL MCP Server Documentation
+# OpenClink Documentation
 
 _Formerly known as PAL MCP. See the short [name change note](name-change.md) for context._
 

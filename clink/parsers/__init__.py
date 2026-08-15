@@ -7,12 +7,14 @@ from .base import BaseParser, ParsedCLIResponse, ParserError
 from .claude import ClaudeJSONParser
 from .codex import CodexJSONLParser
 from .gemini import GeminiJSONParser
+from .opencode import OpenCodeJSONLParser
 
 _PARSER_CLASSES: dict[str, type[BaseParser]] = {
     CodexJSONLParser.name: CodexJSONLParser,
     GeminiJSONParser.name: GeminiJSONParser,
     ClaudeJSONParser.name: ClaudeJSONParser,
     AntigravityTextParser.name: AntigravityTextParser,
+    OpenCodeJSONLParser.name: OpenCodeJSONLParser,
 }
 
 

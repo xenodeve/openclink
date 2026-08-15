@@ -53,7 +53,7 @@ Gemini receives the full conversation context from `consensus` including the con
 - **Role-based prompts**: Pre-configured roles for planning, code review, or general questions
 - **Full CLI capabilities**: Gemini can use its own web search, file tools, and latest features
 - **Token efficiency**: File references (not full content) to conserve tokens
-- **Cross-tool collaboration**: Combine with other PAL tools like `planner` → `clink` → `codereview`
+- **Cross-tool collaboration**: Combine with other OpenClink tools like `planner` → `clink` → `codereview`
 - **Free tier available**: Gemini offers 1,000 requests/day free with a personal Google account - great for cost savings across tools
 
 ## Available Roles
@@ -78,7 +78,7 @@ You can make your own custom roles in `conf/cli_clients/` or tweak any of the sh
 ## Tool Parameters
 
 - `prompt`: Your question or task for the external CLI (required)
-- `cli_name`: Which CLI to use - `gemini` (default), `claude`, `codex`, `antigravity` (fork addition, see below), or add your own in `conf/cli_clients/`. **Note:** the standalone Gemini CLI was retired by Google in mid-2026; its successor is `antigravity` (`agy`) — prefer that for Google models.
+- `cli_name`: Which CLI to use - `gemini` (default), `claude`, `codex`, `antigravity`, `cursor`, `opencode` (the last three are fork additions, see below), or add your own in `conf/cli_clients/`. **Note:** the standalone Gemini CLI was retired by Google in mid-2026; its successor is `antigravity` (`agy`) — prefer that for Google models.
 - `role`: Preset role - `default`, `planner`, `codereviewer` (default: `default`)
 - `files`: Optional file paths for context (references only, CLI opens files itself)
 - `images`: Optional image paths for visual context
@@ -130,18 +130,18 @@ Omit both to use whatever the CLI's config pins by default. Effort has steep dim
 ## How Clink Works
 
 1. **Your request** - You ask your current CLI to use `clink` with a specific CLI and role
-2. **Background execution** - PAL spawns the configured CLI (e.g., `gemini --output-format json`)
+2. **Background execution** - OpenClink spawns the configured CLI (e.g., `gemini --output-format json`)
 3. **Context forwarding** - Your prompt, files (as references), and conversation history are sent as part of the prompt
 4. **CLI processing** - Gemini (or other CLI) uses its own tools: web search, file access, thinking modes
 5. **Seamless return** - Results flow back into your conversation with full context preserved
-6. **Continuation support** - Future tools and models can reference Gemini's findings via [continuation support](../context-revival.md) within PAL.
+6. **Continuation support** - Future tools and models can reference Gemini's findings via [continuation support](../context-revival.md) within OpenClink.
 
 ## Best Practices
 
 - **Pre-authenticate CLIs**: Install and log in to each CLI you'll clink to first — Codex, Claude Code, and/or Antigravity (`agy`, the retired Gemini CLI's successor; see [CHANGES-FORK.md](../../CHANGES-FORK.md))
 - **Choose appropriate roles**: Use `planner` for strategy, `codereviewer` for code, `default` for general questions
 - **Leverage CLI strengths**: Gemini's 1M context for large codebases, web search for current docs
-- **Combine with PAL tools**: Chain `clink` with `planner`, `codereview`, `debug` for powerful workflows
+- **Combine with OpenClink tools**: Chain `clink` with `planner`, `codereview`, `debug` for powerful workflows
 - **File efficiency**: Pass file paths, let the CLI decide what to read (saves tokens)
 
 ## Configuration
@@ -152,6 +152,8 @@ Clink configurations live in `conf/cli_clients/`. We ship presets for the suppor
 - `claude.json` – runs `claude --print --output-format json --permission-mode acceptEdits --model sonnet`
 - `codex.json` – runs `codex exec --json --dangerously-bypass-approvals-and-sandbox`
 - `antigravity.json` – **fork addition** – runs Google's Antigravity CLI (`agy`, the Gemini CLI's 2026 successor). See [CHANGES-FORK.md](../../CHANGES-FORK.md) for how it works and why it needs a Windows ConPTY.
+- `cursor.json` – **fork addition** – runs Cursor's headless `cursor-agent -p`, the only route to xAI's Grok, Moonshot's Kimi and Zhipu's GLM. See [CHANGES-FORK.md](../../CHANGES-FORK.md) for the Windows `SHELL` gotcha that silently makes it text-only.
+- `opencode.json` – **fork addition** – runs `opencode run --format json`. The only preset whose CLI reports the **cost of its own call**, and the only route to the `opencode-go` provider. `--auto` is deliberately not passed; declare a `permission` block in your own `opencode.json` instead.
 - `claude-9arm.json.example` – **fork addition** – template showing how to point the `claude` runner at an alternate OpenAI-compatible model gateway instead of Anthropic's own models. Copy to `claude-9arm.json`, fill in the placeholders, and it becomes a new `cli_name` you can clink to.
 
 > **CAUTION**: These flags intentionally bypass each CLI's safety prompts so they can edit files or launch tools autonomously via MCP. Only enable them in trusted sandboxes and tailor role prompts or CLI configs if you need more guardrails.
@@ -165,9 +167,9 @@ Each preset points to role-specific prompts in `systemprompts/clink/`. Duplicate
 ## When to Use Clink vs Other Tools
 
 - **Use `clink`** for: Leveraging external CLI capabilities (Gemini's web search, 1M context), specialized CLI features, cross-CLI collaboration
-- **Use `chat`** for: Direct model-to-model conversations within PAL
-- **Use `planner`** for: PAL's native planning workflows with step validation
-- **Use `codereview`** for: PAL's structured code review with severity levels
+- **Use `chat`** for: Direct model-to-model conversations within OpenClink
+- **Use `planner`** for: OpenClink's native planning workflows with step validation
+- **Use `codereview`** for: OpenClink's structured code review with severity levels
 
 ## Setup Requirements
 
@@ -181,7 +183,7 @@ Ensure the relevant CLI is installed and configured:
 ## Related Guides
 
 - [Chat Tool](chat.md) - Direct model conversations
-- [Planner Tool](planner.md) - PAL's native planning workflows
+- [Planner Tool](planner.md) - OpenClink's native planning workflows
 - [CodeReview Tool](codereview.md) - Structured code reviews
 - [Context Revival](../context-revival.md) - Continuing conversations across tools
 - [Advanced Usage](../advanced-usage.md) - Complex multi-tool workflows

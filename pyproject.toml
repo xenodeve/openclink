@@ -1,5 +1,5 @@
 [project]
-name = "pal-mcp-server"
+name = "openclink"
 version = "9.8.2"
 description = "AI-powered MCP server with multiple model providers"
 requires-python = ">=3.9"
@@ -42,6 +42,12 @@ py-modules = ["server", "config"]
 ]
 
 [project.scripts]
+openclink = "server:run"
+# Kept through the rename (#94). Every install instruction published before it
+# ended in `pal-mcp-server`, as does whatever users already pasted into their own
+# client config; dropping it in the same release that introduces `openclink` would
+# break all of them at once, as a command-not-found inside an MCP client. Removing
+# it is a separate, deliberate decision.
 pal-mcp-server = "server:run"
 
 [tool.black]
@@ -57,7 +63,7 @@ extend-exclude = '''
   | \.mypy_cache
   | \.tox
   | \.venv
-  | \.pal_venv
+  | \.openclink_venv
   | venv
   | _build
   | buck-out
@@ -74,7 +80,7 @@ force_grid_wrap = 0
 use_parentheses = true
 ensure_newline_before_comments = true
 line_length = 120
-skip_glob = ["venv/*", ".venv/*", ".pal_venv/*"]
+skip_glob = ["venv/*", ".venv/*", ".openclink_venv/*"]
 
 [tool.ruff]
 target-version = "py39"

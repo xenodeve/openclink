@@ -1,7 +1,7 @@
 """Best-effort discovery of CLI executables so bundled configs work with zero setup.
 
 Bundled client configs use a bare command name (`agy`, `claude`, `codex`, `gemini`). When
-the editor launches PAL with a minimal `PATH`, a CLI installed under a user-profile location
+the editor launches OpenClink with a minimal `PATH`, a CLI installed under a user-profile location
 (winget / `%LOCALAPPDATA%` / `npm`) isn't on that `PATH`, so a bare command fails to resolve.
 `resolve_cli_command()` looks the command up on `PATH` first, then against per-CLI known
 install locations. If nothing is found it returns the input unchanged, so the agent's
@@ -24,6 +24,9 @@ _KNOWN_LOCATIONS: dict[str, list[str]] = {
     "claude": [r"%APPDATA%\npm\claude.cmd", r"~\.local\bin\claude.exe"],
     "codex": [r"%APPDATA%\npm\codex.cmd"],
     "gemini": [r"%APPDATA%\npm\gemini.cmd"],
+    # Installed by bun, which does not put its bin dir on PATH — verified absent
+    # from PATH on this machine 2026-08-11 while the binary was present.
+    "opencode": [r"~\.bun\bin\opencode.exe"],
 }
 
 # Glob candidates (e.g. winget package dirs carry a version/hash suffix).

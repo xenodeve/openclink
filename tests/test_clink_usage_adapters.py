@@ -34,6 +34,7 @@ from clink.agents.base import BaseCLIAgent, TokenUsage
 from clink.agents.claude import ClaudeAgent
 from clink.agents.cursor import CursorAgent
 from clink.agents.gemini import GeminiAgent
+from clink.agents.opencode import OpenCodeAgent
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
 from clink.parsers.base import ParsedCLIResponse
 from tools.clink import CLinkTool
@@ -191,6 +192,80 @@ def test_claude_cache_creation_tokens_are_not_folded_into_cache_reads():
     assert 24477 not in vars(account).values()
 
 
+# Recorded verbatim from `opencode run --format json -m opencode-go/deepseek-v4-flash`
+# on 2026-08-11 (opencode 1.18.15) — the `part.tokens` block of the `step_finish`
+# event. Unlike the gemini fixture the magnitudes here are real: the 121702 input
+# against 3 output is OpenCode's own agent context, not the one-sentence prompt.
+OPENCODE_RECORDED_TOKENS = {
+    "total": 121705,
+    "input": 121702,
+    "output": 3,
+    "reasoning": 0,
+    "cache": {"write": 0, "read": 0},
+}
+
+OPENCODE_CASES = [
+    pytest.param(
+        OPENCODE_RECORDED_TOKENS,
+        TokenUsage(input_tokens=121702, cached_input_tokens=None, output_tokens=3, reasoning_output_tokens=0),
+        id="recorded-real-run",
+    ),
+    pytest.param(
+        # A reasoning model's block, with cache actually used. Chosen distinct so
+        # the map is falsifiable — the recorded run has 0 in three places, and a
+        # fixture cannot tell a correct map from a permutation of its own zeros.
+        {"total": 9000, "input": 8000, "output": 900, "reasoning": 100, "cache": {"write": 500, "read": 7000}},
+        TokenUsage(input_tokens=8000, cached_input_tokens=None, output_tokens=900, reasoning_output_tokens=100),
+        id="reasoning-and-cache-used",
+    ),
+]
+
+
+@pytest.mark.parametrize("tokens,expected", OPENCODE_CASES)
+def test_opencode_usage_maps_onto_the_normalised_account(tokens, expected):
+    agent = _agent(OpenCodeAgent, "opencode", "opencode_jsonl")
+    assert _account(agent, {"tokens": tokens}) == expected
+
+
+def test_opencode_reads_its_own_key_not_usage():
+    # opencode's parser writes `tokens`; nothing writes `usage`. If the base
+    # default were still in force this client would report nothing at all while
+    # the CLI was reporting a full account.
+    agent = _agent(OpenCodeAgent, "opencode", "opencode_jsonl")
+    assert _account(agent, {"usage": OPENCODE_RECORDED_TOKENS}) is None
+
+
+def test_opencode_totals_are_not_mapped_anywhere():
+    # `total` is the tempting one: it is numerically plausible in `input_tokens`
+    # and would make the account silently wrong rather than incomplete.
+    agent = _agent(OpenCodeAgent, "opencode", "opencode_jsonl")
+    assert _account(agent, {"tokens": {"total": 121705}}) is None
+
+
+def test_opencode_cache_tokens_reach_no_field_of_the_account():
+    """A KNOWN GAP, pinned for two separate reasons that must not be conflated.
+
+    `cache.write` is the same missing field as claude's — #56 — and the account
+    has nowhere to put it. `cache.read` is different: `cached_input_tokens`
+    exists and would be the right home, but the payload nests it one level down
+    and `_extract_token_usage` reads a flat map (`isinstance(usage.get(key), int)`
+    skips a dict), so the map cannot reach it *mechanically*.
+
+    Both are left unmapped rather than reached for here, because closing the
+    second needs a nested-key vocabulary in the base — a change to the account
+    #23 shipped, which is #56's decision to make, not this client's. Reporting
+    an absent field is incomplete; reporting a wrong one is a lie.
+    """
+    agent = _agent(OpenCodeAgent, "opencode", "opencode_jsonl")
+    account = _account(
+        agent,
+        {"tokens": {"input": 8000, "output": 900, "cache": {"write": 500, "read": 7000}}},
+    )
+    assert account.cached_input_tokens is None
+    assert 7000 not in vars(account).values()
+    assert 500 not in vars(account).values()
+
+
 def test_every_configured_client_either_accounts_or_says_it_cannot():
     """The acceptance criterion in its own words, checked against the real registry.
 
@@ -249,7 +324,7 @@ def test_a_cli_that_reports_no_usage_says_so_explicitly():
 
 def test_an_unwritten_adapter_stays_silent_rather_than_claiming_unavailable():
     # The distinction the whole marker exists for. "No adapter yet" is a fact
-    # about PAL; "the CLI reports nothing" is a fact about the CLI. Collapsing
+    # about OpenClink; "the CLI reports nothing" is a fact about the CLI. Collapsing
     # them would let an unfinished adapter read as a finished one.
     accounting = _accounting(_agent(_NoAdapterYetAgent, "someone-new", "codex_jsonl"), {})
     assert "usage_unavailable" not in accounting

@@ -13,6 +13,7 @@ from clink.constants import (
     CONFIG_DIR,
     DEFAULT_TIMEOUT_SECONDS,
     INTERNAL_DEFAULTS,
+    LEGACY_USER_CONFIG_DIR,
     PROJECT_ROOT,
     USER_CONFIG_DIR,
     CLIInternalDefaults,
@@ -104,7 +105,12 @@ class ClinkRegistry:
             env_path = Path(env_path_raw).expanduser()
             search_paths.append(env_path)
 
-        # 3. User overrides in ~/.pal/cli_clients
+        # 3. User overrides in ~/.openclink/cli_clients (and the pre-rename ~/.pal/cli_clients)
+        # Legacy first, current second: a later file overriding an earlier one is
+        # how this loop already resolves duplicates, so listing the current
+        # directory last means an override the user just wrote beats a stale one
+        # left behind in the pre-rename location (#94).
+        search_paths.append(LEGACY_USER_CONFIG_DIR)
         search_paths.append(USER_CONFIG_DIR)
 
         seen: set[Path] = set()
@@ -121,9 +127,21 @@ class ClinkRegistry:
                 continue
 
             if base.is_dir():
-                for path in sorted(base.glob("*.json")):
-                    if path.is_file():
-                        yield path
+                files = [path for path in sorted(base.glob("*.json")) if path.is_file()]
+                # Reading the pre-rename directory silently would end the breakage
+                # and start a deprecation nobody is told about (#94). Warned, not
+                # debugged: the registry loads at server start, where the default
+                # level would hide it from the one user who needs it. Only when a
+                # file is actually there — a warning about an empty path the user
+                # never used is noise that devalues the real one.
+                if files and base == LEGACY_USER_CONFIG_DIR:
+                    logger.warning(
+                        "Using clink client overrides from the pre-rename directory %s. "
+                        "Move them to %s — the old path is still read, but it is deprecated (#94).",
+                        base,
+                        USER_CONFIG_DIR,
+                    )
+                yield from files
             else:
                 logger.debug("Configuration path does not exist: %s", base)
 
@@ -190,7 +208,7 @@ class ClinkRegistry:
         if tokens:
             # Resolve a bare command name to an absolute path via PATH + known install
             # locations, so bundled configs work with zero setup even when the CLI isn't
-            # on PAL's process PATH. Unresolved names pass through → clear call-time error.
+            # on OpenClink's process PATH. Unresolved names pass through → clear call-time error.
             tokens[0] = resolve_cli_command(tokens[0])
         return tokens
 

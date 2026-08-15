@@ -13,7 +13,7 @@ platform dependency, a security boundary. A reversible implementation detail doe
 |---|---|---|
 | [0001](0001-antigravity-via-windows-conpty.md) | Drive Antigravity (`agy`) through a Windows ConPTY | Accepted |
 | [0002](0002-per-call-model-effort-per-backend.md) | Per-call `model`/`reasoning_effort` as an optional, per-backend-mapped clink override | Accepted |
-| [0003](0003-zero-setup-discovery-and-active-claude-9arm.md) | Zero-setup CLI discovery + ship `claude-9arm` active, with a `~/.pal` override | Accepted |
+| [0003](0003-zero-setup-discovery-and-active-claude-9arm.md) | Zero-setup CLI discovery + ship `claude-9arm` active, with a `~/.openclink` override | Accepted |
 
 The Antigravity `--print`/`--model` ordering bug is a **fix**, recorded as a post-mortem
 (`docs/reports/2026-07-16-clink-antigravity-model-override-investigation.md`, RESOLVED section), not

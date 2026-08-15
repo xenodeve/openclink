@@ -13,7 +13,7 @@ mutations (M1–M12), each applied, each confirmed to flip its target test red, 
 
 - **`tests/test_t4_hooks_layer.py`** — 17 tests at two seams. Config seam: `.claude/t4.json` valid JSON with
   armed `"verify"` targeting the fast unit suite (pinned *not* to `code_quality_checks.sh`, which aborts on the
-  `.venv`/`.pal_venv` split); `settings.json` registers the three hooks with `startup|clear|compact` and
+  `.venv`/`.openclink_venv` split); `settings.json` registers the three hooks with `startup|clear|compact` and
   preserves `permissions`; hook files + snapshot exist; `.gitattributes` LF pin. Gate seam: the *real* `t4-gate`
   run against PreToolUse payloads in a temp-dir sandbox (so no test runs the 38s verify): deny bare `gh pr
   create`; allow with ref in body/`--body-file`; deny dangerous git; allow reset `--hard` under `"afk": true`;
@@ -44,7 +44,7 @@ claimed as enforced.**
 
 - **`.claude/t4.json`** — marker + `"verify"` = `.venv/Scripts/python.exe -m pytest tests/ -q -m "not
   integration"`, **timed at 38s (1050 passed, 4 skipped, 16 deselected)**. The full `code_quality_checks.sh`
-  was not wired: it aborts on this box because the checkout has `.venv` and the script demands `.pal_venv`
+  was not wired: it aborts on this box because the checkout has `.venv` and the script demands `.openclink_venv`
   (the two-venv ledger item) — the issue's own guidance says wire the fast unit suite and leave the
   formatters to `/simplify`.
 - **Hook scripts** — copied **byte-identical** to the canonical `t4-project-bootstrap/references/hooks/`
@@ -117,7 +117,7 @@ of them was not.
   **The review found a real defect again** — `finalize_output` prices every call and no bundled client
   ships a card, so `cost_unavailable: no_rate_card` would have appeared on *every response of every
   client*. It also contradicted a decision made hours earlier in the same series: #24 slice 4 ruled
-  that a fact about *PAL* stays silent so a marker always means a fact about the *CLI or the call*.
+  that a fact about *OpenClink* stays silent so a marker always means a fact about the *CLI or the call*.
   Fixed in `4274130`.
 
 **No real vendor rate is shipped.** None was fetched and verified, and an unchecked price in a bundled
@@ -168,7 +168,7 @@ payload beside a field that was capped; #41 reported what a failed run spent but
   calls prove nothing about it either way.
 
 **Two corrections landed on the spike report itself**, both from the owner: the premise is host-scoped
-(PAL is an MCP server on all four hosts, one was measured), and the fault is random, so a rate is
+(OpenClink is an MCP server on all four hosts, one was measured), and the fault is random, so a rate is
 needed rather than a verdict. Recorded in `docs/reports/2026-08-04-clink-phase0-spike-host-followup-and-cli-capability.md`.
 
 **The owed gates were paid on 2026-08-04, after the batch and before any merge.** `/simplify`,
@@ -229,7 +229,7 @@ measured, not assumed: a two-token model flag beats a config-key spelling regard
 **Stated rather than overstated.** `refuse_unservable` reads the command, and codex also takes a model
 from `~/.codex/config.toml` (line 1 here is `model = "gpt-5.6-luna"`) and from `--profile`. The catalog
 therefore cannot be enforced from argv at all. Closing that is a public-contract change, so it is #39,
-and the docstring now says plainly that the check guards what PAL builds and does not guarantee what the
+and the docstring now says plainly that the check guards what OpenClink builds and does not guarantee what the
 CLI runs.
 
 **Validated:** `960 passed, 4 skipped` on `main`. Red was genuine throughout — the refusal tests failed
@@ -274,7 +274,7 @@ carrying the API's own 400 message; `token_usage` correctly absent because the t
 
 ## 2026-08-01 — T4 operating layer (Seed) + clink research relocated (#4)
 
-The fork now runs agent-primary: a fresh session recovers state from `Obsidian-Pal_MCP/Home.md`
+The fork now runs agent-primary: a fresh session recovers state from `Obsidian-OpenClink/Home.md`
 (MoC + 7 durable notes), `docs/OPEN-WORK-LEDGER.md`, and this log, with the conventions in
 `docs/agents/{domain,workflow,issue-tracker,triage-labels}.md`, decisions in `docs/adr/` (0001–0003),
 and the clink-*code* research reports that belong here (delegation-routing research was moved onward
@@ -305,7 +305,7 @@ to **#18**.
 
 ## 2026-07-16 — Zero-setup CLI discovery + active `claude-9arm` (#3, `d44ae01`)
 
-Installing PAL normally exposes `codex` / `antigravity` / `claude-9arm` with no extra setup; an
+Installing OpenClink normally exposes `codex` / `antigravity` / `claude-9arm` with no extra setup; an
 absent CLI reports "not found". `clink/discovery.py` resolves a bare command via PATH → per-CLI
 known install locations (winget, `%LOCALAPPDATA%\agy\bin`, npm); the registry expands `~`/`%VAR%`
 in `config_args`; `conf/cli_clients/claude-9arm.json` ships active. **Validated:** loaded the
@@ -318,7 +318,7 @@ claude-9arm → winget `claude.exe` with `~` expanded, codex via PATH; `tests/te
 `agy --print` is value-taking; the old order let it swallow `--model` → silent default. Fixed by
 placing model options before `--print` in the Antigravity runner + raising on a non-zero exit.
 **Validated:** independent PowerShell repro (wrong order → *Gemini 3.5 Flash*, right order →
-requested model); live via PAL clink: `Claude Sonnet 4.6 (Thinking)` → Claude Sonnet, `Gemini 3.1
+requested model); live via OpenClink clink: `Claude Sonnet 4.6 (Thinking)` → Claude Sonnet, `Gemini 3.1
 Pro (High)` → Gemini 3.1 Pro, invalid model → exit 1 + catalog (fail-closed).
 
 ## 2026-07-16 — Per-call `model` + `reasoning_effort` for clink (#1, `97a7072`)

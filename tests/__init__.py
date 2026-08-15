@@ -1,1 +1,1 @@
-# Tests for PAL MCP Server
+# Tests for OpenClink

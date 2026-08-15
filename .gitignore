@@ -179,7 +179,7 @@ CLAUDE.local.md
 .claude/settings.local.json
 
 # Standalone mode files
-.pal_venv/
+.openclink_venv/
 .docker_cleaned
 logs/
 *.backup
@@ -189,4 +189,4 @@ logs/
 /worktrees/
 test_simulation_files/
 .mcp.json
-Obsidian-Pal_MCP/.obsidian/
+Obsidian-OpenClink/.obsidian/

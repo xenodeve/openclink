@@ -1,10 +1,11 @@
-# PAL MCP: หลายเวิร์กโฟลว์ บริบทเดียว
+# OpenClink: หลายเวิร์กโฟลว์ บริบทเดียว
 
 **🇹🇭 ภาษาไทย · 🇬🇧 [English](README.en.md)**
 
 > **นี่คือ fork** ของ [BeehiveInnovations/pal-mcp-server](https://github.com/BeehiveInnovations/pal-mcp-server) (ต้นทางหยุดดูแลตั้งแต่ ~กลางปี 2026) โดยเพิ่มแบบ additive ล้วน ไม่แตะพฤติกรรมเดิม:
 > - **`antigravity`** — clink agent สำหรับ Antigravity CLI (`agy`) ตัวสืบทอดจาก Gemini CLI ของ Google ขับผ่าน Windows ConPTY
 > - **`cursor`** — clink agent สำหรับ `cursor-agent` ของ Cursor เปิดทางไปยังตระกูลโมเดลที่ client อื่นไม่มี (Grok ของ xAI, Kimi ของ Moonshot, GLM ของ Zhipu, Composer)
+> - **`opencode`** — clink agent สำหรับ [OpenCode](https://opencode.ai) CLI · เป็นตัวเดียวที่ **รายงานค่าใช้จ่ายของการเรียกมาเอง** (`part.cost`) และตัวเดียวที่เข้าถึง provider `opencode-go` ได้ (deepseek, GLM, Kimi, MiniMax, Qwen, Grok)
 > - **`claude-9arm`** — config ตัวอย่างชี้ Claude Code CLI ไปยัง model gateway ทางเลือก
 > - **override `model` / `reasoning_effort` ต่อ call** ของ clink (Codex ใช้ `-m` + effort; ตัวอื่นใช้ `--model`)
 > - **แก้บั๊ก** — `images` เดิมถูกรับไว้แล้วทิ้งเงียบ ๆ (ไม่มี runner ตัวไหนใช้เลย) ตอนนี้ error พร้อมบอกวิธีที่ได้ผลจริง · pin `mcp<2` เพราะ 2.x ถอด `Server.list_tools` ทำให้ server ตายตั้งแต่ import
@@ -13,10 +14,10 @@
 
 <div align="center">
 
-  <em>PAL ของ AI คุณ — Provider Abstraction Layer</em><br />
-  <sub><a href="docs/name-change.md">เดิมชื่อ Zen MCP</a></sub>
+  <em>CLI เดียว เชื่อมทุกโมเดล ด้วย clink</em><br />
+  <sub><a href="docs/name-change.md">เดิมชื่อ PAL MCP และก่อนหน้านั้นคือ Zen MCP</a></sub>
 
-  [PAL in action](https://github.com/user-attachments/assets/0d26061e-5f21-4ab1-b7d0-f883ddc2c3da)
+  [OpenClink in action](https://github.com/user-attachments/assets/0d26061e-5f21-4ab1-b7d0-f883ddc2c3da)
 
 👉 **[ดูตัวอย่างเพิ่มเติม](#-ดูเครื่องมือทำงานจริง)**
 
@@ -63,20 +64,20 @@ clink antigravity model="Claude Opus 4.6 (Thinking)"      → ขอความ
 
 ---
 
-## ทำไมต้อง PAL MCP?
+## ทำไมต้อง OpenClink?
 
 **ในเมื่อคุณสั่งการทุกโมเดลพร้อมกันได้ ทำไมต้องพึ่งโมเดลเดียว?**
 
-PAL เป็นเซิร์ฟเวอร์ Model Context Protocol ที่เสริมพลังเครื่องมืออย่าง [Claude Code](https://www.anthropic.com/claude-code), [Codex CLI](https://developers.openai.com/codex/cli) และ IDE เช่น [Cursor](https://cursor.com) — **เชื่อมเครื่องมือ AI ที่คุณชอบเข้ากับหลายโมเดล** เพื่อวิเคราะห์โค้ด แก้ปัญหา และพัฒนาแบบร่วมมือกันได้ลึกขึ้น
+OpenClink เป็นเซิร์ฟเวอร์ Model Context Protocol ที่เสริมพลังเครื่องมืออย่าง [Claude Code](https://www.anthropic.com/claude-code), [Codex CLI](https://developers.openai.com/codex/cli) และ IDE เช่น [Cursor](https://cursor.com) — **เชื่อมเครื่องมือ AI ที่คุณชอบเข้ากับหลายโมเดล** เพื่อวิเคราะห์โค้ด แก้ปัญหา และพัฒนาแบบร่วมมือกันได้ลึกขึ้น
 
 ### ร่วมมือกับ AI จริง ด้วยบริบทที่ต่อเนื่อง
 
-PAL รองรับ **conversation threading** — CLI ของคุณจึงถกไอเดียกับหลายโมเดล แลกเหตุผล ขอ second opinion หรือจัดดีเบตระหว่างโมเดลได้ CLI ของคุณคุมทุกอย่าง แต่ได้มุมมองจาก AI ที่เหมาะกับแต่ละงานย่อย บริบทไหลต่อข้ามเครื่องมือ/โมเดล เปิดทางเวิร์กโฟลว์ซับซ้อน เช่น review หลายโมเดล → วางแผน → ลงมือ → ตรวจก่อน commit
+OpenClink รองรับ **conversation threading** — CLI ของคุณจึงถกไอเดียกับหลายโมเดล แลกเหตุผล ขอ second opinion หรือจัดดีเบตระหว่างโมเดลได้ CLI ของคุณคุมทุกอย่าง แต่ได้มุมมองจาก AI ที่เหมาะกับแต่ละงานย่อย บริบทไหลต่อข้ามเครื่องมือ/โมเดล เปิดทางเวิร์กโฟลว์ซับซ้อน เช่น review หลายโมเดล → วางแผน → ลงมือ → ตรวจก่อน commit
 
 > **คุณคือคนคุม** — CLI ของคุณสั่งการทีม AI แต่คุณตัดสินใจเวิร์กโฟลว์เอง เขียนพรอมป์ตให้ดึง Gemini Pro, GPT-5, Flash หรือโมเดลบนเครื่องมาใช้ตอนที่ต้องการ
 
 <details>
-<summary><b>เหตุผลที่ควรใช้ PAL MCP</b></summary>
+<summary><b>เหตุผลที่ควรใช้ OpenClink</b></summary>
 
 - **Multi-Model Orchestration** — ประสานหลายโมเดล (Gemini Pro, O3, GPT-5 และ 50+ โมเดล) เลือกตัวที่เหมาะกับแต่ละงาน
 - **Context Revival** — แม้ context ของ CLI หลักจะรีเซ็ต ก็ให้โมเดลอื่น "เตือนความจำ" เพื่อคุยต่อได้ไร้รอยต่อ
@@ -122,8 +123,8 @@ PAL รองรับ **conversation threading** — CLI ของคุณจ�
 **ตัวเลือก A: clone + ตั้งค่าอัตโนมัติ** (แนะนำ)
 ```bash
 # fork นี้ (เพิ่ม antigravity / claude-9arm / model+effort ต่อ call)
-git clone https://github.com/xenodeve/pal-mcp-server.git
-cd pal-mcp-server
+git clone https://github.com/xenodeve/openclink.git
+cd openclink
 
 # จัดการให้หมด: setup, config, API key จาก environment
 # ตั้งค่าให้ Claude Desktop, Claude Code, Codex CLI, Qwen CLI อัตโนมัติ (Gemini CLI ปลดระวางแล้ว → ใช้ Antigravity)
@@ -135,9 +136,9 @@ cd pal-mcp-server
 // เพิ่มใน ~/.claude/settings.json หรือ .mcp.json — อย่าลืมใส่ API key ใต้ env
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "command": "bash",
-      "args": ["-c", "for p in $(which uvx 2>/dev/null) $HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \"$p\" ] && exec \"$p\" --from git+https://github.com/xenodeve/pal-mcp-server.git pal-mcp-server; done; echo 'uvx not found' >&2; exit 1"],
+      "args": ["-c", "for p in $(which uvx 2>/dev/null) $HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \"$p\" ] && exec \"$p\" --from git+https://github.com/xenodeve/openclink.git openclink; done; echo 'uvx not found' >&2; exit 1"],
       "env": {
         "PATH": "/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin:~/.local/bin",
         "GEMINI_API_KEY": "your-key-here",
@@ -151,7 +152,7 @@ cd pal-mcp-server
 
 **3. เริ่มใช้!**
 ```
-"ใช้ pal วิเคราะห์โค้ดนี้หาช่องโหว่ความปลอดภัยด้วย gemini pro"
+"ใช้ openclink วิเคราะห์โค้ดนี้หาช่องโหว่ความปลอดภัยด้วย gemini pro"
 "debug error นี้ด้วย o3 แล้วให้ flash แนะนำการ optimize"
 "clink with cli_name=\"antigravity\" role=\"planner\" ช่วยร่างแผน rollout แบบเป็นเฟส"
 ```
@@ -212,7 +213,7 @@ DISABLED_TOOLS=
 <details>
 <summary><b>Consensus Tool</b> — ดีเบตหลายโมเดล</summary>
 
-[PAL Consensus Debate](https://github.com/user-attachments/assets/76a23dd5-887a-4382-9cf0-642f5cf6219e)
+[OpenClink Consensus Debate](https://github.com/user-attachments/assets/76a23dd5-887a-4382-9cf0-642f5cf6219e)
 </details>
 
 <details>

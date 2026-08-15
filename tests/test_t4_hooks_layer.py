@@ -109,7 +109,7 @@ def test_marker_is_valid_json_with_an_armed_verify():
 
 def test_verify_targets_the_fast_unit_suite_not_the_full_gate():
     # The full code_quality_checks.sh is not the verify: it aborts on this
-    # Windows box (.venv vs .pal_venv), so wiring it would make every merge
+    # Windows box (.venv vs .openclink_venv), so wiring it would make every merge
     # fail. The verify must stay the fast unit suite.
     verify = json.loads(MARKER.read_text(encoding="utf-8"))["verify"]
     assert "pytest" in verify

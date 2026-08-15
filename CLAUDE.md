@@ -1,6 +1,6 @@
-# Claude Development Guide for PAL MCP Server
+# Claude Development Guide for OpenClink
 
-This file contains essential commands and workflows for developing and maintaining the PAL MCP Server when working with Claude. Use these instructions to efficiently run quality checks, manage the server, check logs, and run tests.
+This file contains essential commands and workflows for developing and maintaining the OpenClink when working with Claude. Use these instructions to efficiently run quality checks, manage the server, check logs, and run tests.
 
 ## Operating standard (T4, fork)
 
@@ -10,8 +10,8 @@ This fork is run **agent-primary** under the T4 operating standard. **At session
    **`using-t4` is a standing default, not a one-off** — re-route through its map at every phase
    boundary (after writing code → `simplify`; before merge → `code-review` + `scrutinize`; touched a
    security boundary → `security-review`). A check at task start does not discharge a later trigger.
-2. Read **`Obsidian-Pal_MCP/Home.md`** (memory vault index — open only the notes your task touches), **`docs/OPEN-WORK-LEDGER.md`** (open work), and **`DONE.md`** (what shipped + how it was validated).
-3. Then the specific GitHub issue you're picking up (`gh issue view <n> --repo xenodeve/pal-mcp-server`).
+2. Read **`Obsidian-OpenClink/Home.md`** (memory vault index — open only the notes your task touches), **`docs/OPEN-WORK-LEDGER.md`** (open work), and **`DONE.md`** (what shipped + how it was validated).
+3. Then the specific GitHub issue you're picking up (`gh issue view <n> --repo xenodeve/openclink`).
 
 Non-negotiables (details in `docs/agents/`): **issue → PR gate** (no PR without a referenced issue);
 **bilingual TH+EN tracker bodies** (issue/PR only — see `docs/agents/issue-tracker.md`); **TDD**, and
@@ -279,7 +279,7 @@ python -m pytest tests/ -v
 ### Development Workflow
 
 #### Before Making Changes
-1. Ensure virtual environment is activated: `source .pal_venv/bin/activate`
+1. Ensure virtual environment is activated: `source .openclink_venv/bin/activate`
 2. Run quality checks: `./code_quality_checks.sh`
 3. Check logs to ensure server is healthy: `tail -n 50 logs/mcp_server.log`
 
@@ -310,7 +310,7 @@ grep "ERROR" logs/mcp_server.log | tail -20
 
 # Check virtual environment
 which python
-# Should show: .../pal-mcp-server/.pal_venv/bin/python
+# Should show: .../openclink/.openclink_venv/bin/python
 ```
 
 #### Test Failures
@@ -359,4 +359,4 @@ isort --check-only .
 - All dependencies from `requirements.txt` installed
 - Proper API keys configured in `.env` file
 
-This guide provides everything needed to efficiently work with the PAL MCP Server codebase using Claude. Always run quality checks before and after making changes to ensure code integrity.
+This guide provides everything needed to efficiently work with the OpenClink codebase using Claude. Always run quality checks before and after making changes to ensure code integrity.

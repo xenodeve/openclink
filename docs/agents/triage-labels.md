@@ -1,6 +1,6 @@
 # Triage Labels (fork)
 
-Default label vocabulary for `xenodeve/pal-mcp-server` issues. Keep it small; a label earns its
+Default label vocabulary for `xenodeve/openclink` issues. Keep it small; a label earns its
 place by changing what an agent does next.
 
 ## Triage roles (one per issue)
@@ -26,7 +26,7 @@ place by changing what an agent does next.
 
 ## Creating them
 
-**Create the labels with `gh label create <name> --repo xenodeve/pal-mcp-server`, then report the
+**Create the labels with `gh label create <name> --repo xenodeve/openclink`, then report the
 reconciliation: which were created, which already existed, and which this document names but you
 skipped.**
 

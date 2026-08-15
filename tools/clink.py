@@ -1,4 +1,4 @@
-"""clink tool - bridge PAL MCP requests to external AI CLIs."""
+"""clink tool - bridge OpenClink requests to external AI CLIs."""
 
 from __future__ import annotations
 
@@ -149,7 +149,7 @@ class CLinkTool(SimpleTool):
 
     def get_description(self) -> str:
         return (
-            "Link a request to an external AI CLI (Gemini CLI, Qwen CLI, etc.) through PAL MCP to reuse "
+            "Link a request to an external AI CLI (Gemini CLI, Qwen CLI, etc.) through OpenClink to reuse "
             "their capabilities inside existing workflows."
         )
 
@@ -570,7 +570,7 @@ class CLinkTool(SimpleTool):
         # `command[0]` with `shutil.which`, so an absolute first element is a
         # resolved one and a bare name never was — reported only in the first
         # case, per this function's absence convention. Clink resolves from the
-        # PROCESS PATH at load time, so two PAL processes on one machine can run
+        # PROCESS PATH at load time, so two OpenClink processes on one machine can run
         # different binaries under one `cli_name`, and a stale one blames the
         # model for its own age (#64).
         command = result.sanitized_command
@@ -603,7 +603,7 @@ class CLinkTool(SimpleTool):
             #
             # `no_rate_card` is the one reason NOT projected, for the same
             # argument #24 slice 4 made about an unwritten adapter: it is a fact
-            # about PAL, not about the CLI or this call. Marking it would put
+            # about OpenClink, not about the CLI or this call. Marking it would put
             # the key on every response of every client until someone configures
             # a card, and a marker present on everything marks nothing.
             accounting["cost_unavailable"] = result.cost.reason
@@ -753,7 +753,7 @@ class CLinkTool(SimpleTool):
             "You are operating through the Gemini CLI agent. You have access to your full suite of "
             "CLI capabilities—including launching web searches, reading files, and using any other "
             "available tools. Gather current information yourself and deliver the final answer without "
-            "asking the PAL MCP host to perform searches or file reads."
+            "asking the OpenClink host to perform searches or file reads."
         )
 
     def _format_file_references(self, files: list[str]) -> str:

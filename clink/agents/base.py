@@ -55,7 +55,7 @@ class AgentOutput:
     resolved_effort: str | None = None
     token_usage: TokenUsage | None = None
     # True when this client's CLI reports no usage at all — a fact about the CLI,
-    # not about PAL. Distinct from a missing `token_usage`, which also covers
+    # not about OpenClink. Distinct from a missing `token_usage`, which also covers
     # "no adapter written yet".
     usage_unavailable: bool = False
     # Either a figure carrying its unit, or the machine-readable reason there is
@@ -444,7 +444,7 @@ class BaseCLIAgent:
 
         This reads the command, so it can only refuse a model the command names. A CLI that also takes a
         model from its own config file or a profile can still spawn one the catalog excludes, with nothing
-        on the argv to see. The check is a guard over what PAL builds, not a guarantee about what the CLI
+        on the argv to see. The check is a guard over what OpenClink builds, not a guarantee about what the CLI
         ultimately runs.
 
         Every runner has to call this, including one that overrides `run`.

@@ -1,14 +1,14 @@
 """agy's own print-mode deadline must not be reported as a model problem (#49).
 
 `agy --print-timeout` defaults to 5m0s — a client-side deadline sitting inside
-clink's 1800s child timeout, which PAL does not model. Measured 2026-08-05
-against the real binary, in the text mode PAL actually runs (the config passes no
+clink's 1800s child timeout, which OpenClink does not model. Measured 2026-08-05
+against the real binary, in the text mode OpenClink actually runs (the config passes no
 `--output-format json`):
 
     EXIT=1   stdout=0 bytes   stderr='Error: timeout waiting for response'
 
 and, because the runner drives agy through a ConPTY, both streams arrive merged
-in the captured output. So PAL *has* the reason in hand.
+in the captured output. So OpenClink *has* the reason in hand.
 
 It then discards it. Every non-zero exit is reported as
 "(a requested model may be unsupported/rejected)", which for a timeout **names
