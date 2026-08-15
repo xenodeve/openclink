@@ -34,18 +34,19 @@ readonly DOCKER_CLEANED_FLAG=".docker_cleaned"
 readonly DESKTOP_CONFIG_FLAG=".desktop_configured"
 readonly LOG_DIR="logs"
 readonly LOG_FILE="mcp_server.log"
-# Every name this project has shipped under, so setup can find and remove a stale
-# registration whichever era the user installed in. EXTENDED on each rename, never
-# replaced: a user may still be on a `zen` install or a `pal` one, and emptying
-# this list strands them with the old entry sitting beside the new one — the
-# duplicate-server state this exists to prevent. Bare, hyphenated and underscored
-# forms are all listed because all three have appeared in real client configs.
 # Registrations this setup should REMOVE, because nothing addresses them any more.
-# Extended on each rename, never replaced -- but a name only belongs here once it
+# Leaving one behind gives the user two entries for one server -- the duplicate
+# state this exists to prevent. Bare, hyphenated and underscored forms are all
+# listed because all three have appeared in real client configs.
+#
+# EXTENDED on each rename, never replaced -- but a name only belongs here once it
 # is genuinely stale. `pal` is deliberately ABSENT: skills still call
 # `mcp__pal__<tool>`, so deleting that entry would break the callers. It joins this
 # list once xeno-skills stops naming that prefix (#94).
 # `openclink` must never appear here -- it is the entry this script creates.
+#
+# This is the ONLY list of names to delete. Do not write another one at a
+# deletion site; `tests/test_mcp_server_key.py` fails if you do.
 readonly LEGACY_MCP_NAMES=("zen" "zen-mcp" "zen-mcp-server" "zen_mcp" "zen_mcp_server")
 
 # Determine portable arguments for sed -i (GNU vs BSD)
@@ -1444,34 +1445,17 @@ check_claude_desktop_integration() {
 
         # Check for old Docker config and remove it
         if grep -q "docker.*compose.*pal\|pal.*docker" "$config_path" 2>/dev/null; then
-            print_warning "Removing old Docker-based MCP configuration..."
+            print_warning "Found old Docker-based MCP configuration, replacing..."
             # Create backup
             cp "$config_path" "${config_path}.backup_$(date +%Y%m%d_%H%M%S)"
-
-            # Remove old server config using a more robust approach
-            local temp_file=$(mktemp)
-            python3 -c "
-import json
-import sys
-
-try:
-    with open('$config_path', 'r') as f:
-        config = json.load(f)
-
-    # Remove this server's entry under either name it has been written under.
-    servers = config.get('mcpServers') or {}
-    for key in ('openclink', 'pal'):
-        if key in servers:
-            del servers[key]
-            print('Removed ' + key + ' configuration')
-
-    with open('$temp_file', 'w') as f:
-        json.dump(config, f, indent=2)
-
-except Exception as e:
-    print(f'Error processing config: {e}', file=sys.stderr)
-    sys.exit(1)
-" && mv "$temp_file" "$config_path"
+            # The rewrite below is what replaces it. This branch used to run its
+            # own `python3 -c` first, deleting the keys ('openclink', 'pal') --
+            # a second cleanup list, written at the deletion site, which #94
+            # forbade ("Reuse it; do not invent a second one"). It disagreed with
+            # LEGACY_MCP_NAMES about the one name that matters: that array spares
+            # `pal` because skills still call `mcp__pal__<tool>`, and this block
+            # deleted it anyway. It was also redundant -- the rewrite already pops
+            # every legacy key and overwrites `openclink` itself.
         fi
 
         # Add new config with environment variables

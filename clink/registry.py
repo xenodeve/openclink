@@ -127,9 +127,21 @@ class ClinkRegistry:
                 continue
 
             if base.is_dir():
-                for path in sorted(base.glob("*.json")):
-                    if path.is_file():
-                        yield path
+                files = [path for path in sorted(base.glob("*.json")) if path.is_file()]
+                # Reading the pre-rename directory silently would end the breakage
+                # and start a deprecation nobody is told about (#94). Warned, not
+                # debugged: the registry loads at server start, where the default
+                # level would hide it from the one user who needs it. Only when a
+                # file is actually there — a warning about an empty path the user
+                # never used is noise that devalues the real one.
+                if files and base == LEGACY_USER_CONFIG_DIR:
+                    logger.warning(
+                        "Using clink client overrides from the pre-rename directory %s. "
+                        "Move them to %s — the old path is still read, but it is deprecated (#94).",
+                        base,
+                        USER_CONFIG_DIR,
+                    )
+                yield from files
             else:
                 logger.debug("Configuration path does not exist: %s", base)
 

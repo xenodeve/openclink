@@ -111,10 +111,10 @@ $script:DOCKER_CLEANED_FLAG = ".docker_cleaned"
 $script:DESKTOP_CONFIG_FLAG = ".desktop_configured"
 $script:LOG_DIR = "logs"
 $script:LOG_FILE = "mcp_server.log"
-# Every name this project has shipped under — see the note on LEGACY_MCP_NAMES in
-# run-server.sh. Extended on each rename, never replaced.
-# See the note on LEGACY_MCP_NAMES in run-server.sh: only genuinely stale names
-# belong here. `pal` is deliberately absent, and `openclink` must never appear.
+# See the note on LEGACY_MCP_NAMES in run-server.sh. Extended on each rename,
+# never replaced, but only genuinely stale names belong here: `pal` is
+# deliberately absent because skills still call `mcp__pal__<tool>`, and
+# `openclink` must never appear -- it is the entry this script creates.
 $script:LegacyServerNames = @("zen", "zen-mcp", "zen-mcp-server", "zen_mcp", "zen_mcp_server")
 
 # ----------------------------------------------------------------------------

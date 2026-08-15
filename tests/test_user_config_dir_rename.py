@@ -19,6 +19,7 @@ client — an explicit new override should beat a stale one.
 from __future__ import annotations
 
 import json
+import logging
 
 import pytest
 
@@ -65,6 +66,49 @@ def test_an_override_in_the_old_directory_is_still_applied(two_config_dirs):
         f"the bundled preset won ({executable!r}) — the previous user config directory "
         "was not read, so every existing user's override silently stopped applying"
     )
+
+
+def test_using_the_old_directory_tells_the_user_where_to_move_it(two_config_dirs, caplog):
+    """Reading it silently is only half of what #94 asked for.
+
+    The issue says: "Read both locations for a deprecation period, **with the old
+    one logged when used**" — and the acceptance criterion is that no user's
+    config "stops being read *without being told*". Reading it forever and never
+    saying so satisfies the first half and quietly fails the second: the
+    deprecation never ends, because nobody is ever told it started.
+
+    `debug` would not do. The registry loads at server start, where the default
+    level hides it, so the one user who needs the message is the one who cannot
+    see it. The message must also name the new directory — "deprecated" without a
+    destination is a complaint, not an instruction.
+    """
+    legacy, _ = two_config_dirs
+    (legacy / f"{CLIENT}.json").write_text(json.dumps(_client_config(CLIENT, "old-cli")), encoding="utf-8")
+
+    with caplog.at_level(logging.WARNING, logger="clink.registry"):
+        ClinkRegistry()
+
+    warnings = [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
+    assert any(str(legacy) in message for message in warnings), (
+        "loading an override from the previous config directory produced no warning naming it — "
+        f"the user is never told to move it. warnings seen: {warnings}"
+    )
+
+
+def test_a_user_only_on_the_new_directory_is_not_nagged(two_config_dirs, caplog):
+    """The other direction, so the fix cannot be "warn unconditionally".
+
+    A warning every start for a path the user does not use is noise that trains
+    them to ignore the one that matters.
+    """
+    _, current = two_config_dirs
+    (current / f"{CLIENT}.json").write_text(json.dumps(_client_config(CLIENT, "new-cli")), encoding="utf-8")
+
+    with caplog.at_level(logging.WARNING, logger="clink.registry"):
+        ClinkRegistry()
+
+    nags = [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING and ".pal" in r.getMessage()]
+    assert not nags, f"warned about the previous directory when nothing was there: {nags}"
 
 
 def test_the_new_directory_wins_when_both_define_the_same_client(two_config_dirs):
