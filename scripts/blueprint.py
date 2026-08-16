@@ -176,7 +176,7 @@ def main() -> int:
     )
 
     blobs = test_mentions()
-    for m, info in mods.items():
+    for info in mods.values():
         stem = info["path"].rsplit("/", 1)[-1][:-3]
         needle_mod = info["module"]
         info["test_files_mentioning"] = sum(1 for b in blobs if needle_mod in b or ("/" + stem + ".py") in b)
