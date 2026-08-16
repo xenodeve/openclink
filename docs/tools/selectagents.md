@@ -1,10 +1,10 @@
 # SelectAgents Tool
 
 > ⚠️ **Partly implemented.** The tool ranks real candidates on cost per task (#104), filters on context
-> window before pricing (#108) and honours an optional budget (#109) — against a **committed fixture
-> whose prices and output volumes are constructed, not measured** (#102 replaces it with fetched data).
-> Still unbuilt: alternatives (#110), the agent count, which is always one (#111), and the scope
-> partition (#113). Every response says the same thing in its own body, and that list is guarded by a
+> window before pricing (#108), honours an optional budget (#109) and returns up to five priced routes
+> with a count of what the bound cut (#110) — against a **committed fixture whose prices and output
+> volumes are constructed, not measured** (#102 replaces it with fetched data). Still unbuilt: the agent
+> count, which is always one (#111), and the scope partition (#113). Every response says the same thing in its own body, and that list is guarded by a
 > test in both directions — it must name everything unbuilt and nothing already shipped.
 >
 > This banner said "does not rank models, read a dataset, or compute anything" for two slices after it
@@ -75,9 +75,17 @@ While the agent count is fixed at one (#111), a budget bounds **one seat** rathe
 - The planned agents, each carrying its own model, effort and share of the scope — a survey seat and a
   working seat can differ.
 - The criteria the choice rested on, so you can disagree with a reason.
-- Five ranked alternatives carrying the same fields, with the cost delta to the one above. A lane
-  outage should leave you a route, and availability is not a cost axis — so an alternative is kept even
-  when another candidate beats it on every measured one.
+- Five ranked routes carrying the same fields, with the cost delta to the one above. A lane outage
+  should leave you a route, and availability is not a cost axis — so a route is kept even when another
+  candidate beats it on every measured one. **The winner leads the list**, so the deltas chain from the
+  route you were actually given, and the first entry's delta is `null` because nothing sits above it.
+  The delta is **signed**: falling back is often cheaper, and a magnitude alone would not tell a saving
+  from a surcharge. Anything the five-route bound cut is reported as `alternatives_dropped`, so a list
+  of five is never mistaken for a field of five.
+
+  The routes follow the rule that picked the winner. With no budget that is ascending cost; with a
+  budget it is descending capability. Ranking them by price under a budget would offer fallbacks for a
+  decision nobody made.
 - An identity for the plan, so a spawn can be tied back to the decision that authorised it.
 - The dataset's fetch time and fingerprint, so the decision can be reproduced later.
 

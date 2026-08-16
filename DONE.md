@@ -3,6 +3,32 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-16 — five priced routes, and a count of what the bound cut (#110, PR #137)
+
+Up to five routes come back, winner first, each carrying the same fields as the winner and the
+**signed** cost delta to the route above it, with anything the bound cut reported as
+`alternatives_dropped`. Nothing qualifying is culled on merit: a candidate beaten on every axis in
+play is still the only route once the winner's lane is down, and availability is not one of the axes
+being compared.
+
+**Validated** — 9 alternatives tests plus the tool seam. Suite 1229 → 1239. Six mutations red (bound
+never applies → 1; dropped always 0 → 1; delta from the winner instead of the predecessor → 1;
+unsigned delta → 1; budgeted slate falls back to cost order → 7; an alternative loses a field the
+winner has → 1).
+
+**The design decision worth keeping: the routes follow the rule that picked the winner, not the price
+list.** #109 made those two orders diverge — under a budget the winner is the best that fits while
+cost order still leads with the cheapest — so alternatives ranked by price would be a fallback list
+for a decision nobody made, and a caller dropping to one would move from a capability choice to a
+frugality choice without being told the basis had changed. `Choice` now carries `ranked` rather than a
+lone winner so that order is available downstream.
+
+Two smaller ones, both stated in code so they are not re-litigated: the winner **leads** the slate,
+because "the cost delta to the one above it" needs something above the first entry — its own delta is
+`null`, not `0.0`, which would read as "same price as the route above". And the delta is **signed**,
+because under the budget rule falling back is usually cheaper and a magnitude cannot tell a saving
+from a surcharge.
+
 ## 2026-08-16 — an optional budget, and frugality without one (#109, PR #136)
 
 No budget takes the cheapest qualifying candidate; a budget takes the best on the axis that fits

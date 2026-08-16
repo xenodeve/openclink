@@ -21,6 +21,9 @@ than assumed: **#98 and #99 are the roots**; then #101 ← 99, #103 ← 98+99; #
 at all; #107 (and so #112) waits on **#100**, which carries no agent label. Nine slices are workable
 without them.
 
+- ✅ **#110 five priced routes** (PR #137) — winner-first, signed deltas to the predecessor, dropped
+  count reported. **The routes follow the rule that picked the winner**, which #109 made non-obvious:
+  under a budget that is descending capability, not ascending cost. `Choice.ranked` exists for this.
 - ✅ **#109 optional budget** (PR #136) — no budget takes the cheapest; a budget takes the best that
   fits, which is the only reading satisfying both of the issue's criteria. Also fixed the INCOMPLETE
   disclosure, which had gone a slice stale in three places at once, and added the test that fails when
