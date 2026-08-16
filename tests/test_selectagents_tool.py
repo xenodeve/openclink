@@ -21,6 +21,20 @@ from mcp.types import TextContent
 
 from tools.selectagents import SelectAgentsTool
 
+# A complete scope. These tests predate #101 and originally called with `{}`,
+# which the contract now correctly refuses — the skeleton accepted anything
+# because there was nothing to accept. Kept as one constant so #101's contract
+# and #99's reachability checks cannot drift apart.
+SCOPE = {
+    "kind_of_work": "implementation",
+    "item_count": 3,
+    "read_volume_tokens": 10_000,
+    "already_in_context": False,
+    "output_ceiling_tokens": 4_000,
+    "verification": "automated_tests",
+    "description": "A small, well-specified change.",
+}
+
 
 @pytest.fixture()
 def tool():
@@ -68,7 +82,7 @@ async def test_calling_it_returns_a_constant_rather_than_an_error(tool):
     The payload is deliberately uninteresting — what is being pinned is that the
     call completes and reports success, not what it says.
     """
-    result = await tool.execute({})
+    result = await tool.execute(dict(SCOPE))
 
     assert len(result) == 1
     assert isinstance(result[0], TextContent)
@@ -87,7 +101,7 @@ async def test_the_stub_says_it_is_a_stub(tool):
     whole argument is that a delegation must not rest on something nobody
     measured.
     """
-    response = json.loads((await tool.execute({}))[0].text)
+    response = json.loads((await tool.execute(dict(SCOPE)))[0].text)
 
     assert response["metadata"]["stub"] is True
     assert "not implemented" in response["content"].lower()
@@ -128,7 +142,7 @@ async def test_it_is_dispatched_through_the_server_by_name():
     """
     from server import handle_call_tool
 
-    result = await handle_call_tool("selectagents", {})
+    result = await handle_call_tool("selectagents", dict(SCOPE))
 
     assert len(result) == 1
     assert json.loads(result[0].text)["status"] == "success"

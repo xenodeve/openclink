@@ -35,7 +35,18 @@ class SelectAgentsReachableTest(BaseSimulatorTest):
         try:
             self.logger.info("📋 Test: selectagents is advertised and callable through the server")
 
-            response, _continuation_id = self.call_mcp_tool("selectagents", {})
+            # A complete scope: #101 closed the contract, so an empty payload is
+            # now correctly refused and would prove nothing about reachability.
+            scope = {
+                "kind_of_work": "implementation",
+                "item_count": 3,
+                "read_volume_tokens": 10000,
+                "already_in_context": False,
+                "output_ceiling_tokens": 4000,
+                "verification": "automated_tests",
+                "description": "A small, well-specified change.",
+            }
+            response, _continuation_id = self.call_mcp_tool("selectagents", scope)
             if not response:
                 self.logger.error("❌ selectagents returned nothing — the tool is not reachable")
                 return False

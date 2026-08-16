@@ -23,6 +23,9 @@ without them.
 
 - ✅ **#98 on-disk record store** (PR #131) — first persistence in the repo. See `DONE.md` for the
   finding: the test for its hardest criterion passed 3/3 against a fully non-atomic implementation.
+- ✅ **#101 input contract** (PR #133) — seven required fields, a closed kind-of-work list, one
+  free-text description that reaches nothing computed. Three published-but-unenforced constraints
+  found and closed; see `DONE.md`.
 - ✅ **#99 `selectagents` skeleton** (PR #132) — registered, advertised, dispatched, returns a stub.
   **Disabled by default** until #104: an advertised tool spends context window in every client, and
   this one computes nothing. Remove it from `DISABLED_TOOLS` in `.env.example` when the first real
