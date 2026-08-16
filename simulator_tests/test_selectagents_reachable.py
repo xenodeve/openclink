@@ -4,8 +4,13 @@ SelectAgents Reachability Test
 
 The end-to-end leg `docs/adding_tools.md` requires and #99 restates: a tool that
 passes unit tests has been shown to work, not to be *reachable*. This drives the
-real server over MCP — initialize, list tools, call by name — so a registration
-that exists only in an import would fail here.
+real server over MCP — initialize, then `tools/call` by name — so a registration
+that exists only in an import fails here.
+
+It does NOT exercise advertisement: `base_test.py` sends no `tools/list` request,
+and an earlier version of this docstring claimed it did. The advertised list is
+covered in-process instead, by `tests/test_selectagents_tool.py` calling
+`handle_list_tools()`.
 
 Deliberately checks nothing about the answer. Until #104 there is no ranking
 behind `selectagents`, so the only honest assertion is that the path exists and

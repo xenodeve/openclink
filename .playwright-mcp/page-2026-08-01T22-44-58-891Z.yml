@@ -1,0 +1,416 @@
+- main [ref=f2e2]:
+  - generic [ref=f2e5]:
+    - link "Artificial Analysis" [ref=f2e6] [cursor=pointer]:
+      - /url: /
+    - generic [ref=f2e10]:
+      - link "Loading":
+        - /url: /login
+      - button [ref=f2e11] [cursor=pointer]
+      - button [ref=f2e12] [cursor=pointer]
+  - generic [ref=f2e13]:
+    - generic [ref=f2e15]:
+      - generic [ref=f2e16]:
+        - generic [ref=f2e17]:
+          - heading "General Work AI Agents Comparison" [level=1] [ref=f2e18]
+          - generic [ref=f2e19]:
+            - paragraph [ref=f2e20]: Agents that operate within and across apps and integrations to execute a broad range of knowledge tasks. They can autonomously carry out multi-step tasks in a delegated workspace over extended periods (e.g., reading and writing files, accessing computer and browser functions, and coordinating with subagents).
+            - paragraph [ref=f2e21]:
+              - text: To compare language models see our
+              - link "model benchmarks" [ref=f2e22] [cursor=pointer]:
+                - /url: /models
+              - text: .
+        - generic [ref=f2e24]:
+          - button [ref=f2e25] [cursor=pointer]:
+            - generic [ref=f2e26]:
+              - heading "Used any of these tools?" [level=3] [ref=f2e38]
+              - paragraph [ref=f2e39]: Share your experience to help others choose the right tool.
+              - paragraph [ref=f2e40]: Leave a review
+          - generic [ref=f2e45]:
+            - button "Suggest a New Tool" [ref=f2e46] [cursor=pointer]
+            - button "Submit Correction" [ref=f2e48] [cursor=pointer]
+          - generic [ref=f2e50]: We use AI to collect some results
+      - tablist [ref=f2e59]:
+        - tab [ref=f2e60] [cursor=pointer]:
+          - link "Coding Agents" [ref=f2e61]:
+            - /url: /agents/coding-agents
+        - tab [selected] [ref=f2e65] [cursor=pointer]:
+          - link "General Work" [ref=f2e66]:
+            - /url: /agents
+        - tab [ref=f2e70] [cursor=pointer]:
+          - link "Chatbots" [ref=f2e71]:
+            - /url: /agents/chatbots
+        - tab [ref=f2e75] [cursor=pointer]:
+          - link "Presentations" [ref=f2e76]:
+            - /url: /agents/presentations
+        - tab [ref=f2e80] [cursor=pointer]:
+          - link "OCR" [ref=f2e81]:
+            - /url: /agents/ocr
+        - tab [ref=f2e87] [cursor=pointer]:
+          - link "Data Analysis" [ref=f2e88]:
+            - /url: /agents/data
+        - tab [ref=f2e93] [cursor=pointer]:
+          - link "Customer Support" [ref=f2e94]:
+            - /url: /agents/customer-support
+    - generic [ref=f2e98]:
+      - table [ref=f2e101]:
+        - rowgroup [ref=f2e113]:
+          - row [ref=f2e114]:
+            - columnheader "Product" [ref=f2e115]
+            - columnheader "Released" [ref=f2e116]
+            - columnheader "Platform" [ref=f2e117]
+            - columnheader "Open Source" [ref=f2e118]
+            - columnheader "Bring Your Own Model" [ref=f2e119]
+            - columnheader "Local Files" [ref=f2e120]
+            - columnheader "Browser Automation" [ref=f2e121]
+            - columnheader "Price" [ref=f2e122]
+            - columnheader "Description" [ref=f2e123]
+            - columnheader [ref=f2e124]
+        - rowgroup [ref=f2e125]:
+          - row [ref=f2e126]:
+            - cell [ref=f2e127]:
+              - link "Claude Cowork Anthropic Anthropic" [ref=f2e128] [cursor=pointer]:
+                - /url: https://claude.com/download
+                - generic [ref=f2e129]: Claude Cowork
+                - generic [ref=f2e130]:
+                  - img "Anthropic" [ref=f2e131]
+                  - generic [ref=f2e132]: Anthropic
+            - cell "Jan 2026" [ref=f2e133]
+            - cell "macOS Windows" [ref=f2e134]:
+              - generic [ref=f2e135]:
+                - generic [ref=f2e136]: macOS
+                - generic [ref=f2e137]: Windows
+            - cell [ref=f2e138]
+            - cell [ref=f2e143]
+            - cell [ref=f2e148]
+            - cell [ref=f2e152]
+            - cell "Subscription Enterprise $20–200/mo" [ref=f2e156]:
+              - generic [ref=f2e157]:
+                - generic [ref=f2e158]:
+                  - generic [ref=f2e159]: Subscription
+                  - generic [ref=f2e160]: Enterprise
+                - link "$20–200/mo" [ref=f2e161] [cursor=pointer]:
+                  - /url: https://claude.com/pricing
+            - cell "Desktop-first agent that executes tasks in a sandboxed Linux VM with access to local files. The agent can edit and create local files, and has pre-set skills for handling common file types and general work tasks (e.g. editing Excel spreadsheets). Connects to external tools via computer use, MCP connectors, or browser extension." [ref=f2e165]
+            - cell [ref=f2e166]:
+              - button "Add review" [ref=f2e167] [cursor=pointer]
+          - row [ref=f2e168]:
+            - cell [ref=f2e169]:
+              - link "ChatGPT Agent OpenAI OpenAI" [ref=f2e170] [cursor=pointer]:
+                - /url: https://openai.com/index/introducing-chatgpt-agent/
+                - generic [ref=f2e171]: ChatGPT Agent
+                - generic [ref=f2e172]:
+                  - img "OpenAI" [ref=f2e173]
+                  - generic [ref=f2e174]: OpenAI
+            - cell "Jul 2025" [ref=f2e175]
+            - cell "Web Mobile Desktop" [ref=f2e176]:
+              - generic [ref=f2e177]:
+                - generic [ref=f2e178]: Web
+                - generic [ref=f2e179]: Mobile
+                - generic [ref=f2e180]: Desktop
+            - cell [ref=f2e181]
+            - cell [ref=f2e186]
+            - cell [ref=f2e191]
+            - cell [ref=f2e196]
+            - cell "Subscription Enterprise $20–200/mo" [ref=f2e200]:
+              - generic [ref=f2e201]:
+                - generic [ref=f2e202]:
+                  - generic [ref=f2e203]: Subscription
+                  - generic [ref=f2e204]: Enterprise
+                - link "$20–200/mo" [ref=f2e205] [cursor=pointer]:
+                  - /url: https://openai.com/chatgpt/pricing/
+            - cell "Agentic system within the ChatGPT app, powered by GPT-5.4 Thinking/Pro — OpenAI's frontier model for agentic workflows. It runs on a cloud VM with no direct file access. GPT-5.4 brings native computer-use capabilities and desktop-level automation, designed for longer-horizon tasks with up to ~30+ minutes of autonomous execution. Successor to Operator and combines Codex-level coding and Deep Research into one experience." [ref=f2e209]
+            - cell [ref=f2e210]:
+              - button "Add review" [ref=f2e211] [cursor=pointer]
+          - row [ref=f2e212]:
+            - cell [ref=f2e213]:
+              - link "OpenClaw Peter Steinberger Peter Steinberger" [ref=f2e214] [cursor=pointer]:
+                - /url: https://openclaw.ai
+                - generic [ref=f2e215]: OpenClaw
+                - generic [ref=f2e216]:
+                  - img "Peter Steinberger" [ref=f2e217]
+                  - generic [ref=f2e218]: Peter Steinberger
+            - cell "Nov 2025" [ref=f2e219]
+            - cell "macOS Linux Windows" [ref=f2e220]:
+              - generic [ref=f2e221]:
+                - generic [ref=f2e222]: macOS
+                - generic [ref=f2e223]: Linux
+                - generic [ref=f2e224]: Windows
+            - cell [ref=f2e225]
+            - cell [ref=f2e229]
+            - cell [ref=f2e233]
+            - cell [ref=f2e237]
+            - cell "Free Free + API costs" [ref=f2e241]:
+              - generic [ref=f2e242]:
+                - generic [ref=f2e243]: Free
+                - link "Free + API costs" [ref=f2e245] [cursor=pointer]:
+                  - /url: https://github.com/openclaw/openclaw
+            - cell "Open-source, self-hosted agent platform that turns existing chat apps (e.g. WhatsApp, Slack, Teams) into autonomous AI assistants. Also has macOS menu bar companion app and WebChat interface. Tasks run in the background with results in chat. Supports community Skills marketplace, NVIDIA NemoClaw stack for secure scaling, and security models." [ref=f2e249]
+            - cell [ref=f2e250]:
+              - button "Add review" [ref=f2e251] [cursor=pointer]
+          - row [ref=f2e252]:
+            - cell [ref=f2e253]:
+              - link "Hermes Agent Nous Research Nous Research" [ref=f2e254] [cursor=pointer]:
+                - /url: https://hermes-agent.nousresearch.com
+                - generic [ref=f2e255]: Hermes Agent
+                - generic [ref=f2e256]:
+                  - img "Nous Research" [ref=f2e257]
+                  - generic [ref=f2e258]: Nous Research
+            - cell "Feb 2026" [ref=f2e259]
+            - cell "macOS Linux Windows" [ref=f2e260]:
+              - generic [ref=f2e261]:
+                - generic [ref=f2e262]: macOS
+                - generic [ref=f2e263]: Linux
+                - generic [ref=f2e264]: Windows
+            - cell [ref=f2e265]
+            - cell [ref=f2e269]
+            - cell [ref=f2e273]
+            - cell [ref=f2e277]
+            - cell "Free Free + API costs" [ref=f2e281]:
+              - generic [ref=f2e282]:
+                - generic [ref=f2e283]: Free
+                - link "Free + API costs" [ref=f2e285] [cursor=pointer]:
+                  - /url: https://github.com/NousResearch/hermes-agent
+            - cell "Open-source, self-hosted agent platform with persistent cross-session memory and a self-improving skills system. Creates procedural skills from experience and reuses them across sessions. Tasks run in the background with results in chat. Includes 40+ built-in tools (e.g. image gen, TTS, vision, Telegram, Discord, Slack, WhatsApp)." [ref=f2e289]
+            - cell [ref=f2e290]:
+              - button "Add review" [ref=f2e291] [cursor=pointer]
+          - row [ref=f2e292]:
+            - cell [ref=f2e293]:
+              - link "Microsoft Copilot Microsoft Microsoft" [ref=f2e294] [cursor=pointer]:
+                - /url: https://copilot.microsoft.com
+                - generic [ref=f2e295]: Microsoft Copilot
+                - generic [ref=f2e296]:
+                  - img "Microsoft" [ref=f2e297]
+                  - generic [ref=f2e298]: Microsoft
+            - cell "Nov 2023" [ref=f2e299]
+            - cell "Windows macOS Web iOS Android" [ref=f2e300]:
+              - generic [ref=f2e301]:
+                - generic [ref=f2e302]: Windows
+                - generic [ref=f2e303]: macOS
+                - generic [ref=f2e304]: Web
+                - generic [ref=f2e305]: iOS
+                - generic [ref=f2e306]: Android
+            - cell [ref=f2e307]
+            - cell [ref=f2e312]
+            - cell [ref=f2e323]
+            - cell [ref=f2e327]
+            - cell "Subscription Enterprise Usage-based $9.99–30/mo" [ref=f2e338]:
+              - generic [ref=f2e339]:
+                - generic [ref=f2e340]:
+                  - generic [ref=f2e341]: Subscription
+                  - generic [ref=f2e342]: Enterprise
+                  - generic [ref=f2e343]: Usage-based
+                - link "$9.99–30/mo" [ref=f2e344] [cursor=pointer]:
+                  - /url: https://www.microsoft.com/en-us/microsoft-365-copilot/pricing
+            - cell "Agents run inside Microsoft 365 ecosystem (Teams, Word, Excel, PowerPoint, and Outlook), executing multi-step tasks like document creation, data analysis, and scheduling. Connects to external tools via MCP, Power Platform connectors, and Microsoft Graph. Copilot Studio lets organizations build and deploy custom autonomous agents." [ref=f2e348]
+            - cell [ref=f2e349]:
+              - button "Add review" [ref=f2e350] [cursor=pointer]
+          - row [ref=f2e351]:
+            - cell [ref=f2e352]:
+              - link "Google Workspace Studio Google Google" [ref=f2e353] [cursor=pointer]:
+                - /url: https://workspace.google.com/intl/en_ca/studio/
+                - generic [ref=f2e354]: Google Workspace Studio
+                - generic [ref=f2e355]:
+                  - img "Google" [ref=f2e356]
+                  - generic [ref=f2e357]: Google
+            - cell "Dec 2025" [ref=f2e358]
+            - cell "Web" [ref=f2e359]
+            - cell [ref=f2e362]
+            - cell [ref=f2e367]
+            - cell [ref=f2e372]
+            - cell [ref=f2e376]
+            - cell "Subscription Enterprise ~$8–27/mo" [ref=f2e381]:
+              - generic [ref=f2e382]:
+                - generic [ref=f2e383]:
+                  - generic [ref=f2e384]: Subscription
+                  - generic [ref=f2e385]: Enterprise
+                - link "~$8–27/mo" [ref=f2e386] [cursor=pointer]:
+                  - /url: https://workspace.google.com/pricing
+            - cell "No-code agent builder inside Google Workspace for creating and sharing AI agents. Agents reason, adapt to new information, and handle tasks like email summarization, meeting action items, and document management, with deep Google ecosystem integration (Gmail, Drive, Sheets, Maps, Docs, etc.) and external app support via Marketplace connectors." [ref=f2e390]
+            - cell [ref=f2e391]:
+              - button "Add review" [ref=f2e392] [cursor=pointer]
+          - row [ref=f2e393]:
+            - cell [ref=f2e394]:
+              - link "Gemini Enterprise Google Google" [ref=f2e395] [cursor=pointer]:
+                - /url: https://cloud.google.com/gemini-enterprise
+                - generic [ref=f2e396]: Gemini Enterprise
+                - generic [ref=f2e397]:
+                  - img "Google" [ref=f2e398]
+                  - generic [ref=f2e399]: Google
+            - cell "Oct 2025" [ref=f2e400]
+            - cell "Web" [ref=f2e401]
+            - cell [ref=f2e404]
+            - cell [ref=f2e409]
+            - cell [ref=f2e414]
+            - cell [ref=f2e425]
+            - cell "Free Subscription Enterprise $21–30/mo" [ref=f2e430]:
+              - generic [ref=f2e431]:
+                - generic [ref=f2e432]:
+                  - generic [ref=f2e433]: Free
+                  - generic [ref=f2e434]: Subscription
+                  - generic [ref=f2e435]: Enterprise
+                - link "$21–30/mo" [ref=f2e436] [cursor=pointer]:
+                  - /url: https://cloud.google.com/gemini-enterprise
+            - cell "Agentic platform for enterprise knowledge workers. Connects to company data via prebuilt connectors (M365, Salesforce, Jira, Confluence, Box). Offers permission-aware search, prebuilt agents like Deep Research, no-code workbench, and Code Assist." [ref=f2e440]
+            - cell [ref=f2e441]:
+              - button "Add review" [ref=f2e442] [cursor=pointer]
+          - row [ref=f2e443]:
+            - cell [ref=f2e444]:
+              - link "Manus Meta Meta" [ref=f2e445] [cursor=pointer]:
+                - /url: https://manus.im
+                - generic [ref=f2e446]: Manus
+                - generic [ref=f2e447]:
+                  - img "Meta" [ref=f2e448]
+                  - generic [ref=f2e449]: Meta
+            - cell "Mar 2025" [ref=f2e450]
+            - cell "Web Windows macOS iOS Android" [ref=f2e451]:
+              - generic [ref=f2e452]:
+                - generic [ref=f2e453]: Web
+                - generic [ref=f2e454]: Windows
+                - generic [ref=f2e455]: macOS
+                - generic [ref=f2e456]: iOS
+                - generic [ref=f2e457]: Android
+            - cell [ref=f2e458]
+            - cell [ref=f2e463]
+            - cell [ref=f2e468]
+            - cell [ref=f2e472]
+            - cell "Free Subscription Usage-based $20–200/mo" [ref=f2e476]:
+              - generic [ref=f2e477]:
+                - generic [ref=f2e478]:
+                  - generic [ref=f2e479]: Free
+                  - generic [ref=f2e480]: Subscription
+                  - generic [ref=f2e481]: Usage-based
+                - link "$20–200/mo" [ref=f2e482] [cursor=pointer]:
+                  - /url: https://manus.im/pricing
+            - cell "General purpose agent that can orchestrate multiple AI models per task and autonomously plan and execute (web automation, coding, data work, PDF/PPT generation) in a sandboxed environment. Produces deliverables including research reports, websites, and data analysis." [ref=f2e486]
+            - cell [ref=f2e487]:
+              - button "Add review" [ref=f2e488] [cursor=pointer]
+          - row [ref=f2e489]:
+            - cell [ref=f2e490]:
+              - link "Microsoft Copilot Cowork Microsoft Microsoft" [ref=f2e491] [cursor=pointer]:
+                - /url: https://techcommunity.microsoft.com/blog/microsoft365copilotblog/act-now-lock-in-current-pricing-on-microsoft-365-copilot-business-bundles/4502628
+                - generic [ref=f2e492]: Microsoft Copilot Cowork
+                - generic [ref=f2e493]:
+                  - img "Microsoft" [ref=f2e494]
+                  - generic [ref=f2e495]: Microsoft
+            - cell "Mar 2026" [ref=f2e496]
+            - cell "Web" [ref=f2e497]
+            - cell [ref=f2e500]
+            - cell [ref=f2e505]
+            - cell [ref=f2e510]
+            - cell [ref=f2e514]
+            - cell "Subscription Enterprise Usage-based $21–30/mo" [ref=f2e519]:
+              - generic [ref=f2e520]:
+                - generic [ref=f2e521]:
+                  - generic [ref=f2e522]: Subscription
+                  - generic [ref=f2e523]: Enterprise
+                  - generic [ref=f2e524]: Usage-based
+                - link "$21–30/mo" [ref=f2e525] [cursor=pointer]:
+                  - /url: https://www.microsoft.com/en-us/microsoft-365-copilot/pricing
+            - cell "Execution layer for Microsoft 365 Copilot that handles autonomous, multi-step actions across Outlook, Teams, Excel, Word, PowerPoint, and Work IQ. Fully sandboxed your M365 cloud tenant, permission-aware, and enterprise-compliant. Plans, coordinates, and executes tasks (calendar cleanup, competitive research, launch plans, etc.) in the background with checkpoints, clarification requests, and user approvals." [ref=f2e529]
+            - cell [ref=f2e530]:
+              - button "Add review" [ref=f2e531] [cursor=pointer]
+      - generic [ref=f2e533]:
+        - heading "Landscape Summary" [level=3] [ref=f2e534]
+        - paragraph [ref=f2e535]: The table compares general work agents across platform availability, open-source status, bring-your-own-model support, local file access, browser automation, and pricing. Microsoft Copilot and Manus offer the broadest platform support (desktop + web + mobile), while ChatGPT Agent covers web, mobile, and desktop. Claude Cowork and OpenClaw are desktop-only. Google Workspace Studio, Gemini Enterprise, and Microsoft Copilot Cowork are web-only. Most agents support local file access — ChatGPT Agent is the notable exception, running entirely on a cloud VM. Browser automation is available in Claude Cowork, ChatGPT Agent, OpenClaw, Manus, and partially in Microsoft Copilot. Pricing ranges from free open-source (OpenClaw) through $8–30/mo subscriptions (Google Workspace Studio, Microsoft Copilot, Gemini Enterprise) up to $200/mo tiers (Claude Cowork, ChatGPT Agent, Manus).
+      - generic [ref=f2e536]:
+        - heading "Frequently Asked Questions" [level=2] [ref=f2e538]
+        - generic [ref=f2e539]:
+          - generic [ref=f2e540]:
+            - heading [level=3] [ref=f2e541]:
+              - button "What are general work AI agents?" [ref=f2e542] [cursor=pointer]
+            - region "What are general work AI agents?":
+              - paragraph [ref=f2e546]: General work AI agents are AI systems that autonomously execute multi-step tasks over extended periods. They read and write files on your desktop or in cloud sandboxes, perform broad knowledge work tasks, and typically connect to external services like email, calendars, Slack, and CRM. Unlike coding agents, they target everyday office and administrative tasks for non-developer knowledge workers.
+          - generic [ref=f2e547]:
+            - heading [level=3] [ref=f2e548]:
+              - button "Which agents support local file access?" [ref=f2e549] [cursor=pointer]
+            - region "Which agents support local file access?":
+              - paragraph [ref=f2e553]: "Most agents in the table support local file access: Claude Cowork, OpenClaw, Microsoft Copilot, Google Workspace Studio, Manus, and Microsoft Copilot Cowork. ChatGPT Agent is the notable exception — it runs entirely on a cloud VM with no local file access. Gemini Enterprise offers partial access via connectors to SharePoint, Confluence, and other enterprise systems."
+          - generic [ref=f2e554]:
+            - heading [level=3] [ref=f2e555]:
+              - button "Which agents support browser automation?" [ref=f2e556] [cursor=pointer]
+            - region "Which agents support browser automation?":
+              - paragraph [ref=f2e560]: Claude Cowork, ChatGPT Agent, OpenClaw, and Manus all support browser automation. Microsoft Copilot offers partial browser automation via Copilot Studio. The remaining agents (Google Workspace Studio, Gemini Enterprise, Microsoft Copilot Cowork) do not include browser automation.
+          - generic [ref=f2e561]:
+            - heading [level=3] [ref=f2e562]:
+              - button "Are there free or open-source general work AI agents?" [ref=f2e563] [cursor=pointer]
+            - region "Are there free or open-source general work AI agents?":
+              - paragraph [ref=f2e567]: OpenClaw is fully open-source and free (you pay only for LLM API calls). Microsoft Copilot has a partial BYOM option via Copilot Studio. The remaining agents are closed-source and require subscriptions ranging from ~$8/mo (Google Workspace Studio) to $200/mo (Claude Cowork, ChatGPT Agent).
+          - generic [ref=f2e568]:
+            - heading [level=3] [ref=f2e569]:
+              - button "How does Artificial Analysis compare these agents?" [ref=f2e570] [cursor=pointer]
+            - region "How does Artificial Analysis compare these agents?":
+              - paragraph [ref=f2e574]:
+                - text: We compare agents across platform availability, open-source status, bring-your-own-model support, local file access, browser automation, and pricing. Our comparison table is updated regularly.
+                - link "View LLM benchmarks" [ref=f2e575] [cursor=pointer]:
+                  - /url: /models
+  - button "Back to top"
+  - region "Notifications alt+T"
+  - generic [ref=f2e577]:
+    - generic [ref=f2e578]:
+      - link "Artificial Analysis" [ref=f2e580] [cursor=pointer]:
+        - /url: /
+      - generic [ref=f2e583]:
+        - paragraph [ref=f2e584]: Get notified about new articles
+        - generic [ref=f2e588]:
+          - generic [ref=f2e589]: Email address
+          - textbox "Email address" [ref=f2e590]:
+            - /placeholder: What's your email?
+          - button "Subscribe" [ref=f2e591] [cursor=pointer]
+      - paragraph [ref=f2e595]: Artificial Analysis
+      - generic [ref=f2e596]:
+        - generic [ref=f2e597]:
+          - paragraph [ref=f2e598]: Explore
+          - list [ref=f2e599]:
+            - listitem [ref=f2e600]:
+              - link "LLM Leaderboard" [ref=f2e601] [cursor=pointer]:
+                - /url: /leaderboards/models
+            - listitem [ref=f2e602]:
+              - link "Image Arena" [ref=f2e603] [cursor=pointer]:
+                - /url: /image/arena
+            - listitem [ref=f2e604]:
+              - link "Video Arena" [ref=f2e605] [cursor=pointer]:
+                - /url: /video/arena
+            - listitem [ref=f2e606]:
+              - link "AI Agents" [ref=f2e607] [cursor=pointer]:
+                - /url: /agents
+            - listitem [ref=f2e608]:
+              - link "Evaluations" [ref=f2e609] [cursor=pointer]:
+                - /url: /evaluations
+        - generic [ref=f2e610]:
+          - paragraph [ref=f2e611]: Company
+          - list [ref=f2e612]:
+            - listitem [ref=f2e613]:
+              - link "Methodology" [ref=f2e614] [cursor=pointer]:
+                - /url: /methodology
+            - listitem [ref=f2e615]:
+              - link "Services" [ref=f2e616] [cursor=pointer]:
+                - /url: /services
+            - listitem [ref=f2e617]:
+              - link "Contact" [ref=f2e618] [cursor=pointer]:
+                - /url: /contact
+            - listitem [ref=f2e619]:
+              - link "Articles" [ref=f2e620] [cursor=pointer]:
+                - /url: /articles
+            - listitem [ref=f2e621]:
+              - link "FAQ" [ref=f2e622] [cursor=pointer]:
+                - /url: /faq
+      - generic [ref=f2e623]:
+        - link "X" [ref=f2e624] [cursor=pointer]:
+          - /url: https://x.com/ArtificialAnlys
+        - link "LinkedIn" [ref=f2e628] [cursor=pointer]:
+          - /url: https://www.linkedin.com/company/artificial-analysis/
+        - link "YouTube" [ref=f2e632] [cursor=pointer]:
+          - /url: https://www.youtube.com/@ArtificialAnalysisAI
+        - link "Rednote" [ref=f2e636] [cursor=pointer]:
+          - /url: https://www.xiaohongshu.com/user/profile/69ea6345000000000d034c02
+        - link "Discord" [ref=f2e640] [cursor=pointer]:
+          - /url: https://discord.gg/Mk298GPZ7V
+    - generic [ref=f2e644]:
+      - paragraph [ref=f2e645]: © 2026 Artificial Analysis
+      - link "Terms of Use" [ref=f2e646] [cursor=pointer]:
+        - /url: /docs/legal/Terms-of-Use.pdf
+      - link "Privacy Policy" [ref=f2e647] [cursor=pointer]:
+        - /url: /docs/legal/Privacy-Policy.pdf
+      - generic [ref=f2e648]:
+        - combobox "Select language" [ref=f2e649] [cursor=pointer]: English
+        - combobox [ref=f2e657]

@@ -47,23 +47,42 @@ class SelectAgentsTool(BaseTool):
         return "selectagents"
 
     def get_description(self) -> str:
+        # The warning goes FIRST. This string is what a client model reads when it
+        # decides which tool to call, and a capability claim followed by a caveat
+        # is read as a capability -- which would have an agent delegate on the
+        # strength of a plan that does not exist. That is the exact failure #96
+        # was written to remove.
         return (
-            "Compute a delegation plan — whether to delegate, to how many agents, and on which "
-            "model and effort each — from a measured model dataset rather than from recollection. "
-            "Returns the planned agents, the criteria the choice rested on, ranked alternatives "
-            "with their cost deltas, and an identity for the plan. NOT IMPLEMENTED YET (#99): "
-            "currently returns a stub."
+            "NOT IMPLEMENTED YET (#99) — returns a stub, computes nothing, do not act on its output. "
+            "When built, it will compute a delegation plan — whether to delegate, to how many agents, "
+            "and on which model and effort each — from a measured model dataset rather than from "
+            "recollection, returning the planned agents, the criteria the choice rested on, ranked "
+            "alternatives with their cost deltas, and an identity for the plan."
         )
+
+    def get_annotations(self) -> dict[str, Any] | None:
+        """Read-only, declared the way the other model-less tools declare it.
+
+        `listmodels` and `version` both publish `readOnlyHint`. Omitting it here
+        would advertise a tool that returns a constant as one a client must
+        assume can mutate something.
+        """
+        return {"readOnlyHint": True}
 
     def get_input_schema(self) -> dict[str, Any]:
         # Deliberately empty of required fields. The real contract — fixed fields
         # plus a closed kind-of-work enumeration — is #101's deliverable, and
         # declaring a guessed version here would give callers a shape to write
         # against that #101 then has to break.
+        # `additionalProperties: False`, matching `listmodels`. The first version
+        # said True, which advertises "send me anything" -- a promise a stub
+        # cannot keep and one #101's closed contract will contradict. Refusing
+        # unknown fields now means a caller written against this skeleton fails
+        # loudly rather than silently having its arguments ignored.
         return {
             "type": "object",
             "properties": {},
-            "additionalProperties": True,
+            "additionalProperties": False,
         }
 
     def get_system_prompt(self) -> str:

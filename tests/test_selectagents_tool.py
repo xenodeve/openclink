@@ -93,25 +93,38 @@ async def test_the_stub_says_it_is_a_stub(tool):
     assert "not implemented" in response["content"].lower()
 
 
-def test_the_server_advertises_it(monkeypatch):
-    """Registered, not merely importable.
+@pytest.mark.asyncio
+async def test_the_server_advertises_it():
+    """Registered, not merely importable — asserted on what a client is actually told.
 
-    Reads `server.TOOLS` — the same dictionary `handle_list_tools` iterates — so
-    a tool exported from `tools/__init__.py` and never wired in fails here.
+    A first version read `server.TOOLS` and its docstring claimed that was "the
+    same dictionary `handle_list_tools` iterates". True, and not the same claim:
+    the handler filters and builds `Tool` objects, so a tool dropped there would
+    have left that test green while no client could see it. The registration is
+    the thing being pinned, so the assertion belongs on the advertised list.
     """
-    import server
+    from server import handle_list_tools
 
-    assert "selectagents" in server.TOOLS
-    assert server.TOOLS["selectagents"].name == "selectagents"
+    advertised = {tool.name: tool for tool in await handle_list_tools()}
+
+    assert "selectagents" in advertised
+    # An advertised tool with no schema is discoverable and uncallable.
+    assert advertised["selectagents"].inputSchema
+    assert advertised["selectagents"].description
 
 
 @pytest.mark.asyncio
 async def test_it_is_dispatched_through_the_server_by_name():
     """The end-to-end leg #99 asks for, at the server's own dispatch seam.
 
-    `handle_call_tool` is what an MCP client actually reaches. Going through it
-    covers the wiring a direct `SelectAgentsTool().execute()` cannot: the name
-    lookup, the disabled-tools filter, and the server's argument handling.
+    `handle_call_tool` is what an MCP client actually reaches, so this covers the
+    name lookup a direct `SelectAgentsTool().execute()` cannot.
+
+    It covers no more than that, and an earlier version of this docstring claimed
+    it did. With `requires_model()` False the handler dispatches immediately, so
+    model resolution is never reached; and the disabled-tools filter runs once at
+    import rather than per call. Claiming coverage a test does not have is how a
+    gap survives a green suite.
     """
     from server import handle_call_tool
 
