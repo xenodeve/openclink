@@ -101,6 +101,13 @@ class OpenCodeJSONLParser(BaseParser):
             metadata["tokens"] = tokens
         if cost is not None:
             metadata["cost"] = cost
+            # The unit travels with the number, declared where the CLI is known
+            # rather than assumed by the consumer (#126). opencode bills its zen
+            # endpoint in dollars; a future client reporting credits would say so
+            # here, and `tools/clink.py` emits nothing for a cost with no unit —
+            # a bare figure that a caller might add to a currency one is the
+            # mistake #25 named.
+            metadata["cost_unit"] = "USD"
         if stderr and stderr.strip():
             metadata["stderr"] = stderr.strip()
 

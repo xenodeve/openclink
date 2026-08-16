@@ -103,11 +103,41 @@ same: codex nests the reply under `item`, keys usage at the event root, and repo
 OpenCode puts the reply in `part.text` on `type:"text"`, and the account in `part.tokens` on
 `type:"step_finish"` — plus a `part.cost` that no other client provides.
 
-**It reports the price of its own call.** `part.cost` arrives per step, so OpenClink needs no rate card to
-know what a call cost. That matters because OpenClink's own pricing layer is currently unreachable (#77) —
-no bundled config declares a `rate_card`, so `price_call` returns `no_rate_card` for every client.
-OpenCode hands over the number regardless; today it is published in parser metadata while
-`AgentOutput.cost` still reads `CostUnavailable(no_rate_card)`. Reconciling the two is #77's call.
+**It reports the price of its own call, and that figure now reaches you.** `part.cost` arrives per step,
+so OpenClink needs no rate card to know what a call cost. That matters because OpenClink's own pricing
+layer is unreachable (#77) — no bundled config declares a `rate_card`, so `price_call` returns
+`no_rate_card` for every client and the tool suppresses that reason deliberately.
+
+#77 framed the choice as *ship a real rate card* or *reduce the surface*. OpenCode makes a third option
+available, because it is the only client that measures itself: for it the pricing layer is not
+unreachable, it is unnecessary. So the measured figure is projected under its own key (#126):
+
+```json
+"cli_reported_cost": { "value": 0.007392, "unit": "USD", "source": "opencode_jsonl" }
+```
+
+**Its own key, not `cost`.** `cost` means *OpenClink multiplied an account by a rate card*; this is a
+vendor's meter. One key carrying both claims would leave no way to tell which a figure was.
+`AgentOutput.cost` still reads `CostUnavailable(no_rate_card)`, correctly — nothing priced this call.
+
+The unit is declared by the parser, which knows the CLI, rather than assumed by the consumer; a cost
+published without one is **not reported at all**, because a bare number invites summing credits with
+currency. And a reported `0` is emitted rather than swallowed — the free tier genuinely bills nothing,
+and "this call was free" is a different claim from "cost unknown".
+
+**Reasoning effort reaches it too, as `--variant` (#125).** `opencode run --variant <v>` is a real
+flag, and until #125 `OpenCodeAgent` inherited the base behaviour of discarding the caller's
+`reasoning_effort` — silently, because `resolved_effort` is only reported when non-null. Valid values
+are per model and enumerable: `opencode models opencode --verbose` publishes a `variants` object, with
+`low`/`high`/`max` for `deepseek-v4-flash` and five tiers for `claude-opus-5`.
+
+Two measured caveats, stated because the flag now looks fully supported and is not quite:
+**an invalid variant is accepted and silently ignored** by the CLI (`--variant not-a-real-variant`
+exits 0 and answers normally), and OpenClink does not validate against the per-model list because that
+would cost a ~30s `opencode models` call per delegation. And **no observable effect could be
+demonstrated on `deepseek-v4-flash`** — three runs of one prompt at no variant, `low` and `max` gave
+indistinguishable token profiles. OpenClink writes the flag and can read it back; whether the provider
+acts on it for that model is unverified.
 
 **Per-step accounting, which is the trap.** An agentic run closes a `step_finish` per tool round-trip,
 and each one reports only *its own* spend. Taking the last — the obvious reading, and what the first

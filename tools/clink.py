@@ -607,6 +607,31 @@ class CLinkTool(SimpleTool):
             # the key on every response of every client until someone configures
             # a card, and a marker present on everything marks nothing.
             accounting["cost_unavailable"] = result.cost.reason
+        # A cost the CLI measured itself, under its own key (#126). Every other
+        # client needs OpenClink to price it, and no bundled config declares a
+        # rate card (#77) — but opencode reports `part.cost` per step and the
+        # parser accumulates it, so for that one client the pricing layer is not
+        # unreachable, it is unnecessary.
+        #
+        # NOT folded into `cost`: that key means "OpenClink multiplied an account
+        # by a rate card", and a vendor's meter is a different claim. One key
+        # carrying both would leave no way to tell which a figure was.
+        #
+        # Keyed on the metadata, never on the cli_name — a projection that named
+        # the client would put a figure on every other one as soon as somebody
+        # copied this block.
+        reported_cost = (result.parsed.metadata or {}).get("cost") if result.parsed else None
+        reported_unit = (result.parsed.metadata or {}).get("cost_unit") if result.parsed else None
+        # `is not None`, because a free call reports exactly 0 and truthiness
+        # would turn "this was free" into "cost unknown". The unit is required for
+        # the reason #25 gives: a bare number invites summing credits with
+        # currency, so a cost with no declared unit is not reported at all.
+        if reported_cost is not None and reported_unit:
+            accounting["cli_reported_cost"] = {
+                "value": reported_cost,
+                "unit": reported_unit,
+                "source": result.parser_name,
+            }
         return accounting
 
     def _merge_metadata(self, base: dict[str, Any] | None, extra: dict[str, Any]) -> dict[str, Any]:
