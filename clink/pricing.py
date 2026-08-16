@@ -7,7 +7,7 @@ reproducible from a recorded account, and what lets the tests pin exact numbers.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -116,8 +116,16 @@ def sum_thread_accounts(accounts: list[dict]) -> dict:
     return out
 
 
-def _total_cost(accounts: Iterable[dict], key: str, out_key: str) -> dict:
+def _total_cost(accounts: Sequence[dict], key: str, out_key: str) -> dict:
     """Sum one cost key across turns, refusing to mix units.
+
+    `Sequence`, not `Iterable`, and that is load-bearing: `sum_thread_accounts`
+    now walks `accounts` three times — once for usage and once per cost key — so
+    a one-shot iterator would be exhausted by the first pass and the remaining
+    two would silently total nothing. A zero that should have been a figure, with
+    no error to notice. The public signature is already `list[dict]` and the only
+    caller passes a comprehension, so nothing can hit this today; the annotation
+    is here to keep it that way.
 
     `is not None` on the value, not truthiness: a call that genuinely cost zero
     reported something, and demoting it to "uncovered" would mark the total
