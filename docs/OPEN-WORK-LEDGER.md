@@ -27,8 +27,16 @@ class on a real run, 144,256 against 102,535 input — had the right field and n
   it back; the provider side is unverified, and the quota constraint permits no other model for
   testing. Worth re-probing on a tiered model if one becomes cheap to call.
 
-`cache.write` stays unmapped — a schema question, still **#56**. `cli_reported_cost` does not reach
-`sum_thread_accounts`, so a thread total still shows nothing; that is **#77**'s remaining half.
+`cache.write` stays unmapped — a schema question, still **#56**.
+
+**Gate debt paid late, and it found something (#129, PR #130).** PR #128 merged with
+`scrutinize=not-run`; running it afterwards showed `cli_reported_cost` never reached
+`sum_thread_accounts`, so a thread of opencode calls reported usage and nothing at all about cost while
+every turn carried a measured figure. Fixed with two totals that are never merged. Reviewing that fix
+found a second thing — the extraction walks `accounts` three times, so the helper takes a `Sequence`;
+an `Iterable` would let a one-shot iterator silently zero both totals.
+
+Whether `cost` should exist at all, and whether a real rate card ships, is still **#77** — untouched.
 
 ### 🟡 The rename shipped; the tool prefix is the one piece left (2026-08-16, #94 → #122)
 

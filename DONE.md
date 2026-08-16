@@ -56,6 +56,22 @@ projection test hand-fed the metadata: two parser tests now pin the unit and the
 
 Every new assertion was mutation-tested — eight mutations, each applied, observed red, and reverted.
 
+**Gate debt, paid after the merge (#129, PR #130).** PR #128 shipped with `scrutinize=not-run`. Paying
+it afterwards found what the missing gate would have caught: `sum_thread_accounts` reads only
+`account["cost"]`, so the figure #126 filed under `cli_reported_cost` never reached the thread total.
+Every opencode turn fell to `unpriced_turns`, and with `priced_turns == 0` the cost branch never ran —
+**a thread of opencode calls returned usage and complete silence about money**, while every turn in it
+carried a measured number. Not a regression; an incompleteness the per-call fix made visible and, for
+the first time, fixable. Now two totals that are never merged, from one accumulator called twice so the
+mixed-unit refusal cannot drift between them. A second finding came from reviewing my own fix: the
+extraction turned one pass over `accounts` into three, and annotating the helper `Iterable` would have
+invited a one-shot iterator that the first pass exhausts — two totals silently summing nothing.
+`Sequence` says so instead.
+
+**The lesson is about the gate, not the bug.** `scrutinize` is the outsider pass, and this is precisely
+the class it exists for: the change was correct everywhere the diff touched, and wrong one layer up
+where it did not.
+
 ## 2026-08-16 — the project is OpenClink (#94, PR #114, merged at `7effad8`)
 
 Renamed from PAL MCP. `pal-mcp-server` is taken on PyPI at 10.4.3 by something that is not this
