@@ -29,14 +29,19 @@ class OpenCodeAgent(BaseCLIAgent):
     # plausible in `input_tokens`, so landing it there makes the account wrong
     # rather than incomplete.
     #
-    # `cache.write` and `cache.read` are unmapped for two different reasons —
-    # cache-creation has no field on the normalised account at all (#56), and
-    # cache-read has one but sits a level down, which the flat field map cannot
-    # reach. Both are pinned by test_opencode_cache_tokens_reach_no_field_of_the_account.
+    # `cache.read` is a DOTTED key: the payload nests it under `cache`, and the
+    # field map now walks a path (#127). It was the largest class on a real run
+    # -- 144,256 against 102,535 input -- and it was being dropped because the
+    # map could not reach it, not because it had nowhere to go.
+    #
+    # `cache.write` stays unmapped, and for the OTHER reason: cache-creation has
+    # no field on the normalised account at all (#56). The two were bundled once
+    # and that is why this one waited on a schema decision it never needed.
     USAGE_FIELD_MAP = {
         "input": "input_tokens",
         "output": "output_tokens",
         "reasoning": "reasoning_output_tokens",
+        "cache.read": "cached_input_tokens",
     }
 
     def _model_args(self, model: str | None, reasoning_effort: str | None) -> list[str]:

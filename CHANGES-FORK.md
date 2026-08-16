@@ -146,10 +146,20 @@ measured on a real two-step file-read at **1,053 input tokens against 102,535 ac
 **0.000248 against 0.007392**. It reads as a plausible small number rather than as an error, and no
 single-step fixture can fail that way. The parser accumulates; a single-step run sums a set of one.
 
-**Cache classes are reported and deliberately unmapped.** `tokens.cache.write` has no field on the
-normalised account at all (#56), and `tokens.cache.read` has one — `cached_input_tokens` — but sits a
-level down, which the base's flat field map cannot reach. Both stay absent rather than being folded
-somewhere plausible: an incomplete account is recoverable, a wrong one is not.
+**Cache-read is now accounted; cache-write still has nowhere to go.** These were bundled once and are
+not the same problem. `tokens.cache.read` has exactly the right home — `cached_input_tokens` — and was
+being dropped only because the base's field map was flat and `cache` is a dict; #127 gave the map a
+dotted path (`"cache.read": "cached_input_tokens"`) and it lands. That mattered more than "incomplete"
+suggests: on the recorded two-step run the dropped class was **larger than the reported one**, 144,256
+against 102,535 input, so anything reasoning about cache effectiveness from that account was wrong by
+over a factor of two with nothing to say so.
+
+`tokens.cache.write` stays absent, for the other reason: the normalised account has no field for
+cache-creation at all (#56). Folding it somewhere plausible would make the account wrong rather than
+incomplete, and an incomplete one is recoverable.
+
+The dotted path is opt-in per client — every other adapter is flat and unchanged — and a path whose
+parent is missing, or arrives as a scalar, yields no field rather than an exception.
 
 **`--auto` is deliberately not passed.** OpenCode's own help calls it *"auto-approve permissions that
 are not explicitly denied (dangerous!)"*, and its docs note that most permissions already default to

@@ -71,6 +71,27 @@ class AgentOutput:
 MAX_DRAINED_OUTPUT_CHARS = 10_000
 
 
+def _walk(payload: dict, key: str) -> object:
+    """Read a `USAGE_FIELD_MAP` key, which may name a nested path with dots (#127).
+
+    A flat key costs one lookup and behaves exactly as before, so no existing
+    adapter changes. A dotted one descends, and anything that is not a dict on
+    the way down ends the walk at `None` rather than raising: a CLI that stops
+    reporting a block, or reports it as a scalar in some mode, must degrade to an
+    incomplete account and not take down the call that produced it.
+
+    This exists because `cache.read` had the right field on the account
+    (`cached_input_tokens`) and no way to reach it — on a real opencode run the
+    class it dropped was larger than the one it reported.
+    """
+    node: object = payload
+    for part in key.split("."):
+        if not isinstance(node, dict):
+            return None
+        node = node.get(part)
+    return node
+
+
 def flag_values(command: Sequence[str], flags: Sequence[str], *, prefix: str | None = None) -> list[str]:
     """Return values read for `flags`, in command order.
 
@@ -477,7 +498,15 @@ class BaseCLIAgent:
         usage = parsed.metadata.get(self.USAGE_METADATA_KEY)
         if not isinstance(usage, dict):
             return None
-        reported = {field: usage[key] for key, field in self.USAGE_FIELD_MAP.items() if isinstance(usage.get(key), int)}
+        reported: dict[str, int] = {}
+        for key, field in self.USAGE_FIELD_MAP.items():
+            value = _walk(usage, key)
+            # `bool` is a subclass of `int`, so the obvious guard admits `True` as
+            # a token count of 1. Same trap already fixed in the opencode parser's
+            # `_accumulate`; costs one clause here and removes a class of account
+            # that is wrong rather than incomplete.
+            if isinstance(value, int) and not isinstance(value, bool):
+                reported[field] = value
         return TokenUsage(**reported) if reported else None
 
     def _resolve_model_effort(self, command: Sequence[str]) -> tuple[str | None, str | None]:
