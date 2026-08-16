@@ -10,6 +10,20 @@ protocol in `docs/agents/` and the entry map (`using-t4`).
 
 ## Active
 
+### 🟡 The #96 selection layer — implementing the slices (2026-08-16)
+
+`#96` is the PRD and it is already cut into #98–#113. Dependency order, read off the issues rather
+than assumed: **#98 and #99 are the roots**; then #101 ← 99, #103 ← 98+99; #104 ← 101;
+#108/#109/#110 ← 104; #111 ← 108; #113 ← 111.
+
+**Two branches of that graph are blocked on work that is not `ready-for-agent`:** #102 (and so #105,
+#106) waits on **#97**, a `ready-for-human` spike asking whether the vendor API exposes cost-per-task
+at all; #107 (and so #112) waits on **#100**, which carries no agent label. Nine slices are workable
+without them.
+
+- ✅ **#98 on-disk record store** (PR #131) — first persistence in the repo. See `DONE.md` for the
+  finding: the test for its hardest criterion passed 3/3 against a fully non-atomic implementation.
+
 ### ✅ opencode is fully supported (2026-08-16, #125 #126 #127, PR #128)
 
 Three gaps in the client that shipped in #86, each verified end to end against the real binary rather
