@@ -21,6 +21,10 @@ than assumed: **#98 and #99 are the roots**; then #101 ← 99, #103 ← 98+99; #
 at all; #107 (and so #112) waits on **#100**, which carries no agent label. Nine slices are workable
 without them.
 
+- ✅ **#109 optional budget** (PR #136) — no budget takes the cheapest; a budget takes the best that
+  fits, which is the only reading satisfying both of the issue's criteria. Also fixed the INCOMPLETE
+  disclosure, which had gone a slice stale in three places at once, and added the test that fails when
+  the unbuilt list is too LONG. **Keep that list pruned in every slice from here.**
 - ✅ **#108 context-window filter** (PR #135) — a hard filter ahead of pricing, with both exclusion
   reasons named rather than counted. `rank()` returns a `Ranking`, not a list, and
   `output_ceiling_tokens` is **required** — it defaulted to 0, which is fail-open on a safety filter.

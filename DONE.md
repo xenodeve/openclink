@@ -3,6 +3,33 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-16 — an optional budget, and frugality without one (#109, PR #136)
+
+No budget takes the cheapest qualifying candidate; a budget takes the best on the axis that fits
+inside it. **That reading is forced, not preferred:** #109 requires both "no budget yields the
+cheapest" and "a fixture case exists where a budget changes the winner", and a ceiling-only budget
+makes the second unsatisfiable — the cheapest would win whenever anything fit. A budget nothing fits
+refuses and names the cheapest qualifying candidate and its price. A budget of `0` is a contract
+error, because absent means "choose on cost" and zero means "spend nothing".
+
+**Validated** — 10 budget tests plus 3 at the tool seam. Suite 1215 → 1229. Six mutations red
+(budget ignored → 3; boundary `<=`→`<` → 1; cheapest-affordable instead of best → 5; priced-out
+unreported → 2; zero accepted → 1; disclosure re-adds a shipped slice → 1).
+
+**The finding: a rule enforced by an accident of its input.** Deleting the cost tiebreak from
+`choose`'s sort key reddened **nothing** — `max` returns the first maximal element and `rank` had
+already ordered by cost, so "ties go to the cheaper" held by luck rather than by the code claiming to
+hold it, and would have left silently the first time anything handed `choose` a differently-ordered
+list. Unlike #101's genuine redundancy, the rule is real, so it was made load-bearing instead of
+deleted: a test hands `choose` a deliberately unranked list, dearer twin first.
+
+**The second finding: the INCOMPLETE disclosure had gone a slice stale.** #108 shipped the
+context-window filter while the response, `docs/tools/selectagents.md` and the module docstring all
+still called it unbuilt. A caller reads "the context window is not applied" and hand-splits a scope
+the layer already filtered — an understated capability misleads exactly as confidently as an
+overstated one. The old test only failed when the list was too SHORT; a new one fails when it is too
+LONG, which is the direction a list nobody prunes actually drifts.
+
 ## 2026-08-16 — context window as a hard filter, applied before pricing (#108, PR #135)
 
 A candidate whose window cannot hold the share it would be given is removed, not down-ranked. A
