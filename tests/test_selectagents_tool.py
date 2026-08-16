@@ -137,10 +137,14 @@ async def test_a_plan_names_one_model_and_effort_from_the_dataset(tool):
 async def test_the_plan_carries_the_criteria_it_rested_on(tool):
     """#96: the criteria come back with the plan, so a caller can disagree with a reason.
 
-    `candidates_scored_on_axis` next to `candidates_considered` is the part that
-    matters most — it says how much of the dataset was actually eligible, so a
-    plan chosen from two of five candidates does not read like one chosen from
-    five.
+    `candidates_ranked` next to `candidates_considered` is the part that matters
+    most — it says how much of the dataset was actually eligible, so a plan chosen
+    from two of five candidates does not read like one chosen from five.
+
+    That key was `candidates_scored_on_axis` until #108 added a second exclusion
+    reason, at which point the name described one of the two filters and counted
+    both. Renamed rather than left: a count whose name says "on axis" while it
+    also excludes for context window is a label that will be believed.
     """
     response = json.loads((await tool.execute(dict(SCOPE)))[0].text)
     criteria = response["metadata"]["plan"]["criteria"]
@@ -148,7 +152,7 @@ async def test_the_plan_carries_the_criteria_it_rested_on(tool):
     assert criteria["axis"] == "coding"  # SCOPE declares implementation
     assert criteria["ranked_on"] == "cost_per_task"
     assert criteria["axis_score"] is not None
-    assert criteria["candidates_scored_on_axis"] <= criteria["candidates_considered"]
+    assert criteria["candidates_ranked"] <= criteria["candidates_considered"]
 
 
 @pytest.mark.asyncio

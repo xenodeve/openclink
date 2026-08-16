@@ -130,6 +130,31 @@ def load_candidates(path: Path | None = None) -> list[Candidate]:
     ]
 
 
+@dataclass(frozen=True)
+class Ranking:
+    """The survivors, and who was removed on the way — never only the survivors.
+
+    A plan chosen from two candidates out of five must not read like one chosen
+    from five (#108). The two exclusion reasons are kept apart because they mean
+    different things to a caller: "your scope is larger than most context windows"
+    is actionable — split it — while "nobody measured these on your axis" is not.
+    """
+
+    ordered: list[Candidate]
+    excluded_by_window: list[str]
+    excluded_by_axis: list[str]
+
+
+def required_window(*, read_volume_tokens: int, output_ceiling_tokens: int) -> int:
+    """What a candidate must be able to hold: the input AND its own answer.
+
+    Sizing on the read alone looks conservative and is not — a model sized
+    exactly to the input has nowhere to put the output, and the truncation lands
+    in the result rather than in an error.
+    """
+    return read_volume_tokens + output_ceiling_tokens
+
+
 def axis_for(kind_of_work: str) -> str:
     try:
         return AXIS_FOR_KIND[kind_of_work]
@@ -137,17 +162,49 @@ def axis_for(kind_of_work: str) -> str:
         raise DatasetError(f"no capability axis declared for kind of work {kind_of_work!r}") from exc
 
 
-def rank(candidates: list[Candidate], *, kind_of_work: str, read_volume_tokens: int) -> list[Candidate]:
-    """Cheapest per task first, among those the axis was measured on.
+def rank(
+    candidates: list[Candidate],
+    *,
+    kind_of_work: str,
+    read_volume_tokens: int,
+    output_ceiling_tokens: int,
+) -> Ranking:
+    """Filter hard, then rank what survives. Cheapest per task first.
+
+    **`output_ceiling_tokens` has no default on purpose.** It defaulted to 0,
+    which sized the requirement on the read alone — the mistake `required_window`
+    exists to prevent, reachable by omission. A fail-open default on a hard
+    filter lets MORE candidates through, so nothing errors and a model that
+    cannot hold its own answer is simply eligible. Every caller says it.
+
+    **Context window is a filter and not a weight (#96, #108).** A weight lets a
+    cheap-enough model outrank the constraint and be handed work it will silently
+    truncate; a filter removes it. And it runs BEFORE pricing, because #110
+    returns the alternatives from this same list — a candidate excluded only at
+    the end would reappear as a fallback route, which is exactly where a
+    truncating model would get used: after the first choice's lane went down and
+    nobody looked again.
 
     Ties broken by the axis score, higher first: two candidates that cost the
-    same are not interchangeable, and picking the better-measured one is the only
-    non-arbitrary rule available. Then by name, so the order is stable and a test
-    can assert on it.
+    same are not interchangeable, and the better-measured one is the only
+    non-arbitrary pick. Then by name, so the order is stable enough to assert on.
     """
     axis = axis_for(kind_of_work)
-    qualifying = [c for c in candidates if c.score_on(axis) is not None]
-    return sorted(
-        qualifying,
+    needed = required_window(read_volume_tokens=read_volume_tokens, output_ceiling_tokens=output_ceiling_tokens)
+
+    survivors: list[Candidate] = []
+    by_window: list[str] = []
+    by_axis: list[str] = []
+    for candidate in candidates:
+        if candidate.context_window < needed:
+            by_window.append(candidate.model)
+        elif candidate.score_on(axis) is None:
+            by_axis.append(candidate.model)
+        else:
+            survivors.append(candidate)
+
+    ordered = sorted(
+        survivors,
         key=lambda c: (c.cost_per_task(read_volume_tokens), -(c.score_on(axis) or 0.0), c.model, c.effort),
     )
+    return Ranking(ordered=ordered, excluded_by_window=by_window, excluded_by_axis=by_axis)

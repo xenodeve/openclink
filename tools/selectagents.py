@@ -26,7 +26,7 @@ from mcp.types import TextContent
 from pydantic import ConfigDict, Field, ValidationError, field_validator
 
 from tools.models import ToolOutput
-from tools.selection import DatasetError, axis_for, load_candidates, rank
+from tools.selection import DatasetError, axis_for, load_candidates, rank, required_window
 from tools.shared.base_models import ToolRequest
 from tools.shared.base_tool import BaseTool
 
@@ -360,7 +360,13 @@ class SelectAgentsTool(BaseTool):
             return [TextContent(type="text", text=_dataset_refusal(str(exc)).model_dump_json())]
 
         axis = axis_for(request.kind_of_work)
-        ordered = rank(candidates, kind_of_work=request.kind_of_work, read_volume_tokens=request.read_volume_tokens)
+        ranking = rank(
+            candidates,
+            kind_of_work=request.kind_of_work,
+            read_volume_tokens=request.read_volume_tokens,
+            output_ceiling_tokens=request.output_ceiling_tokens,
+        )
+        ordered = ranking.ordered
         if not ordered:
             return [TextContent(type="text", text=_no_candidate_refusal(axis).model_dump_json())]
 
@@ -380,7 +386,17 @@ class SelectAgentsTool(BaseTool):
                 "axis_score": winner.score_on(axis),
                 "ranked_on": "cost_per_task",
                 "candidates_considered": len(candidates),
-                "candidates_scored_on_axis": len(ordered),
+                "candidates_ranked": len(ordered),
+                # Both exclusions named, not counted. "Your scope is larger than
+                # most context windows" is actionable — split it — and "nobody
+                # measured these on your axis" is not, so collapsing the two into
+                # one number throws away the only half a caller can act on (#108).
+                "excluded_by_context_window": ranking.excluded_by_window,
+                "excluded_by_axis": ranking.excluded_by_axis,
+                "context_window_required": required_window(
+                    read_volume_tokens=request.read_volume_tokens,
+                    output_ceiling_tokens=request.output_ceiling_tokens,
+                ),
             },
         }
 
