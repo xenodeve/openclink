@@ -21,6 +21,13 @@ than assumed: **#98 and #99 are the roots**; then #101 ← 99, #103 ← 98+99; #
 at all; #107 (and so #112) waits on **#100**, which carries no agent label. Nine slices are workable
 without them.
 
+- 🟡 **#138 a budget bounds one seat, not the whole plan** — opened by #111, which made the count a
+  variable while `choose` still compares against one seat's cost. Not circular: `width()` never depends
+  on the budget. `ready-for-agent`.
+- ✅ **#111 derived agent count** (PR #139) — and it **corrected #108's filter**: the required window is
+  one item-share, not the whole read, or no candidate could ever need a second seat. A generalisation
+  (identical at `item_count=1`), pinned by test. Three mutations came back 0 red and all three were
+  real gaps — including a tool-seam test that held only because the count happened to be 1.
 - ✅ **#110 five priced routes** (PR #137) — winner-first, signed deltas to the predecessor, dropped
   count reported. **The routes follow the rule that picked the winner**, which #109 made non-obvious:
   under a budget that is descending capability, not ascending cost. `Choice.ranked` exists for this.

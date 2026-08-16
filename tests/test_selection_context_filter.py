@@ -41,7 +41,7 @@ def test_the_required_window_is_what_is_read_plus_what_is_written():
     a candidate sized exactly to the input has nowhere to put the output, and the
     truncation lands in the result rather than in an error.
     """
-    assert required_window(read_volume_tokens=40_000, output_ceiling_tokens=8_000) == 48_000
+    assert required_window(read_volume_tokens=40_000, output_ceiling_tokens=8_000, item_count=1) == 48_000
 
 
 def test_a_candidate_that_cannot_hold_its_share_disappears_entirely():
@@ -57,6 +57,7 @@ def test_a_candidate_that_cannot_hold_its_share_disappears_entirely():
         kind_of_work="implementation",
         read_volume_tokens=100_000,
         output_ceiling_tokens=8_000,
+        item_count=1,
     )
 
     assert [c.model for c in result.ordered] == ["big-window"]
@@ -81,6 +82,7 @@ def test_the_cheapest_candidate_losing_to_the_filter_is_the_case_that_matters():
         kind_of_work="implementation",
         read_volume_tokens=200_000,
         output_ceiling_tokens=8_000,
+        item_count=1,
     )
 
     assert small.cost_per_task(200_000) < big.cost_per_task(200_000)
@@ -109,6 +111,7 @@ def test_a_window_that_holds_the_read_but_not_the_answer_is_still_too_small():
         kind_of_work="implementation",
         read_volume_tokens=40_000,
         output_ceiling_tokens=8_000,
+        item_count=1,
     )
 
     assert snug.cost_per_task(40_000) < roomy.cost_per_task(40_000)
@@ -143,7 +146,9 @@ def test_a_candidate_sized_exactly_to_the_requirement_still_fits():
     """
     exact = _candidate("exact", window=48_000, axes={"coding": 70.0}, in_price=1.0, out_price=1.0, out_tokens=1_000)
 
-    result = rank([exact], kind_of_work="implementation", read_volume_tokens=40_000, output_ceiling_tokens=8_000)
+    result = rank(
+        [exact], kind_of_work="implementation", read_volume_tokens=40_000, output_ceiling_tokens=8_000, item_count=1
+    )
 
     assert [c.model for c in result.ordered] == ["exact"]
 
@@ -168,6 +173,7 @@ def test_the_exclusions_are_reported_rather_than_silent():
         kind_of_work="implementation",
         read_volume_tokens=100_000,
         output_ceiling_tokens=8_000,
+        item_count=1,
     )
 
     assert [c.model for c in result.ordered] == ["usable"]
@@ -192,6 +198,7 @@ def test_the_window_filter_runs_before_the_axis_filter_is_not_assumed():
         kind_of_work="implementation",
         read_volume_tokens=100_000,
         output_ceiling_tokens=8_000,
+        item_count=1,
     )
 
     assert [c.model for c in result.ordered] == ["usable"]
@@ -208,7 +215,9 @@ def test_nothing_surviving_the_filter_is_distinguishable_from_nothing_measured()
     """
     small = _candidate("small", window=1_000, axes={"coding": 80.0}, in_price=1.0, out_price=1.0, out_tokens=100)
 
-    result = rank([small], kind_of_work="implementation", read_volume_tokens=100_000, output_ceiling_tokens=8_000)
+    result = rank(
+        [small], kind_of_work="implementation", read_volume_tokens=100_000, output_ceiling_tokens=8_000, item_count=1
+    )
 
     assert result.ordered == []
     assert result.excluded_by_window == ["small"]

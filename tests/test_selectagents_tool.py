@@ -117,7 +117,7 @@ async def test_the_response_names_what_is_still_missing(tool):
     """
     content = json.loads((await tool.execute(dict(SCOPE)))[0].text)["content"]
 
-    for unbuilt in ("#102", "#111", "#113"):
+    for unbuilt in ("#102", "#113", "#138"):
         assert unbuilt in content, f"the response does not disclose that {unbuilt} is unbuilt"
 
 
@@ -136,7 +136,7 @@ async def test_the_response_stops_naming_a_slice_once_it_ships(tool):
     """
     content = json.loads((await tool.execute(dict(SCOPE)))[0].text)["content"]
 
-    for shipped in ("#98", "#99", "#101", "#104", "#108", "#109", "#110"):
+    for shipped in ("#98", "#99", "#101", "#104", "#108", "#109", "#110", "#111"):
         assert shipped not in content, f"{shipped} has shipped, but the response still calls it unbuilt"
 
 
@@ -220,6 +220,7 @@ async def test_a_budget_nothing_fits_refuses_and_says_what_it_would_take(tool):
         kind_of_work=SCOPE["kind_of_work"],
         read_volume_tokens=SCOPE["read_volume_tokens"],
         output_ceiling_tokens=SCOPE["output_ceiling_tokens"],
+        item_count=SCOPE["item_count"],
     ).ordered[0]
 
     scope = dict(SCOPE) | {"budget_usd": 0.000001}
@@ -271,6 +272,50 @@ async def test_the_alternatives_carry_the_winners_fields_and_the_dropped_count(t
     # field of five from a field of eighty without it.
     assert "alternatives_dropped" in plan
     assert plan["alternatives_dropped"] >= 0
+
+
+@pytest.mark.asyncio
+async def test_the_agent_count_is_derived_and_shows_its_working(tool):
+    """#111 at the tool seam: a bare number is a number someone picked.
+
+    The derivation is checked for internal consistency rather than for a literal,
+    so it cannot report figures the count was not computed from — a derivation
+    that looks checkable and is not is worse than none.
+    """
+    plan = json.loads((await tool.execute(dict(SCOPE)))[0].text)["metadata"]["plan"]
+    derivation = plan["criteria"]["agent_count_derivation"]
+    count = plan["criteria"]["agent_count"]
+
+    assert count >= 1
+    assert derivation["item_count"] == SCOPE["item_count"]
+    assert derivation["items_per_agent"] >= 1
+    assert -(-derivation["item_count"] // derivation["items_per_agent"]) == count
+
+    # Named rather than left out. Silence would read as "difficulty was weighed".
+    assert "NOT AN INPUT" in derivation["difficulty"]
+
+
+@pytest.mark.asyncio
+async def test_one_agent_is_described_per_seat_the_count_declared(tool):
+    """The count is fixed before agents are described and does not change after.
+
+    Asserted as an identity between the declared count and the seats actually
+    listed, which is the only way a caller can tell the plan was generated FROM
+    the count rather than counted afterwards — the difference between a width
+    frozen at the start of a phase and one that grew while the phase ran.
+
+    **The scope has to make the count exceed one, or the test is vacuous.** The
+    first version used 40 items over 400,000 tokens; against the fixture's
+    million-token windows that is a 10,000-token share, 99 items per seat, and a
+    count of 1 — so replacing `range(count)` with `range(1)` reddened nothing.
+    Four items over 1,600,000 tokens is a 400,000-token share, two per seat, and
+    two seats.
+    """
+    scope = dict(SCOPE) | {"item_count": 4, "read_volume_tokens": 1_600_000, "output_ceiling_tokens": 4_000}
+    plan = json.loads((await tool.execute(scope))[0].text)["metadata"]["plan"]
+
+    assert plan["criteria"]["agent_count"] > 1, "the scope no longer exercises a multi-seat plan"
+    assert len(plan["agents"]) == plan["criteria"]["agent_count"]
 
 
 @pytest.mark.asyncio

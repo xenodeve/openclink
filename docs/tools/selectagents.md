@@ -1,10 +1,12 @@
 # SelectAgents Tool
 
 > ⚠️ **Partly implemented.** The tool ranks real candidates on cost per task (#104), filters on context
-> window before pricing (#108), honours an optional budget (#109) and returns up to five priced routes
-> with a count of what the bound cut (#110) — against a **committed fixture whose prices and output
-> volumes are constructed, not measured** (#102 replaces it with fetched data). Still unbuilt: the agent
-> count, which is always one (#111), and the scope partition (#113). Every response says the same thing in its own body, and that list is guarded by a
+> window before pricing (#108), honours an optional budget (#109), returns up to five priced routes with
+> a count of what the bound cut (#110) and derives the agent count from the chosen window (#111) —
+> against a **committed fixture whose prices and output volumes are constructed, not measured** (#102
+> replaces it with fetched data). Still unbuilt: the scope partition, so every agent is described
+> identically and none owns a share (#113), and **a budget still bounds one seat rather than the whole
+> plan** (#138), so an N-agent plan can cost up to N times the cap. Every response says the same thing in its own body, and that list is guarded by a
 > test in both directions — it must name everything unbuilt and nothing already shipped.
 >
 > This banner said "does not rank models, read a dataset, or compute anything" for two slices after it
@@ -69,6 +71,28 @@ returning a plan your own ceiling forbids and letting you find out from the bill
 contract error, not a refusal: omitting the field is how you say "choose on cost".
 
 While the agent count is fixed at one (#111), a budget bounds **one seat** rather than the whole run.
+
+### The agent count is derived, not chosen
+
+How many agents the plan contains falls out of **how many item-shares the chosen model's window holds
+at once**. A scope of 100 items reading 100,000 tokens is a 1,000-token share; a model with 10,000
+usable tokens seats ten items and needs ten agents, while a million-token model needs one. A smaller
+window forces a *finer split* rather than a truncation nobody sees.
+
+The derivation comes back with the count — the per-item share, the usable window, the items per agent,
+and the formula — because a bare number is indistinguishable from a number someone picked, which is the
+thing this layer exists to replace.
+
+Two consequences worth stating plainly:
+
+- **`output_ceiling_tokens` is subtracted from the window before anything is divided.** A model sized
+  exactly to what it reads has nowhere to put its answer.
+- **A candidate is excluded only if it cannot hold one item.** Splitting stops at the item, so no
+  number of agents rescues a window below that bar.
+
+**Difficulty is not an input.** #111 names it, and the request contract has no field for it — so the
+count derives from volume and window only, and the criteria say so rather than implying a factor that
+is not there.
 
 ## What It Will Return
 
