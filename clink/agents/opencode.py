@@ -8,12 +8,18 @@ from .base import BaseCLIAgent
 class OpenCodeAgent(BaseCLIAgent):
     """OpenCode CLI agent.
 
-    Behaviourally identical to the base today — `opencode run` takes the model as
-    `-m provider/model`, which `BaseCLIAgent` already emits, and its reasoning
-    effort is a separate `--variant` flag that no OpenClink call sets yet. The class
-    exists as the declaration site for opencode's own usage vocabulary, which the
-    fallback cannot express.
+    `opencode run` takes the model as `-m/--model provider/model`, which the base
+    already emits, and its reasoning effort as a SEPARATE `--variant` flag. The
+    base drops the effort on purpose — claude and gemini bake the tier into the
+    model name — so inheriting that dropped it here too, silently (#125).
     """
+
+    # Declared so `_resolve_model_effort` can read the effort back off the command.
+    # Writing the flag without declaring it here reports `resolved_effort: None`
+    # while the CLI honours it — the silent hole #27 closed for codex and #43 for
+    # antigravity. The two halves are one fix; shipping either alone is worse than
+    # shipping neither, because it looks done.
+    EFFORT_FLAGS = ("--variant",)
 
     # opencode's parser publishes the account under `tokens`, not `usage`.
     USAGE_METADATA_KEY = "tokens"
@@ -32,3 +38,21 @@ class OpenCodeAgent(BaseCLIAgent):
         "output": "output_tokens",
         "reasoning": "reasoning_output_tokens",
     }
+
+    def _model_args(self, model: str | None, reasoning_effort: str | None) -> list[str]:
+        # `opencode run --help` (2026-08-16, v1.18.15):
+        #   -m, --model    model to use in the format of provider/model
+        #       --variant  model variant (provider-specific reasoning effort,
+        #                  e.g., high, max, minimal)
+        #
+        # Independent knobs, unlike agy's — `--variant` is described as
+        # provider-specific, not as conflicting with the model, so either may be
+        # given alone. That is why there is no `refuse_unservable` here; see the
+        # note in the test module for what the real binary does with an
+        # unsupported value.
+        args: list[str] = []
+        if model:
+            args += ["--model", model]
+        if reasoning_effort:
+            args += ["--variant", reasoning_effort]
+        return args
