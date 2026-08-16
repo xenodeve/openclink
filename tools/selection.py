@@ -369,6 +369,70 @@ def width(candidate: Candidate, *, read_volume_tokens: int, item_count: int, out
     )
 
 
+@dataclass(frozen=True)
+class Share:
+    """One agent's part of the scope: which items, and how much reading."""
+
+    first_item: int
+    item_count: int
+    read_volume_tokens: int
+
+
+class PartitionError(RuntimeError):
+    """The scope cannot be divided into the count asked for.
+
+    Reported rather than silently rebalanced (#113). Quietly adjusting the count
+    to something divisible would move the width decision out of the frozen phase
+    and into the partitioner — the growth the per-phase freeze exists to prevent,
+    arriving as a correction nobody asked for.
+    """
+
+
+def partition(*, item_count: int, read_volume_tokens: int, agent_count: int) -> list[Share]:
+    """Divide the scope once, here, so each worker does not divide it again (#113).
+
+    **Every item has exactly one owner and the shares sum to the whole**, on both
+    axes. Coverage is what terminates a phase — never confidence — so the sum is
+    the criterion rather than a check on it.
+
+    **The read follows the items.** An agent holding four of ten items reads four
+    tenths, because #111 sized its context window on the item share; splitting the
+    read evenly across seats while the items divide unevenly would hand the
+    largest seat the budget of an average one, and the shortfall lands as a
+    truncation rather than as an error.
+
+    **The boundaries are cumulative, not rounded per share.** Rounding each share
+    independently leaks: 100 tokens over 3 seats is either three 33s that lose a
+    token or three 34s that invent two, and neither is a scope anyone declared.
+    Taking differences between cumulative marks makes the total telescope back to
+    exactly the input, whatever the remainders do.
+
+    **The remainder is spread from the front, not piled on the last seat.** The
+    widest seat is the one a phase waits on, and putting the surplus on the last
+    agent makes that the last one to start.
+    """
+    if agent_count > item_count:
+        raise PartitionError(
+            f"cannot divide {item_count} items among {agent_count} agents: "
+            "an item is the smallest share there is, so some agent would own nothing. "
+            "Nothing was rebalanced — the count is fixed when the phase starts."
+        )
+
+    base, remainder = divmod(item_count, agent_count)
+
+    shares: list[Share] = []
+    first_item = 0
+    for position in range(agent_count):
+        owned = base + (1 if position < remainder else 0)
+        # Cumulative marks, so the differences sum to exactly `read_volume_tokens`.
+        read_before = read_volume_tokens * first_item // item_count
+        read_after = read_volume_tokens * (first_item + owned) // item_count
+        shares.append(Share(first_item=first_item, item_count=owned, read_volume_tokens=read_after - read_before))
+        first_item += owned
+
+    return shares
+
+
 def axis_for(kind_of_work: str) -> str:
     try:
         return AXIS_FOR_KIND[kind_of_work]

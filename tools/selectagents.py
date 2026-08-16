@@ -7,12 +7,15 @@ a budget in force, the best on that axis that fits (#109). Up to five routes com
 back, winner first, each priced against the one above it, with anything the bound
 cut counted rather than silently omitted (#110). The agent count is derived from
 how many item-shares the chosen window holds at once, and the derivation comes
-back with it (#111). Registered, advertised and dispatched by name.
+back with it (#111). Each agent owns a named share of the scope, decided once
+here rather than by each worker separately (#113). Registered, advertised and
+dispatched by name.
 
 **What it still does not do is stated in the response itself**, not only here:
 the dataset is a committed fixture whose prices are constructed (#102 replaces
-it), a budget bounds one seat rather than the whole plan (#138), and the scope is
-not partitioned (#113). That list is guarded in both directions
+it), a budget bounds one seat rather than the whole plan (#138), and every seat
+names the same model and effort because nothing here yet decides one should
+differ. That list is guarded in both directions
 — a test fails if it omits an unbuilt slice, and another fails if it still names
 a shipped one. The second half exists because this docstring and the tool's own
 disclosure both went stale by a slice before anything noticed.
@@ -38,7 +41,17 @@ from mcp.types import TextContent
 from pydantic import ConfigDict, Field, ValidationError, field_validator
 
 from tools.models import ToolOutput
-from tools.selection import DatasetError, axis_for, choose, load_candidates, rank, required_window, slate, width
+from tools.selection import (
+    DatasetError,
+    axis_for,
+    choose,
+    load_candidates,
+    partition,
+    rank,
+    required_window,
+    slate,
+    width,
+)
 from tools.shared.base_models import ToolRequest
 from tools.shared.base_tool import BaseTool
 
@@ -227,16 +240,17 @@ _PARTIAL_CONTENT = (
     "the axis that fits inside it. Up to five routes are returned, winner first, "
     "each priced against the one above it, with anything the bound cut counted. "
     "The agent count is derived from how many item-shares the chosen window "
-    "holds at once, and the derivation comes back with it. That much is real "
-    "arithmetic on a committed fixture.\n\n"
+    "holds at once, the derivation comes back with it, and each agent owns a "
+    "named share of the scope that sums with its neighbours to the whole. That "
+    "much is real arithmetic on a committed fixture.\n\n"
     "What is NOT here yet, and what you must not assume: the dataset is a "
     "committed fixture whose prices and output volumes are CONSTRUCTED rather "
     "than measured (#102 replaces it with fetched data); a budget bounds ONE "
     "SEAT rather than the whole plan, so a plan of N agents can cost up to N "
     "times what you capped (#138); difficulty is not an input, because the "
-    "request contract carries no field for it; "
-    "and the scope is not partitioned, so every agent is described identically "
-    "and none of them owns a share yet (#113)."
+    "request contract carries no field for it; and every agent names the same "
+    "model and effort — the fields sit on the agent so a survey seat and a "
+    "working seat CAN differ, but nothing here yet decides that one should."
 )
 
 
@@ -497,14 +511,36 @@ class SelectAgentsTool(BaseTool):
             output_ceiling_tokens=request.output_ceiling_tokens,
         )
 
+        # The partition is decided once, here, rather than by each worker
+        # separately (#113). `width` never produces a count above the item count,
+        # so this cannot refuse today — but `partition` checks anyway, because
+        # #111 makes a phase sizeable from a previous phase's result and a count
+        # can arrive from outside the function that computed this one.
+        shares = partition(
+            item_count=request.item_count,
+            read_volume_tokens=request.read_volume_tokens,
+            agent_count=seats.count,
+        )
+
         plan = {
+            # Model and effort sit on the AGENT, not on the plan, so a survey
+            # seat and a working seat can differ (#96, story 9). Every seat names
+            # the winner today because nothing here decides that a seat should
+            # differ — that reason is a phase-level one and does not exist yet.
+            # The shape allows it; the layer does not yet exercise it, and the
+            # response says so rather than letting the shape imply otherwise.
             "agents": [
                 {
                     "model": winner.model,
                     "effort": winner.effort,
-                    "cost_per_task": round(winner.cost_per_task(request.read_volume_tokens), 6),
+                    "cost_per_task": round(winner.cost_per_task(share.read_volume_tokens), 6),
+                    "scope_share": {
+                        "first_item": share.first_item,
+                        "item_count": share.item_count,
+                        "read_volume_tokens": share.read_volume_tokens,
+                    },
                 }
-                for _ in range(seats.count)
+                for share in shares
             ],
             # The routes, winner first, each carrying the SAME fields as the
             # winner so a substitution is decided on the same evidence (#110).

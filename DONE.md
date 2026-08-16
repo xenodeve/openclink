@@ -3,6 +3,35 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-16 — every agent owns its share of the scope (#113, PR #140)
+
+The partition is decided once, in `partition()`, rather than by each worker separately. Every item has
+exactly one owner, the shares sum to the scope on **both** axes — items and read volume — and a count
+the scope cannot be divided into is refused rather than silently rebalanced, because quietly adjusting
+it would move the width decision out of the frozen phase and into the partitioner.
+
+Two arithmetic decisions that a plausible implementation gets wrong: **the read follows the items**
+(an agent holding four of ten reads four tenths, because #111 sized its window on the item share, so
+an even split across seats would hand the largest seat an average seat's budget), and **the boundaries
+are cumulative rather than per-share rounded** (100 tokens over 3 seats is three 33s that lose a token
+or three 34s that invent two; differences between cumulative marks telescope back to exactly the
+input).
+
+**Validated** — 10 partition tests plus 2 at the tool seam, both run against a scope whose count
+genuinely exceeds one. Suite 1253 → 1265. Five mutations red: remainder piled on the last seat → 2;
+read split evenly across seats → 1; per-share rounding → 1; unpartitionable count rebalanced → 1;
+shares overlap by one item → 3.
+
+**And the assertion caught my hand-written expectation again.** I asserted the odd token lands on the
+FIRST seat, reasoning from the item rule — the item remainder is spread from the front, because the
+widest seat is the one a phase waits on. The token remainder falls wherever the cumulative marks put
+it, which is the end, and one token of reading is not a load imbalance. Two remainders, two rules, and
+the comment computed the answer from the wrong one. Third instance this epic.
+
+**Not delivered, and said in the response rather than implied:** every seat names the same model and
+effort. The fields sit on the agent so a survey seat and a working seat *can* differ (#96, story 9),
+but nothing in this layer decides that one should — that reason is phase-level and does not exist yet.
+
 ## 2026-08-16 — the agent count is derived, and it corrected #108's filter (#111, PR #139)
 
 The count comes from how many item-shares the winner's window holds at once, with the derivation
