@@ -112,13 +112,32 @@ async def test_the_response_names_what_is_still_missing(tool):
     """ "Incomplete" without a list is a disclaimer; with one it is information.
 
     Each of these is a promise #96 makes that a caller might otherwise assume the
-    plan already honours — a budget it does not enforce, a context filter it does
-    not apply, alternatives it does not return.
+    plan already honours — alternatives it does not return, a count it does not
+    compute, a partition it does not make.
     """
     content = json.loads((await tool.execute(dict(SCOPE)))[0].text)["content"]
 
-    for unbuilt in ("#102", "#108", "#109", "#110", "#111", "#113"):
+    for unbuilt in ("#102", "#110", "#111", "#113"):
         assert unbuilt in content, f"the response does not disclose that {unbuilt} is unbuilt"
+
+
+@pytest.mark.asyncio
+async def test_the_response_stops_naming_a_slice_once_it_ships(tool):
+    """The list must SHRINK, and nothing was checking that it did.
+
+    It went one merge stale: #108 shipped the context-window filter and the
+    disclosure still called it unbuilt. That is the same defect as an overstated
+    capability, pointing the other way — a caller reads "the context window is not
+    applied" and splits a scope by hand that the layer had already filtered for.
+
+    The half above only ever failed when the list was too SHORT. This half fails
+    when it is too long, which is the direction a list nobody prunes actually
+    drifts.
+    """
+    content = json.loads((await tool.execute(dict(SCOPE)))[0].text)["content"]
+
+    for shipped in ("#98", "#99", "#101", "#104", "#108", "#109"):
+        assert shipped not in content, f"{shipped} has shipped, but the response still calls it unbuilt"
 
 
 @pytest.mark.asyncio
@@ -153,6 +172,78 @@ async def test_the_plan_carries_the_criteria_it_rested_on(tool):
     assert criteria["ranked_on"] == "cost_per_task"
     assert criteria["axis_score"] is not None
     assert criteria["candidates_ranked"] <= criteria["candidates_considered"]
+
+
+@pytest.mark.asyncio
+async def test_a_budget_reaches_the_ranking_and_says_which_rule_it_put_in_play(tool):
+    """#109 at the tool seam: the criteria must state the budget in force.
+
+    Both fields, because the winner alone cannot say which rule ran — `null` with
+    `cheapest_qualifying` is a caller that named no ceiling, and a figure with
+    `best_within_budget` is one that did and got the best seat that fit.
+    """
+    unbudgeted = json.loads((await tool.execute(dict(SCOPE)))[0].text)["metadata"]["plan"]["criteria"]
+
+    assert unbudgeted["budget_usd"] is None
+    assert unbudgeted["selection_rule"] == "cheapest_qualifying"
+
+    # 0.12 clears the whole committed fixture at this read volume, so the best on
+    # the coding axis is affordable and the cheapest is not the winner.
+    budgeted_scope = dict(SCOPE) | {"budget_usd": 0.12}
+    budgeted = json.loads((await tool.execute(budgeted_scope))[0].text)["metadata"]["plan"]["criteria"]
+
+    assert budgeted["budget_usd"] == 0.12
+    assert budgeted["selection_rule"] == "best_within_budget"
+    assert budgeted["axis_score"] > unbudgeted["axis_score"]
+
+
+@pytest.mark.asyncio
+async def test_a_budget_nothing_fits_refuses_and_says_what_it_would_take(tool):
+    """Refused rather than exceeded, and actionable rather than merely negative.
+
+    A refusal that does not name the cheapest qualifying figure leaves the caller
+    guessing at the next budget, which turns one refusal into several.
+
+    The expected model and price are derived from the pure layer rather than
+    written in, so #102 replacing the dataset cannot leave this test asserting a
+    price nothing charges any more. The arithmetic itself is pinned in
+    `test_selection_ranking.py`; what this checks is that the tool surfaces it.
+
+    A first version also asserted the phrase "over budget" was ABSENT. That
+    pinned wording, not behaviour — and it was wrong wording at that, since the
+    refusal properly says it declined "rather than a plan returned over budget".
+    """
+    from tools.selection import load_candidates, rank
+
+    cheapest = rank(
+        load_candidates(),
+        kind_of_work=SCOPE["kind_of_work"],
+        read_volume_tokens=SCOPE["read_volume_tokens"],
+        output_ceiling_tokens=SCOPE["output_ceiling_tokens"],
+    ).ordered[0]
+
+    scope = dict(SCOPE) | {"budget_usd": 0.000001}
+    response = json.loads((await tool.execute(scope))[0].text)
+
+    assert response["status"] == "error"
+    assert cheapest.model in response["content"]
+    assert f"${cheapest.cost_per_task(SCOPE['read_volume_tokens']):.4f}" in response["content"]
+
+
+@pytest.mark.asyncio
+async def test_a_budget_of_zero_is_refused_as_a_contract_violation(tool):
+    """Absent and zero are different answers, and only one of them is frugality.
+
+    Omitting the budget means "choose on cost"; zero means "spend nothing", which
+    nothing can satisfy. Accepted, it would reach the ranking and come back as an
+    over-budget refusal — a plausible typo reported as an empty field of
+    candidates rather than as the bad input it is.
+    """
+    response = json.loads((await tool.execute(dict(SCOPE) | {"budget_usd": 0}))[0].text)
+
+    assert response["status"] == "error"
+    assert "budget_usd" in response["content"]
+    assert "greater than 0" in response["content"]
 
 
 @pytest.mark.asyncio

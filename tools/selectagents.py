@@ -1,9 +1,18 @@
 """Compute a delegation plan from measured data rather than from judgement (#96).
 
-**It validates its input (#101) and computes nothing yet (#99).** Registered,
-advertised, dispatched by name; a complete scope is accepted and echoed back, and
-anything else is refused. The dataset arrives in #102, the first real ranking in
-#104.
+**It validates its input (#101) and computes a real, partial plan.** Candidates
+are filtered on context window before anything is priced (#108), then ranked on
+cost per task along the axis the declared kind of work maps to (#104) — or, with
+a budget in force, the best on that axis that fits (#109). Registered, advertised
+and dispatched by name.
+
+**What it still does not do is stated in the response itself**, not only here:
+the dataset is a committed fixture whose prices are constructed (#102 replaces
+it), no alternatives are returned (#110), the agent count is always one (#111),
+and the scope is not partitioned (#113). That list is guarded in both directions
+— a test fails if it omits an unbuilt slice, and another fails if it still names
+a shipped one. The second half exists because this docstring and the tool's own
+disclosure both went stale by a slice before anything noticed.
 
 Built as a tracer bullet on purpose: the whole path is proven before anything
 worth computing runs through it. A tool that passes its own unit tests has been
@@ -26,7 +35,7 @@ from mcp.types import TextContent
 from pydantic import ConfigDict, Field, ValidationError, field_validator
 
 from tools.models import ToolOutput
-from tools.selection import DatasetError, axis_for, load_candidates, rank, required_window
+from tools.selection import DatasetError, axis_for, choose, load_candidates, rank, required_window
 from tools.shared.base_models import ToolRequest
 from tools.shared.base_tool import BaseTool
 
@@ -117,9 +126,10 @@ class SelectAgentsRequest(ToolRequest):
     # discarded — measured — which is the same defect as declaring an `enum` and
     # typing the field `str`: a published constraint nobody enforces.
     #
-    # It bites hardest on fields that do not exist YET. `budget` arrives in #109;
-    # a caller sending it today would be told the request succeeded and would
-    # believe it had bounded a run that is not bounded.
+    # It bites hardest on fields that do not exist YET. A caller sending an
+    # unknown key today is told so, rather than told the request succeeded and
+    # left believing it had bounded a run that is not bounded — which is what
+    # `budget_usd` (below, #109) would have done had it stayed unrecognised.
     model_config = ConfigDict(extra="forbid")
 
     kind_of_work: str = Field(..., description=f"One of: {', '.join(KIND_OF_WORK)}.")
@@ -136,6 +146,30 @@ class SelectAgentsRequest(ToolRequest):
             "never as an input to the ranking arithmetic."
         ),
     )
+
+    # The one optional field, and optional on purpose (#109). Every other field
+    # is required because a default would decide something silently; here the
+    # absence IS the decision, and it is the frugal one — no budget means the
+    # cheapest qualifying candidate, so a caller that has no figure in mind is
+    # not made to invent one.
+    budget_usd: float | None = Field(
+        None,
+        description=(
+            "Optional ceiling in USD for one task. Omit it and the cheapest qualifying "
+            "candidate is chosen; supply it and the best candidate that fits is chosen instead."
+        ),
+    )
+
+    @field_validator("budget_usd")
+    @classmethod
+    def _budget_can_buy_something(cls, value: float | None) -> float | None:
+        # `None` and `0` are different answers wearing similar clothes: absent
+        # means "choose frugally", while zero means "spend nothing", which no
+        # candidate can satisfy. Accepting zero would turn a plausible typo into
+        # a refusal that reads like an empty dataset.
+        if value is not None and value <= 0:
+            raise ValueError("must be greater than 0; omit the field entirely to select on cost alone")
+        return value
 
     # Validated against the same tuples the schema publishes. The first version
     # typed these as plain `str` and declared the `enum` only in the JSON schema:
@@ -174,17 +208,26 @@ class SelectAgentsRequest(ToolRequest):
 # a real answer is worse than an error: #96 exists because a delegation resting
 # on something nobody measured is the failure, and a confident-looking plan from
 # a tool that ranks nothing is exactly that failure wearing the fix's clothes.
+#
+# This list must SHRINK as slices land. It went one merge stale — #108 shipped
+# the context-window filter and this text still called it unbuilt — which is the
+# same defect pointing the other way: a disclosure nobody maintains understates
+# the tool exactly as confidently as it once overstated it.
 _PARTIAL_CONTENT = (
-    "selectagents is INCOMPLETE (#104).\n\n"
-    "The plan below names one agent, chosen as the lowest cost per task among "
-    "candidates measured on the axis your kind of work maps to. That much is real "
-    "arithmetic on a committed fixture.\n\n"
+    # The EPIC, not the newest slice. Naming the last thing that shipped told a
+    # caller nothing and dated the string on every merge; #96 is where the whole
+    # plan is, and it stays right until the layer is finished.
+    "selectagents is INCOMPLETE (#96).\n\n"
+    "The plan below names one agent. Candidates that cannot hold the read plus "
+    "your output ceiling are excluded before anything is priced, and the winner "
+    "is then the lowest cost per task — or, if you named a budget, the best on "
+    "the axis that fits inside it. That much is real arithmetic on a committed "
+    "fixture.\n\n"
     "What is NOT here yet, and what you must not assume: the dataset is a "
     "committed fixture whose prices and output volumes are CONSTRUCTED rather "
-    "than measured (#102 replaces it with fetched data); the context window is "
-    "not yet applied as a filter (#108); no budget is honoured (#109); no "
-    "alternatives are returned (#110); the agent count is always one (#111); and "
-    "the scope is not partitioned (#113)."
+    "than measured (#102 replaces it with fetched data); no alternatives are "
+    "returned (#110); the agent count is always one, so a budget bounds one seat "
+    "rather than the whole run (#111); and the scope is not partitioned (#113)."
 )
 
 
@@ -219,6 +262,27 @@ def _no_candidate_refusal(axis: str) -> ToolOutput:
             "your declared kind of work ranks on. Nothing was ranked — a candidate with no "
             "score on an axis has not been measured on it, and ranking it anyway would invent "
             "the number this layer exists to avoid inventing."
+        ),
+        content_type="text",
+        metadata={"tool_name": "selectagents", "partial": True},
+    )
+
+
+def _over_budget_refusal(budget_usd: float, cheapest: float, model: str) -> ToolOutput:
+    """The budget fits nothing, said plainly rather than exceeded quietly (#109).
+
+    Returning the cheapest anyway would hand back a plan the caller's own stated
+    ceiling forbids, and nothing in the response would say so until the bill
+    arrived. The cheapest qualifying figure is named because a refusal that does
+    not say what it would take leaves the caller guessing at the next budget.
+    """
+    return ToolOutput(
+        status="error",
+        content=(
+            f"selectagents found no candidate within a budget of ${budget_usd:.4f} per task. "
+            f"Nothing was planned rather than a plan returned over budget.\n\n"
+            f"The cheapest qualifying candidate is {model} at ${cheapest:.4f} per task. "
+            "Raise the budget, reduce the read volume, or omit the budget to select on cost alone."
         ),
         content_type="text",
         metadata={"tool_name": "selectagents", "partial": True},
@@ -370,7 +434,28 @@ class SelectAgentsTool(BaseTool):
         if not ordered:
             return [TextContent(type="text", text=_no_candidate_refusal(axis).model_dump_json())]
 
-        winner = ordered[0]
+        choice = choose(
+            ordered,
+            axis=axis,
+            read_volume_tokens=request.read_volume_tokens,
+            budget_usd=request.budget_usd,
+        )
+        if choice.winner is None:
+            # Only reachable with a budget in force: `ordered` is non-empty by the
+            # check above, and the no-budget rule always takes its first element.
+            cheapest = ordered[0]
+            return [
+                TextContent(
+                    type="text",
+                    text=_over_budget_refusal(
+                        request.budget_usd,
+                        cheapest.cost_per_task(request.read_volume_tokens),
+                        cheapest.model,
+                    ).model_dump_json(),
+                )
+            ]
+
+        winner = choice.winner
         plan = {
             "agents": [
                 {
@@ -393,6 +478,14 @@ class SelectAgentsTool(BaseTool):
                 # one number throws away the only half a caller can act on (#108).
                 "excluded_by_context_window": ranking.excluded_by_window,
                 "excluded_by_axis": ranking.excluded_by_axis,
+                # The budget in force, and which rule it put in play (#109). Both,
+                # because the winner alone cannot say which ran: `null` here with
+                # `cheapest_qualifying` is a caller that named no ceiling, and a
+                # figure with `best_within_budget` is one that did and got the best
+                # seat that fit rather than the cheapest.
+                "budget_usd": request.budget_usd,
+                "selection_rule": choice.rule,
+                "excluded_by_budget": choice.excluded_by_budget,
                 "context_window_required": required_window(
                     read_volume_tokens=request.read_volume_tokens,
                     output_ceiling_tokens=request.output_ceiling_tokens,

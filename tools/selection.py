@@ -155,6 +155,72 @@ def required_window(*, read_volume_tokens: int, output_ceiling_tokens: int) -> i
     return read_volume_tokens + output_ceiling_tokens
 
 
+@dataclass(frozen=True)
+class Choice:
+    """Who won, under which rule, and who the budget priced out.
+
+    `rule` is carried rather than inferred because the two rules answer different
+    questions and a caller cannot tell which one ran from the winner alone.
+    """
+
+    winner: Candidate | None
+    rule: str
+    excluded_by_budget: list[str]
+
+
+def choose(
+    ordered: list[Candidate],
+    *,
+    axis: str,
+    read_volume_tokens: int,
+    budget_usd: float | None,
+) -> Choice:
+    """Cheapest by default; the best that fits once a ceiling is named (#109).
+
+    **Two rules, and which one applies is the substance of the slice.** With no
+    budget, frugality — #96 wants that to be the default "rather than a setting
+    the caller has to remember". With a budget, the caller has already declared
+    what it will spend, so the layer spends it on capability rather than handing
+    back change.
+
+    **That reading is forced by the criteria, not chosen.** #109 requires both
+    "no budget yields the cheapest qualifying candidate" and "a fixture case
+    exists where supplying a budget changes the winner". Were a budget only a
+    ceiling, the cheapest would still win whenever anything fit, and the winner
+    could never change — the second criterion would be unsatisfiable.
+
+    **Nothing fitting returns no winner rather than the cheapest anyway.** The
+    criterion is "says so rather than exceeding it", and quietly returning a plan
+    the caller's own ceiling forbids is the overrun it exists to prevent.
+
+    Scope boundary, stated because it will not stay true: with the agent count
+    fixed at one, the plan costs what the winner costs, so bounding the winner
+    bounds the plan. **#111 makes the count a variable and this comparison has to
+    become count x cost.** Until then a budget bounds one seat.
+    """
+    if budget_usd is None:
+        return Choice(
+            winner=ordered[0] if ordered else None,
+            rule="cheapest_qualifying",
+            excluded_by_budget=[],
+        )
+
+    affordable = [c for c in ordered if c.cost_per_task(read_volume_tokens) <= budget_usd]
+    priced_out = [c.model for c in ordered if c.cost_per_task(read_volume_tokens) > budget_usd]
+
+    # Highest on the axis; ties to the cheaper seat, because cost is always
+    # weighted (#96) and "either" would make the layer non-deterministic. Any
+    # remaining tie falls to `max` returning the first maximal element, which
+    # `rank` has already ordered by name and effort — so the tiebreak is not
+    # restated here, where it could drift from the one that decides `ordered`.
+    winner = max(
+        affordable,
+        key=lambda c: (c.score_on(axis) or 0.0, -c.cost_per_task(read_volume_tokens)),
+        default=None,
+    )
+    return Choice(winner=winner, rule="best_within_budget", excluded_by_budget=priced_out)
+
+
 def axis_for(kind_of_work: str) -> str:
     try:
         return AXIS_FOR_KIND[kind_of_work]
