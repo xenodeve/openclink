@@ -3,6 +3,36 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-16 — the selectagents skeleton, registered and reachable (#99, PR #132)
+
+A tracer bullet for #96's selection layer: the whole path proven before anything worth computing runs
+through it. Registered, advertised, dispatched by name, returns a stub. `docs/adding_tools.md` followed
+rather than invented, including the end-to-end simulator scenario it requires.
+
+**Validated** — 8 unit tests, the advertised list read through `handle_list_tools()`, and a simulator
+case (`selectagents_reachable`). Suite 1160 → 1168.
+
+**The stub announces itself in three places, and the description leads with it.** A placeholder that
+reads like a real answer is worse than an error here — #96 exists because a delegation resting on
+something nobody measured IS the failure. The review caught that `get_description()` opened with the
+capability claim and buried "NOT IMPLEMENTED YET" in the final sentence; that string is what a client
+model reads when choosing a tool, and a caveat after a claim is read as a claim.
+
+**Disabled by default.** An advertised tool spends context window in every client that connects, and
+this one computes nothing. It comes off the `DISABLED_TOOLS` default when #104 lands.
+
+**Two docstrings claimed coverage the tests did not have**, both found by review and both fixed:
+- The simulator scenario said it drove "initialize, list tools, call by name". `base_test.py` sends no
+  `tools/list` request at all — verified, zero occurrences — so the advertisement leg is covered
+  in-process instead, and the docstring now says which half it does.
+- The dispatch test claimed it exercised "the disabled-tools filter and the server's argument
+  handling". With `requires_model()` False the handler dispatches immediately, and the filter runs once
+  at import. It covers the name lookup, and now says only that.
+
+The first RED was a construction failure — `BaseTool.__init__` calls `get_name()`, so a stub raising
+`NotImplementedError` made six tests *error* rather than fail. Same weak-red family as an uncollectable
+module. The stub was changed to return deliberately wrong values, and all 8 reds became behavioural.
+
 ## 2026-08-16 — an on-disk record store, the prefactor under #96 and #89 (#98, PR #131)
 
 First persistence in this repository. `utils/storage_backend.py` is an in-memory cache whose own

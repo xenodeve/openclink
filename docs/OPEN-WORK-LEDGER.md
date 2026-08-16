@@ -23,6 +23,10 @@ without them.
 
 - ✅ **#98 on-disk record store** (PR #131) — first persistence in the repo. See `DONE.md` for the
   finding: the test for its hardest criterion passed 3/3 against a fully non-atomic implementation.
+- ✅ **#99 `selectagents` skeleton** (PR #132) — registered, advertised, dispatched, returns a stub.
+  **Disabled by default** until #104: an advertised tool spends context window in every client, and
+  this one computes nothing. Remove it from `DISABLED_TOOLS` in `.env.example` when the first real
+  ranking lands.
 
 ### ✅ opencode is fully supported (2026-08-16, #125 #126 #127, PR #128)
 

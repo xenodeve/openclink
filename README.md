@@ -182,13 +182,14 @@ cd openclink
 **ยูทิลิตี้**
 - **[`apilookup`](docs/tools/apilookup.md)** — บังคับค้นเอกสาร API/SDK ปีปัจจุบันใน sub-process กันคำตอบจากข้อมูลเก่า
 - **[`challenge`](docs/tools/challenge.md)** — กันคำตอบ "You're absolutely right!" ด้วยการวิเคราะห์เชิงวิพากษ์
+- **[`selectagents`](docs/tools/selectagents.md)** *(ปิดโดยดีฟอลต์)* — คำนวณแผนการมอบงานจากข้อมูลโมเดลที่วัดแล้ว แทนการนึกเอา (⚠️ ยังเป็น stub ดู #96)
 - **[`tracer`](docs/tools/tracer.md)** *(ปิดโดยดีฟอลต์)* — วิเคราะห์ call-flow แบบ static
 
 <details>
 <summary><b id="tool-configuration">👉 Tool Configuration</b></summary>
 
 เปิดโดยดีฟอลต์: `chat`, `thinkdeep`, `planner`, `consensus`, `codereview`, `precommit`, `debug`, `apilookup`, `challenge`
-ปิดโดยดีฟอลต์: `analyze`, `refactor`, `testgen`, `secaudit`, `docgen`, `tracer`
+ปิดโดยดีฟอลต์: `analyze`, `refactor`, `testgen`, `secaudit`, `docgen`, `tracer`, `selectagents` (ยังเป็น stub จนกว่า #104 จะลง — tool ที่ประกาศไว้กิน context window ของทุก client)
 
 เปิดเพิ่มโดยลบชื่อออกจาก `DISABLED_TOOLS` ใน `.env` หรือ MCP settings:
 ```bash
