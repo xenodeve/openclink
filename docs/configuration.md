@@ -235,6 +235,19 @@ CONVERSATION_TIMEOUT_HOURS=5
 MAX_CONVERSATION_TURNS=20
 ```
 
+**On-Disk Record Store:**
+```env
+# Where records that must outlive the process are kept.
+# Default: ~/.openclink/store
+OPENCLINK_STORE_DIR=/absolute/path/to/store
+```
+
+Separate from conversation memory, which is in-process and dies with the server. The default sits
+**outside the repository tree** on purpose — a store inside it is either committed by accident or
+wiped by a clean checkout, and both failures are silent. Records are written through a temporary file
+and an atomic rename, so a half-written record is never visible; a damaged one is reported rather than
+read as absent, because "corrupt" and "never written" must not look alike to a caller.
+
 **Logging Configuration:**
 ```env
 # Logging level: DEBUG, INFO, WARNING, ERROR
