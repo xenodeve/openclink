@@ -620,8 +620,9 @@ class CLinkTool(SimpleTool):
         # Keyed on the metadata, never on the cli_name — a projection that named
         # the client would put a figure on every other one as soon as somebody
         # copied this block.
-        reported_cost = (result.parsed.metadata or {}).get("cost") if result.parsed else None
-        reported_unit = (result.parsed.metadata or {}).get("cost_unit") if result.parsed else None
+        metadata = (result.parsed.metadata or {}) if result.parsed else {}
+        reported_cost = metadata.get("cli_cost")
+        reported_unit = metadata.get("cli_cost_unit")
         # `is not None`, because a free call reports exactly 0 and truthiness
         # would turn "this was free" into "cost unknown". The unit is required for
         # the reason #25 gives: a bare number invites summing credits with

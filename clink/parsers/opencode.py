@@ -100,14 +100,18 @@ class OpenCodeJSONLParser(BaseParser):
         if tokens:
             metadata["tokens"] = tokens
         if cost is not None:
-            metadata["cost"] = cost
+            # `cli_cost`, not `cost`. The tool merges parser metadata and then the
+            # accounting block into one dict, and `accounting["cost"]` is the
+            # rate-card figure — a DICT. Publishing this float as `cost` puts two
+            # different claims on one key, and the later update silently wins the
+            # moment any client gets a rate card (#126).
+            metadata["cli_cost"] = cost
             # The unit travels with the number, declared where the CLI is known
-            # rather than assumed by the consumer (#126). opencode bills its zen
-            # endpoint in dollars; a future client reporting credits would say so
-            # here, and `tools/clink.py` emits nothing for a cost with no unit —
-            # a bare figure that a caller might add to a currency one is the
-            # mistake #25 named.
-            metadata["cost_unit"] = "USD"
+            # rather than assumed by the consumer. opencode bills its zen endpoint
+            # in dollars; a future client reporting credits would say so here, and
+            # `tools/clink.py` emits nothing for a cost with no unit — a bare
+            # figure a caller might add to a currency one is the mistake #25 named.
+            metadata["cli_cost_unit"] = "USD"
         if stderr and stderr.strip():
             metadata["stderr"] = stderr.strip()
 

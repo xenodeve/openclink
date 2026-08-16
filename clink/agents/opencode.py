@@ -52,9 +52,19 @@ class OpenCodeAgent(BaseCLIAgent):
         #
         # Independent knobs, unlike agy's — `--variant` is described as
         # provider-specific, not as conflicting with the model, so either may be
-        # given alone. That is why there is no `refuse_unservable` here; see the
-        # note in the test module for what the real binary does with an
-        # unsupported value.
+        # given alone.
+        #
+        # **Why there is no `refuse_unservable`, on the axis that actually
+        # matters.** agy's exists because its two knobs CONFLICT per model and it
+        # errors, so the refusal turns a guaranteed failure into a clear message.
+        # opencode does the opposite: an unsupported variant is accepted and
+        # silently ignored (measured 2026-08-16 — `--variant
+        # definitely-not-a-real-variant` exited 0 and answered normally), so
+        # there is no error to pre-empt. Refusing would mean validating against
+        # the per-model `variants` list, which is only readable via a ~30s
+        # `opencode models` call. That is a deliberate trade, not an oversight:
+        # a typo here is silently ignored by the CLI, and OpenClink does not
+        # catch it. Caching the enumerable list would close it (#125).
         args: list[str] = []
         if model:
             args += ["--model", model]

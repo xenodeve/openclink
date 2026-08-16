@@ -4,22 +4,34 @@ Every other client needs OpenClink to price it: `price_call` multiplies a
 normalised account by a `rate_card`, and no bundled config declares one, so
 `cost` is never emitted (#77, finding 1). OpenCode is the exception — `opencode
 run --format json` reports `part.cost` on each `step_finish`, and
-`clink/parsers/opencode.py` accumulates it into `metadata["cost"]`.
+`clink/parsers/opencode.py` accumulates it.
 
-That number was then discarded: `AgentOutput.cost` is `CostUnavailable("no_rate_card")`,
-and `tools/clink.py` suppresses that reason deliberately, so the caller was told
-nothing while the true figure sat unused one attribute away.
+**A correction to how this was first written up.** The figure was NOT invisible:
+`_build_success_metadata` merges the whole parser metadata into the response, and
+`_prune_metadata` drops only `events`/`raw`/`raw_events`, so a bare float reached
+the caller at metadata top level. What was missing is narrower and still worth
+fixing — it never appeared in the `accounting` block beside the account it
+belongs to, it carried no unit, and it named no provenance. Saying "the caller
+was told nothing" overstated it, and the review caught that.
 
-**Provenance is the whole design.** A number computed from a rate card and a
-number reported by the CLI are different claims — one is OpenClink's arithmetic,
-the other is the vendor's meter. Filing both under `cost` would make them
-indistinguishable to every future consumer, so the reported one gets its own key.
+**Provenance is the design.** A number computed from a rate card and a number
+reported by the CLI are different claims — one is OpenClink's arithmetic, the
+other is the vendor's meter — so the reported one gets its own key.
+
+**And its own metadata key, `cli_cost`, not `cost`.** The tool merges parser
+metadata and then the accounting block into one dict, and `accounting["cost"]` is
+a DICT. A float published under `cost` sits there harmlessly only until some
+client gets a rate card, at which point the later update wins silently and the
+two claims have swapped places with no one able to tell.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
+from clink.agents.base import CLIAgentError
 from clink.agents.codex import CodexAgent
 from clink.agents.opencode import OpenCodeAgent
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
@@ -71,12 +83,12 @@ def test_the_cost_opencode_measured_reaches_the_caller():
     """
     accounting = _accounting(
         _agent(OpenCodeAgent, "opencode", "opencode_jsonl"),
-        {"tokens": USAGE, "cost": 0.007392, "cost_unit": "USD"},
+        {"tokens": USAGE, "cli_cost": 0.007392, "cli_cost_unit": "USD"},
     )
 
     assert "cli_reported_cost" in accounting, (
-        "opencode measured the cost of its own call and the caller was told nothing — "
-        "the figure is in parsed.metadata['cost'] and never projected (#126)"
+        "opencode measured the cost of its own call and it never reached the accounting "
+        "block — only a bare, unlabelled float at metadata top level (#126)"
     )
     assert accounting["cli_reported_cost"]["value"] == 0.007392
 
@@ -90,7 +102,7 @@ def test_the_reported_cost_names_where_it_came_from():
     """
     accounting = _accounting(
         _agent(OpenCodeAgent, "opencode", "opencode_jsonl"),
-        {"tokens": USAGE, "cost": 0.007392, "cost_unit": "USD"},
+        {"tokens": USAGE, "cli_cost": 0.007392, "cli_cost_unit": "USD"},
     )
 
     assert accounting["cli_reported_cost"]["unit"] == "USD"
@@ -112,7 +124,7 @@ def test_a_reported_cost_of_zero_is_emitted_rather_than_swallowed():
     """
     accounting = _accounting(
         _agent(OpenCodeAgent, "opencode", "opencode_jsonl"),
-        {"tokens": USAGE, "cost": 0, "cost_unit": "USD"},
+        {"tokens": USAGE, "cli_cost": 0, "cli_cost_unit": "USD"},
     )
 
     assert "cli_reported_cost" in accounting, "a free call reported 0 and the projection swallowed it"
@@ -124,15 +136,56 @@ def test_a_cost_with_no_declared_unit_is_not_reported():
 
     A bare figure is worse than none: a caller routing across a dollar-metered
     client and a credit-metered one cannot sum them, and nothing in the payload
-    would warn it. So a parser that publishes `cost` without `cost_unit` gets
-    silence, not a guessed currency.
+    would warn it. So a parser that publishes `cli_cost` without `cli_cost_unit`
+    gets silence, not a guessed currency.
     """
     accounting = _accounting(
         _agent(OpenCodeAgent, "opencode", "opencode_jsonl"),
-        {"tokens": USAGE, "cost": 0.5},
+        {"tokens": USAGE, "cli_cost": 0.5},
     )
 
     assert "cli_reported_cost" not in accounting
+
+
+def test_the_failure_path_projects_the_same_accounting_without_crashing():
+    """One projection serves both outcomes, and this broke that.
+
+    `CLIAgentError`'s own docstring says the field names "deliberately match
+    `AgentOutput`'s, so the tool can project the accounting block from either
+    with one function instead of two that drift" (#41). Reading a field only one
+    of them carries turns a failed run into an `AttributeError` raised from
+    inside the error handler — so the caller loses the whole diagnostic block
+    that exists precisely for the run that failed.
+
+    A failed run still spent what it spent, and opencode still reported what it
+    cost: the `step_finish` arrives before whatever killed the call. So the
+    figure must survive the failure path too, not merely not crash it.
+
+    Driven through the REAL raise site rather than a hand-built error. A
+    constructed `CLIAgentError` proves the projection tolerates the shape; only
+    `finalize_output` proves the agent actually populates it. Mutation showed the
+    difference: deleting `parser_name=self._parser.name` from the raise left a
+    hand-built version of this test entirely green.
+    """
+    agent = _agent(OpenCodeAgent, "opencode", "opencode_jsonl")
+
+    with pytest.raises(CLIAgentError) as caught:
+        agent.finalize_output(
+            parsed=ParsedCLIResponse(
+                content="partial", metadata={"tokens": USAGE, "cli_cost": 0.0073, "cli_cost_unit": "USD"}
+            ),
+            sanitized_command=["opencode"],
+            returncode=1,
+            stdout="",
+            stderr="exploded",
+            duration_seconds=0.1,
+        )
+
+    accounting = CLinkTool()._call_accounting(caught.value)
+
+    assert accounting["cli_reported_cost"]["value"] == 0.0073
+    assert accounting["cli_reported_cost"]["unit"] == "USD"
+    assert accounting["cli_reported_cost"]["source"] == "opencode_jsonl"
 
 
 def test_a_client_that_reports_no_cost_is_unaffected():

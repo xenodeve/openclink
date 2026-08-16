@@ -103,27 +103,38 @@ same: codex nests the reply under `item`, keys usage at the event root, and repo
 OpenCode puts the reply in `part.text` on `type:"text"`, and the account in `part.tokens` on
 `type:"step_finish"` — plus a `part.cost` that no other client provides.
 
-**It reports the price of its own call, and that figure now reaches you.** `part.cost` arrives per step,
-so OpenClink needs no rate card to know what a call cost. That matters because OpenClink's own pricing
-layer is unreachable (#77) — no bundled config declares a `rate_card`, so `price_call` returns
-`no_rate_card` for every client and the tool suppresses that reason deliberately.
+**It reports the price of its own call, and that figure is now accounted rather than merely present.**
+`part.cost` arrives per step, so OpenClink needs no rate card to know what a call cost. That matters
+because OpenClink's own pricing layer is unreachable (#77) — no bundled config declares a `rate_card`,
+so `price_call` returns `no_rate_card` for every client and the tool suppresses that reason
+deliberately.
 
 #77 framed the choice as *ship a real rate card* or *reduce the surface*. OpenCode makes a third option
 available, because it is the only client that measures itself: for it the pricing layer is not
-unreachable, it is unnecessary. So the measured figure is projected under its own key (#126):
+unreachable, it is unnecessary. So the measured figure is projected into the accounting block (#126):
 
 ```json
 "cli_reported_cost": { "value": 0.007392, "unit": "USD", "source": "opencode_jsonl" }
 ```
 
-**Its own key, not `cost`.** `cost` means *OpenClink multiplied an account by a rate card*; this is a
-vendor's meter. One key carrying both claims would leave no way to tell which a figure was.
-`AgentOutput.cost` still reads `CostUnavailable(no_rate_card)`, correctly — nothing priced this call.
+**Stated precisely, because the first write-up of this overstated it.** The number was never invisible
+— parser metadata is merged into the response wholesale, so a bare float always reached the caller at
+top level. What it lacked was a place in `accounting` beside the account it belongs to, a unit, and any
+statement of where it came from.
+
+**Its own key, not `cost` — in both places.** In the accounting block, `cost` means *OpenClink
+multiplied an account by a rate card* and this is a vendor's meter; one key carrying both claims would
+leave no way to tell which a figure was. In parser metadata it is published as `cli_cost` for a sharper
+reason: the tool merges parser metadata and then the accounting block into one dict, so a float under
+`cost` is overwritten by the accounting dict the moment any client gets a rate card — silently, and
+with the two claims swapped. `AgentOutput.cost` still reads `CostUnavailable(no_rate_card)`, correctly.
 
 The unit is declared by the parser, which knows the CLI, rather than assumed by the consumer; a cost
 published without one is **not reported at all**, because a bare number invites summing credits with
 currency. And a reported `0` is emitted rather than swallowed — the free tier genuinely bills nothing,
-and "this call was free" is a different claim from "cost unknown".
+and "this call was free" is a different claim from "cost unknown". Both halves survive a failed run
+too: the `step_finish` arrives before whatever killed the call, and `CLIAgentError` carries the same
+field names as `AgentOutput` so one projection serves both.
 
 **Reasoning effort reaches it too, as `--variant` (#125).** `opencode run --variant <v>` is a real
 flag, and until #125 `OpenCodeAgent` inherited the base behaviour of discarding the caller's

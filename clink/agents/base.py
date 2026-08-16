@@ -151,6 +151,7 @@ class CLIAgentError(RuntimeError):
         stderr: str = "",
         parsed: ParsedCLIResponse | None = None,
         sanitized_command: list[str] | None = None,
+        parser_name: str | None = None,
         token_usage: TokenUsage | None = None,
         requested_model: str | None = None,
         resolved_model: str | None = None,
@@ -172,6 +173,14 @@ class CLIAgentError(RuntimeError):
         # HTTP 400 blaming the model (#64). A failed run is exactly when the
         # caller needs to know which executable produced it.
         self.sanitized_command = sanitized_command
+        # Which parser read the output — carried here for the same reason as
+        # everything below it, and added late: a projection that read it off
+        # `AgentOutput` alone turned every failed run into an `AttributeError`
+        # raised from inside the error handler, costing the caller the whole
+        # diagnostic block. The match between these names and `AgentOutput`'s is
+        # the invariant, not a coincidence, and it is only load-bearing while it
+        # is complete.
+        self.parser_name = parser_name
         # A run that failed still spent the tokens it spent. Making the outcome
         # honest must not make the call unaccountable.
         self.token_usage = token_usage
@@ -429,6 +438,7 @@ class BaseCLIAgent:
                 stderr=stderr,
                 parsed=parsed,
                 sanitized_command=sanitized_command,
+                parser_name=self._parser.name,
                 token_usage=token_usage,
                 requested_model=requested_model,
                 resolved_model=resolved_model,
