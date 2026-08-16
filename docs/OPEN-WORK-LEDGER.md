@@ -10,17 +10,41 @@ protocol in `docs/agents/` and the entry map (`using-t4`).
 
 ## Active
 
-### 🟡 The #96 selection layer — implementing the slices (2026-08-16)
+### 🟢 The #96 selection layer — every agent-workable slice is merged (2026-08-16)
 
-`#96` is the PRD and it is already cut into #98–#113. Dependency order, read off the issues rather
-than assumed: **#98 and #99 are the roots**; then #101 ← 99, #103 ← 98+99; #104 ← 101;
-#108/#109/#110 ← 104; #111 ← 108; #113 ← 111.
+`#96` is the PRD, cut into #98–#113. Dependency order, read off the issues rather than assumed:
+**#98 and #99 are the roots**; then #101 ← 99, #103 ← 98+99; #104 ← 101; #108/#109/#110 ← 104;
+#111 ← 108; #113 ← 111. Plus **#138**, opened by #111 and closed the same day.
 
-**Two branches of that graph are blocked on work that is not `ready-for-agent`:** #102 (and so #105,
+**All eleven are merged.** `selectagents` now validates its input, filters on context window before
+pricing, ranks on what the whole plan costs, honours an optional budget, returns five priced routes
+with a dropped count, derives the agent count, partitions the scope, and persists every plan under an
+identity before responding.
+
+**The remainder is blocked on work no agent can do, and the labels now say so.** #102 (and so #105,
 #106) waits on **#97**, a `ready-for-human` spike asking whether the vendor API exposes cost-per-task
-at all; #107 (and so #112) waits on **#100**, which carries no agent label. Nine slices are workable
-without them.
+at all; #107 (and so #112) waits on **#100**, which carries no agent label. All five carried
+`ready-for-agent` while being unstartable — **the label removed, with the reason on each issue**,
+because `t4-afk` builds its unattended worklist from it and an agent picking one up would either stall
+or guess at the answer the spike exists to measure.
 
+**What the tool still does not do, and says so in its own response:** the dataset is a committed
+fixture whose prices are CONSTRUCTED (#102 replaces the file wholesale — **do not build on its
+numbers**), and every seat names the same model and effort, because nothing in this layer yet decides
+that a survey seat should differ from a working one.
+
+**It remains in `DISABLED_TOOLS`.** Take it out of `.env.example` when #102 lands and the numbers are
+real.
+
+- 🚧 **#15 supervised session** — carried `ready-for-agent` while its own body says **"do not start"**.
+  Label moved to `ready-for-human`: it is blocked on **#12 question 1** (does the master's MCP host
+  issue a follow-up tool call?), and #12 closed COMPLETED **without answering it** — its findings
+  comment is titled *"Q2 answered, Q1 still blocking"* and its last comment withdraws the transport
+  measurement as mis-scoped. Building the handle-plus-poll shape on an unverified premise is the
+  expensive direction: not a slow start, a wrong one.
+- ✅ **#121 PowerShell quality gate** (PR #143) — the `.ps1` copy auto-fixed for six weeks because the
+  #63 guard read only the `.sh`. Both are now parametrized, **and the covered set is itself asserted**,
+  because the defect was a file nobody asserted on. Running it surfaced a live `B007`, fixed here.
 - ✅ **#103 plan identity** (PR #141) — `tools/plan_record.py`, on #98's store. Written before the
   response exists, and the test **records the order** rather than looking afterwards, because both
   orders leave the same directory behind. Not-found raises; it never resolves to `{}`.
