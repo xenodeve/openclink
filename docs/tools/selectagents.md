@@ -4,9 +4,10 @@
 > window before pricing (#108), honours an optional budget (#109), returns up to five priced routes with
 > a count of what the bound cut (#110) and derives the agent count from the chosen window (#111) —
 > against a **committed fixture whose prices and output volumes are constructed, not measured** (#102
-> replaces it with fetched data). Still unbuilt: the scope partition, so every agent is described
-> identically and none owns a share (#113), and **a budget still bounds one seat rather than the whole
-> plan** (#138), so an N-agent plan can cost up to N times the cap. Every response says the same thing in its own body, and that list is guarded by a
+> replaces it with fetched data), and partitions the scope across the planned agents (#113). Still
+> unbuilt: **a budget bounds one seat rather than the whole plan** (#138), so an N-agent plan can cost
+> up to N times the cap; and every seat names the same model and effort — the fields sit on the agent
+> so a survey seat and a working seat *can* differ, but nothing here yet decides that one should. Every response says the same thing in its own body, and that list is guarded by a
 > test in both directions — it must name everything unbuilt and nothing already shipped.
 >
 > This banner said "does not rank models, read a dataset, or compute anything" for two slices after it
@@ -96,8 +97,15 @@ is not there.
 
 ## What It Will Return
 
-- The planned agents, each carrying its own model, effort and share of the scope — a survey seat and a
-  working seat can differ.
+- The planned agents, each carrying its own model, effort and **share of the scope** — which items it
+  owns and how much reading that is. The partition is decided once here rather than by each worker
+  separately: every item has exactly one owner, and the shares sum to the declared scope on both axes.
+  The read follows the items, so an agent holding four of ten reads four tenths — an even split across
+  seats would hand the largest seat an average seat's budget, and #111 sized its context window on the
+  item share, so the mismatch would land as a truncation.
+
+  A count the scope cannot be divided into is **refused, never rebalanced**: adjusting it quietly would
+  move the width decision out of the frozen phase and into the partitioner.
 - The criteria the choice rested on, so you can disagree with a reason.
 - Five ranked routes carrying the same fields, with the cost delta to the one above. A lane outage
   should leave you a route, and availability is not a cost axis — so a route is kept even when another

@@ -21,6 +21,9 @@ than assumed: **#98 and #99 are the roots**; then #101 ← 99, #103 ← 98+99; #
 at all; #107 (and so #112) waits on **#100**, which carries no agent label. Nine slices are workable
 without them.
 
+- ✅ **#113 scope partition** (PR #140) — every item exactly one owner, shares sum on both axes, an
+  undividable count refused rather than rebalanced. The read follows the items and the boundaries are
+  cumulative, so nothing is lost or invented to rounding.
 - 🟡 **#138 a budget bounds one seat, not the whole plan** — opened by #111, which made the count a
   variable while `choose` still compares against one seat's cost. Not circular: `width()` never depends
   on the budget. `ready-for-agent`.

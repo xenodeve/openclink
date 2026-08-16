@@ -117,7 +117,7 @@ async def test_the_response_names_what_is_still_missing(tool):
     """
     content = json.loads((await tool.execute(dict(SCOPE)))[0].text)["content"]
 
-    for unbuilt in ("#102", "#113", "#138"):
+    for unbuilt in ("#102", "#138"):
         assert unbuilt in content, f"the response does not disclose that {unbuilt} is unbuilt"
 
 
@@ -136,7 +136,7 @@ async def test_the_response_stops_naming_a_slice_once_it_ships(tool):
     """
     content = json.loads((await tool.execute(dict(SCOPE)))[0].text)["content"]
 
-    for shipped in ("#98", "#99", "#101", "#104", "#108", "#109", "#110", "#111"):
+    for shipped in ("#98", "#99", "#101", "#104", "#108", "#109", "#110", "#111", "#113"):
         assert shipped not in content, f"{shipped} has shipped, but the response still calls it unbuilt"
 
 
@@ -316,6 +316,49 @@ async def test_one_agent_is_described_per_seat_the_count_declared(tool):
 
     assert plan["criteria"]["agent_count"] > 1, "the scope no longer exercises a multi-seat plan"
     assert len(plan["agents"]) == plan["criteria"]["agent_count"]
+
+
+@pytest.mark.asyncio
+async def test_every_agent_owns_a_share_and_the_shares_sum_to_the_scope(tool):
+    """#113 at the tool seam. The sum is the criterion, not a check on it.
+
+    Run against a scope whose count genuinely exceeds one — a single-seat plan
+    partitions trivially and would let a broken split pass unnoticed, which is
+    how the #111 seam test came to be vacuous.
+    """
+    scope = dict(SCOPE) | {"item_count": 4, "read_volume_tokens": 1_600_000, "output_ceiling_tokens": 4_000}
+    plan = json.loads((await tool.execute(scope))[0].text)["metadata"]["plan"]
+    agents = plan["agents"]
+
+    assert len(agents) > 1, "the scope no longer exercises a multi-seat plan"
+
+    shares = [agent["scope_share"] for agent in agents]
+    assert sum(s["item_count"] for s in shares) == scope["item_count"]
+    assert sum(s["read_volume_tokens"] for s in shares) == scope["read_volume_tokens"]
+
+    owned = [i for s in shares for i in range(s["first_item"], s["first_item"] + s["item_count"])]
+    assert sorted(owned) == list(range(scope["item_count"]))
+    assert len(owned) == len(set(owned)), "an item has two owners"
+
+
+@pytest.mark.asyncio
+async def test_model_and_effort_sit_on_the_agent_rather_than_on_the_plan(tool):
+    """So a survey seat and a working seat can differ (#96, story 9).
+
+    Every seat names the winner today, because nothing in this layer decides that
+    a seat SHOULD differ — that reason is phase-level and does not exist yet. What
+    is pinned here is that the fields live on the agent, so the shape permits it;
+    the response says the rest rather than letting the shape imply it.
+    """
+    scope = dict(SCOPE) | {"item_count": 4, "read_volume_tokens": 1_600_000, "output_ceiling_tokens": 4_000}
+    agents = json.loads((await tool.execute(scope))[0].text)["metadata"]["plan"]["agents"]
+
+    for agent in agents:
+        assert agent["model"]
+        assert agent["effort"]
+    # Priced on its OWN share, not on the whole scope — the seat reads a quarter
+    # of it, and charging each seat for the whole read would quadruple the plan.
+    assert all(agent["cost_per_task"] < agents[0]["cost_per_task"] * len(agents) for agent in agents)
 
 
 @pytest.mark.asyncio
