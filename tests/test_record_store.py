@@ -32,6 +32,7 @@ from __future__ import annotations
 import json
 import os
 import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -87,6 +88,79 @@ def test_a_corrupt_record_is_reported_rather_than_read_as_absent(tmp_path):
     assert "plan-1" in str(caught.value)
 
 
+def test_a_record_torn_mid_character_is_corrupt_rather_than_an_unhandled_error(tmp_path):
+    """The corruption a torn write actually produces, and it escaped.
+
+    Every other corruption test writes *text*, which can only ever fail as
+    invalid JSON. A real interrupted write cuts a multi-byte UTF-8 sequence in
+    half, and that raises `UnicodeDecodeError` from `read_text` — outside the
+    `try` that was meant to catch it, so the guard was dead code. Measured: this
+    payload produced `UnicodeDecodeError`, not `StoreCorruptError`.
+
+    A caller that catches the store's own error to recover would not catch this.
+    """
+    store = RecordStore(tmp_path)
+    store.put("torn", {"n": "ก"})
+    store.path_for("torn").write_bytes(b'{"n": "\xe0\xa4')
+
+    with pytest.raises(StoreCorruptError):
+        store.get("torn")
+
+
+def test_an_identity_may_not_differ_from_another_only_by_case(tmp_path):
+    """NTFS is case-insensitive, so two identities would silently share a record.
+
+    Measured before the fix: `put("Plan-1", {"a": 1})` then
+    `put("plan-1", {"b": 2})` left ONE file, and both `get`s returned `{"b": 2}`.
+    A caller holding two distinct plan identities would read one plan's decision
+    under the other's name, on the platform this fork is developed on.
+
+    Refused rather than normalised: silently lowercasing would make `get` succeed
+    for an identity that was never written, which is the same lie one step later.
+    """
+    store = RecordStore(tmp_path)
+
+    with pytest.raises(ValueError) as caught:
+        store.put("Plan-1", {"a": 1})
+
+    assert "lowercase" in str(caught.value)
+
+
+def test_an_identity_with_a_trailing_newline_is_refused(tmp_path):
+    """`$` matches before a final newline — `re.match(r"...$", "abc\\n")` is truthy.
+
+    Measured. The identity then reaches the filesystem and dies as
+    `OSError [Errno 22] Invalid argument`, which is the class of raw platform
+    error the length checks exist to replace.
+    """
+    with pytest.raises(ValueError):
+        RecordStore(tmp_path).put("abc\n", {"n": 1})
+
+
+def test_the_stored_identities_can_be_listed(tmp_path):
+    """#89's journal reads its whole run back; keyed `get` alone cannot serve it.
+
+    #98 exists to be shared by #96's dataset cache and #89's phased-run journal.
+    A cache needs `get` by key; a journal needs to enumerate what a run wrote.
+    Without this the store serves one of its two stated callers.
+
+    Temp files must not appear — they are named `.tmp-*` precisely so a scan can
+    tell them apart, and a listing that included one would hand out an identity
+    that no `get` can read.
+    """
+    store = RecordStore(tmp_path)
+    store.put("plan-1", {"n": 1})
+    store.put("plan-2", {"n": 2})
+    (tmp_path / ".tmp-leftover.json").write_text("{}", encoding="utf-8")
+
+    assert sorted(store.identities()) == ["plan-1", "plan-2"]
+
+
+def test_listing_an_absent_store_is_empty_rather_than_an_error(tmp_path):
+    """First run, before anything has been written."""
+    assert list(RecordStore(tmp_path / "not-created-yet").identities()) == []
+
+
 def test_an_empty_file_is_corrupt_not_an_empty_record(tmp_path):
     """Zero bytes is the classic torn write, and `{}` is a plausible-looking lie."""
     store = RecordStore(tmp_path)
@@ -136,6 +210,54 @@ def test_concurrent_writers_never_leave_a_spliced_record(tmp_path):
 
     landed = store.get("contended")
     assert landed in (first, second), "the stored record is neither payload — it was spliced"
+
+
+def test_a_reader_running_during_the_writes_never_sees_a_torn_record(tmp_path):
+    """The criterion the test above only *looked* like it covered.
+
+    `test_concurrent_writers_never_leave_a_spliced_record` inspects the store
+    after both threads join — when nothing is in flight — so a torn state is
+    unobservable by construction. Measured: with `put` replaced by a bare
+    `path.write_text(payload)`, fully non-atomic, that test passed 3 runs out of
+    3. It pins that the writers do not crash; it cannot pin atomicity.
+
+    Contention is only visible from inside it. This reader runs while both
+    writers do, and every read must be one of the two complete payloads — never
+    a splice, never a `StoreCorruptError` from catching a half-written file.
+    """
+    store = RecordStore(tmp_path)
+    first = {"who": "a", "pad": "a" * 200_000}
+    second = {"who": "b", "pad": "b" * 200_000}
+    store.put("contended", first)
+
+    stop = threading.Event()
+    bad: list[object] = []
+
+    def write(payload):
+        while not stop.is_set():
+            store.put("contended", payload)
+
+    def read():
+        while not stop.is_set():
+            try:
+                seen = store.get("contended")
+            except BaseException as exc:  # noqa: BLE001 - recorded, then asserted on
+                bad.append(exc)
+                return
+            if seen not in (first, second):
+                bad.append(seen)
+                return
+
+    workers = [threading.Thread(target=write, args=(p,)) for p in (first, second)]
+    workers.append(threading.Thread(target=read))
+    for w in workers:
+        w.start()
+    time.sleep(0.5)
+    stop.set()
+    for w in workers:
+        w.join(timeout=5)
+
+    assert not bad, f"a reader observed a record that was neither payload: {bad[0]!r}"
 
 
 def test_a_briefly_held_destination_is_waited_out(tmp_path):
@@ -274,8 +396,12 @@ def test_the_default_location_is_outside_the_repository(monkeypatch):
 
     location = default_store_dir()
 
+    # Exact equality, and nothing weaker beside it. A first version also asserted
+    # `Path.cwd() not in location.parents`, which reads like a repo-tree check and
+    # is not one: run from `tests/`, it passes for a location plainly inside the
+    # repository. A check that can be satisfied by the wrong thing is worse than
+    # no check, because it looks like coverage.
     assert location == Path.home() / ".openclink" / "store"
-    assert Path.cwd() not in location.parents
 
 
 def test_the_location_is_configurable(monkeypatch, tmp_path):

@@ -35,10 +35,21 @@ from pathlib import Path
 from utils.env import get_env
 
 # The identity becomes a filename, so it is untrusted input even though #103
-# mints it. Anchored and deliberately narrow: a leading alphanumeric rules out
-# `.`, `..` and dotfiles in one clause, and the absence of `/`, `\` and `:`
-# means no identity can address anything outside the store directory.
-_SAFE_IDENTITY = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+# mints it. Deliberately narrow: a leading alphanumeric rules out `.`, `..` and
+# dotfiles in one clause, and the absence of `/`, `\` and `:` means no identity
+# can address anything outside the store directory.
+#
+# Lowercase only, and matched with `fullmatch` rather than `match`: `$` matches BEFORE a
+# final newline, so `re.match(r"...$", "abc\n")` is truthy — measured — and the
+# identity then reaches the filesystem as `OSError [Errno 22] Invalid argument`.
+#
+# The case restriction is not tidiness. NTFS is case-insensitive, so `Plan-1` and
+# `plan-1` name one file: measured, two `put`s left a single record and both
+# `get`s returned the second payload. Two distinct plan identities would read
+# each other's decision, on the platform this fork is developed on. Refused
+# rather than silently lowercased, because normalising makes `get` succeed for an
+# identity nobody wrote — the same lie, one step later.
+_SAFE_IDENTITY = re.compile(r"[a-z0-9][a-z0-9._-]*")
 
 # A filename component is capped at 255 on every filesystem this runs on, and
 # `.json` takes five of them. Bounded here because the platform's own complaint
@@ -104,16 +115,51 @@ def _replace_with_retry(source: str, destination: Path) -> None:
             time.sleep(_REPLACE_BACKOFF_SECONDS)
 
 
+def _read_with_retry(path: Path) -> bytes:
+    """The reader's half of the same Windows rule.
+
+    `os.replace` is atomic for WRITERS — a reader sees the old bytes or the new
+    ones, never a splice. It is not transparent to readers: while the rename is
+    in flight the destination is briefly inaccessible and `read_bytes` raises
+    `PermissionError(13)`. Found by a test that reads *during* concurrent writes;
+    the earlier tests only read after the writers had joined, so they never
+    touched it.
+
+    Same bounded wait as the writer, and the same rule: if it never clears, the
+    error propagates. A read that could not happen must not look like absence.
+    """
+    for attempt in range(_REPLACE_ATTEMPTS):
+        try:
+            return path.read_bytes()
+        except PermissionError:
+            if attempt == _REPLACE_ATTEMPTS - 1:
+                raise
+            time.sleep(_REPLACE_BACKOFF_SECONDS)
+    raise AssertionError("unreachable")  # pragma: no cover
+
+
 class RecordStore:
-    """Records keyed by identity, added and never mutated in place."""
+    """Records keyed by identity.
+
+    `put` REPLACES the record under an identity — #96's dataset cache refreshes
+    in place, so overwrite is required, and calling that "append-only" would be
+    the class of docstring that reads true and is not. What is append-only is the
+    set of identities: a record is written whole or not at all, never edited.
+    """
 
     def __init__(self, directory: Path | str | None = None) -> None:
         self.directory = Path(directory) if directory is not None else default_store_dir()
 
     def path_for(self, identity: str) -> Path:
-        if not _SAFE_IDENTITY.match(identity or ""):
+        candidate = identity or ""
+        if not _SAFE_IDENTITY.fullmatch(candidate):
+            if _SAFE_IDENTITY.fullmatch(candidate.lower()):
+                raise ValueError(
+                    f"record identity {identity!r} must be lowercase: a case-insensitive "
+                    "filesystem would make it share a file with an identity differing only by case"
+                )
             raise ValueError(
-                f"unusable record identity {identity!r}: expected [A-Za-z0-9][A-Za-z0-9._-]*, "
+                f"unusable record identity {identity!r}: expected [a-z0-9][a-z0-9._-]*, "
                 "so that an identity cannot address anything outside the store directory"
             )
         if len(identity) > _MAX_IDENTITY_LENGTH:
@@ -162,14 +208,35 @@ class RecordStore:
 
     def get(self, identity: str) -> dict | None:
         path = self.path_for(identity)
+        # Read BYTES and decode inside the guard. `read_text` decodes as it reads,
+        # so a `UnicodeDecodeError` was raised outside the `except` that named it
+        # and the guard was dead code — measured. That matters more than it looks:
+        # an interrupted write cuts a multi-byte UTF-8 sequence in half, so it is
+        # the corruption a torn record actually has, and a caller catching
+        # StoreCorruptError to recover would not have caught it.
         try:
-            raw = path.read_text(encoding="utf-8")
+            raw = _read_with_retry(path)
         except FileNotFoundError:
             return None
 
         if not raw.strip():
             raise StoreCorruptError(f"record {identity!r} at {path} is empty — a torn write, not an empty record")
         try:
-            return json.loads(raw)
+            return json.loads(raw.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
             raise StoreCorruptError(f"record {identity!r} at {path} is not readable JSON: {exc}") from exc
+
+    def identities(self) -> list[str]:
+        """Every identity currently stored, in no particular order.
+
+        #98 is shared by #96's dataset cache and #89's phased-run journal, and
+        those want different things: a cache reads by key, a journal reads its
+        whole run back. Without this the store served one of its two callers.
+
+        Temp files are excluded by their `.tmp-` prefix rather than by parsing —
+        the prefix starts with a dot, which `_SAFE_IDENTITY` forbids, so no
+        listed identity can ever collide with one in flight.
+        """
+        if not self.directory.is_dir():
+            return []
+        return [p.stem for p in self.directory.glob("*.json") if not p.name.startswith(".tmp-")]
