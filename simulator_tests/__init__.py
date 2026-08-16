@@ -36,6 +36,7 @@ from .test_prompt_size_limit_bug import PromptSizeLimitBugTest
 # Redis validation test removed - no longer needed for standalone server
 from .test_refactor_validation import RefactorValidationTest
 from .test_secaudit_validation import SecauditValidationTest
+from .test_selectagents_reachable import SelectAgentsReachableTest
 from .test_testgen_validation import TestGenValidationTest
 from .test_thinkdeep_validation import ThinkDeepWorkflowValidationTest
 from .test_token_allocation_validation import TokenAllocationValidationTest
@@ -67,6 +68,7 @@ TEST_REGISTRY = {
     "thinkdeep_validation": ThinkDeepWorkflowValidationTest,
     "refactor_validation": RefactorValidationTest,
     "secaudit_validation": SecauditValidationTest,
+    "selectagents_reachable": SelectAgentsReachableTest,
     "debug_validation": DebugValidationTest,
     "debug_certain_confidence": DebugCertainConfidenceTest,
     "conversation_chain_validation": ConversationChainValidationTest,
@@ -105,6 +107,7 @@ __all__ = [
     "ThinkDeepWorkflowValidationTest",
     "RefactorValidationTest",
     "SecauditValidationTest",
+    "SelectAgentsReachableTest",
     "DebugValidationTest",
     "DebugCertainConfidenceTest",
     "ConversationChainValidationTest",

@@ -182,6 +182,7 @@ cd openclink
 **ยูทิลิตี้**
 - **[`apilookup`](docs/tools/apilookup.md)** — บังคับค้นเอกสาร API/SDK ปีปัจจุบันใน sub-process กันคำตอบจากข้อมูลเก่า
 - **[`challenge`](docs/tools/challenge.md)** — กันคำตอบ "You're absolutely right!" ด้วยการวิเคราะห์เชิงวิพากษ์
+- **[`selectagents`](docs/tools/selectagents.md)** — คำนวณแผนการมอบงานจากข้อมูลโมเดลที่วัดแล้ว แทนการนึกเอา (⚠️ ยังเป็น stub ดู #96)
 - **[`tracer`](docs/tools/tracer.md)** *(ปิดโดยดีฟอลต์)* — วิเคราะห์ call-flow แบบ static
 
 <details>

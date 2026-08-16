@@ -241,6 +241,7 @@ OpenClink activates any provider that has credentials in your `.env`. See `.env.
 **Utilities**
 - **[`apilookup`](docs/tools/apilookup.md)** - Forces current-year API/SDK documentation lookups in a sub-process (saves tokens within the current context window), prevents outdated training data responses
 - **[`challenge`](docs/tools/challenge.md)** - Prevent "You're absolutely right!" responses with critical analysis
+- **[`selectagents`](docs/tools/selectagents.md)** - Compute a delegation plan from measured model data rather than recollection (⚠️ stub, see #96)
 - **[`tracer`](docs/tools/tracer.md)** *(disabled by default - [enable](#tool-configuration))* - Static analysis prompts for call-flow mapping
 
 <details>
