@@ -167,9 +167,15 @@ def rank(
     *,
     kind_of_work: str,
     read_volume_tokens: int,
-    output_ceiling_tokens: int = 0,
+    output_ceiling_tokens: int,
 ) -> Ranking:
     """Filter hard, then rank what survives. Cheapest per task first.
+
+    **`output_ceiling_tokens` has no default on purpose.** It defaulted to 0,
+    which sized the requirement on the read alone — the mistake `required_window`
+    exists to prevent, reachable by omission. A fail-open default on a hard
+    filter lets MORE candidates through, so nothing errors and a model that
+    cannot hold its own answer is simply eligible. Every caller says it.
 
     **Context window is a filter and not a weight (#96, #108).** A weight lets a
     cheap-enough model outrank the constraint and be handed work it will silently

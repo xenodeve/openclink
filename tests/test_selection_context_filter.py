@@ -87,6 +87,53 @@ def test_the_cheapest_candidate_losing_to_the_filter_is_the_case_that_matters():
     assert [c.model for c in result.ordered] == ["big-window"]
 
 
+def test_a_window_that_holds_the_read_but_not_the_answer_is_still_too_small():
+    """The output half of the requirement, pinned by who survives — not by arithmetic.
+
+    `required_window` has its own unit test and it is **not enough**: drop the
+    ceiling term from that function and every other test in this file still
+    passes, because each candidate here is either comfortably over the
+    requirement or far under it. The mutation reddened one hand-checked identity
+    and no behaviour at all — which is what a coverage gap looks like from the
+    inside.
+
+    This is the case that sits in the gap. 44_000 clears the 40_000 read and
+    fails the 48_000 the answer also needs, and `snug` is the cheaper of the two,
+    so a requirement sized on the read alone hands it the work.
+    """
+    snug = _candidate("snug", window=44_000, axes={"coding": 80.0}, in_price=0.1, out_price=0.1, out_tokens=1_000)
+    roomy = _candidate("roomy", window=1_000_000, axes={"coding": 60.0}, in_price=9.0, out_price=9.0, out_tokens=1_000)
+
+    result = rank(
+        [snug, roomy],
+        kind_of_work="implementation",
+        read_volume_tokens=40_000,
+        output_ceiling_tokens=8_000,
+    )
+
+    assert snug.cost_per_task(40_000) < roomy.cost_per_task(40_000)
+    assert [c.model for c in result.ordered] == ["roomy"]
+    assert result.excluded_by_window == ["snug"]
+
+
+def test_the_output_ceiling_cannot_be_left_unsaid():
+    """A hard filter must not have a fail-open default.
+
+    `output_ceiling_tokens` defaulted to 0, which sized the requirement on the
+    read alone — the exact mistake this module's docstring warns about, reachable
+    by omission. A fail-open default on a safety filter lets MORE candidates
+    through, so the failure is silent: nothing errors, a truncating model is
+    simply eligible.
+
+    Pinned as a `TypeError` rather than trusted to review, because the default
+    that has to stay absent is one keyword away from coming back.
+    """
+    candidate = _candidate("any", window=1_000_000, axes={"coding": 60.0}, in_price=1.0, out_price=1.0, out_tokens=1)
+
+    with pytest.raises(TypeError):
+        rank([candidate], kind_of_work="implementation", read_volume_tokens=1_000)
+
+
 def test_a_candidate_sized_exactly_to_the_requirement_still_fits():
     """The boundary, pinned in the direction that would otherwise drift.
 

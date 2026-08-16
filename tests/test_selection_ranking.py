@@ -8,6 +8,11 @@ were not enough, because a plan chosen from two candidates out of five must not
 read like one chosen from five. These tests read `.ordered`; the exclusions are
 covered in `test_selection_context_filter.py`.
 
+`output_ceiling_tokens=0` is passed explicitly everywhere below. It is not a
+default — #108 removed that, because sizing the requirement on the read alone is
+fail-open on a hard filter. Zero is the honest value here: these cases are about
+pricing, and every candidate is given a window nothing in them can exhaust.
+
 **The case this slice exists for is the disagreement.** Price per token and cost
 per task order the same candidates differently on real data, and a layer that
 ranked by price would recommend the loser. Every other test in this file supports
@@ -60,7 +65,9 @@ def test_price_per_token_and_cost_per_task_disagree_and_cost_per_task_wins():
     assert cheap.price_per_token() < dear.price_per_token()
 
     # A small read: output volume dominates, and the cheap-per-token model loses.
-    ordered = rank([cheap, dear], kind_of_work="implementation", read_volume_tokens=1_000).ordered
+    ordered = rank(
+        [cheap, dear], kind_of_work="implementation", read_volume_tokens=1_000, output_ceiling_tokens=0
+    ).ordered
 
     assert ordered[0].model == "dear-per-token", (
         "ranked by price per token, not cost per task — the model that emits more "
@@ -81,7 +88,9 @@ def test_the_same_pair_flips_when_the_read_volume_dominates():
 
     #   cheap: (200_000 * 0.4 + 48_000) / 1e6 = 0.128
     #   dear:  (200_000 * 1.0 + 40_000) / 1e6 = 0.240
-    ordered = rank([cheap, dear], kind_of_work="implementation", read_volume_tokens=200_000).ordered
+    ordered = rank(
+        [cheap, dear], kind_of_work="implementation", read_volume_tokens=200_000, output_ceiling_tokens=0
+    ).ordered
 
     assert ordered[0].model == "cheap-per-token"
 
@@ -97,7 +106,9 @@ def test_a_candidate_with_no_score_on_the_axis_is_excluded_not_zeroed():
     measured = _candidate("measured", axes={"coding": 60.0}, in_price=10.0, out_price=40.0, out_tokens=10_000)
     unmeasured = _candidate("unmeasured", axes={"index": 14.9}, in_price=0.05, out_price=0.2, out_tokens=30_000)
 
-    ordered = rank([measured, unmeasured], kind_of_work="implementation", read_volume_tokens=40_000).ordered
+    ordered = rank(
+        [measured, unmeasured], kind_of_work="implementation", read_volume_tokens=40_000, output_ceiling_tokens=0
+    ).ordered
 
     assert [c.model for c in ordered] == ["measured"]
 
@@ -107,7 +118,9 @@ def test_a_tie_on_cost_is_broken_by_the_axis_score():
     worse = _candidate("worse", axes={"coding": 50.0}, in_price=1.0, out_price=1.0, out_tokens=1_000)
     better = _candidate("better", axes={"coding": 70.0}, in_price=1.0, out_price=1.0, out_tokens=1_000)
 
-    ordered = rank([worse, better], kind_of_work="implementation", read_volume_tokens=10_000).ordered
+    ordered = rank(
+        [worse, better], kind_of_work="implementation", read_volume_tokens=10_000, output_ceiling_tokens=0
+    ).ordered
 
     assert [c.model for c in ordered] == ["better", "worse"]
 
@@ -136,8 +149,13 @@ def test_the_axis_comes_from_the_kind_of_work_and_not_from_the_caller():
     agentic_only = _candidate("agent", axes={"agentic": 80.0}, in_price=1.0, out_price=1.0, out_tokens=10_000)
     pool = [coding_only, agentic_only]
 
-    assert [c.model for c in rank(pool, kind_of_work="implementation", read_volume_tokens=1_000).ordered] == ["coder"]
-    assert [c.model for c in rank(pool, kind_of_work="research", read_volume_tokens=1_000).ordered] == ["agent"]
+    assert [
+        c.model
+        for c in rank(pool, kind_of_work="implementation", read_volume_tokens=1_000, output_ceiling_tokens=0).ordered
+    ] == ["coder"]
+    assert [
+        c.model for c in rank(pool, kind_of_work="research", read_volume_tokens=1_000, output_ceiling_tokens=0).ordered
+    ] == ["agent"]
 
 
 def test_the_committed_dataset_loads_and_carries_what_the_ranking_needs():
