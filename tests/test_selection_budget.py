@@ -39,7 +39,9 @@ def _candidate(model: str, *, score: float, in_price: float, out_price: float, o
 
 
 def _ranked(candidates: list[Candidate], *, read: int) -> list[Candidate]:
-    return rank(candidates, kind_of_work="implementation", read_volume_tokens=read, output_ceiling_tokens=0).ordered
+    return rank(
+        candidates, kind_of_work="implementation", read_volume_tokens=read, output_ceiling_tokens=0, item_count=1
+    ).ordered
 
 
 # cost per task at a 10,000-token read:
@@ -190,7 +192,7 @@ def test_the_committed_fixture_carries_a_case_where_a_budget_changes_the_winner(
     the coding axis at roughly twice the cost.
     """
     ordered = rank(
-        load_candidates(), kind_of_work="implementation", read_volume_tokens=READ, output_ceiling_tokens=0
+        load_candidates(), kind_of_work="implementation", read_volume_tokens=READ, output_ceiling_tokens=0, item_count=1
     ).ordered
     axis = axis_for("implementation")
 

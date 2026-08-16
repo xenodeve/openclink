@@ -66,7 +66,7 @@ def test_price_per_token_and_cost_per_task_disagree_and_cost_per_task_wins():
 
     # A small read: output volume dominates, and the cheap-per-token model loses.
     ordered = rank(
-        [cheap, dear], kind_of_work="implementation", read_volume_tokens=1_000, output_ceiling_tokens=0
+        [cheap, dear], kind_of_work="implementation", read_volume_tokens=1_000, output_ceiling_tokens=0, item_count=1
     ).ordered
 
     assert ordered[0].model == "dear-per-token", (
@@ -89,7 +89,7 @@ def test_the_same_pair_flips_when_the_read_volume_dominates():
     #   cheap: (200_000 * 0.4 + 48_000) / 1e6 = 0.128
     #   dear:  (200_000 * 1.0 + 40_000) / 1e6 = 0.240
     ordered = rank(
-        [cheap, dear], kind_of_work="implementation", read_volume_tokens=200_000, output_ceiling_tokens=0
+        [cheap, dear], kind_of_work="implementation", read_volume_tokens=200_000, output_ceiling_tokens=0, item_count=1
     ).ordered
 
     assert ordered[0].model == "cheap-per-token"
@@ -107,7 +107,11 @@ def test_a_candidate_with_no_score_on_the_axis_is_excluded_not_zeroed():
     unmeasured = _candidate("unmeasured", axes={"index": 14.9}, in_price=0.05, out_price=0.2, out_tokens=30_000)
 
     ordered = rank(
-        [measured, unmeasured], kind_of_work="implementation", read_volume_tokens=40_000, output_ceiling_tokens=0
+        [measured, unmeasured],
+        kind_of_work="implementation",
+        read_volume_tokens=40_000,
+        output_ceiling_tokens=0,
+        item_count=1,
     ).ordered
 
     assert [c.model for c in ordered] == ["measured"]
@@ -119,7 +123,7 @@ def test_a_tie_on_cost_is_broken_by_the_axis_score():
     better = _candidate("better", axes={"coding": 70.0}, in_price=1.0, out_price=1.0, out_tokens=1_000)
 
     ordered = rank(
-        [worse, better], kind_of_work="implementation", read_volume_tokens=10_000, output_ceiling_tokens=0
+        [worse, better], kind_of_work="implementation", read_volume_tokens=10_000, output_ceiling_tokens=0, item_count=1
     ).ordered
 
     assert [c.model for c in ordered] == ["better", "worse"]
@@ -151,10 +155,15 @@ def test_the_axis_comes_from_the_kind_of_work_and_not_from_the_caller():
 
     assert [
         c.model
-        for c in rank(pool, kind_of_work="implementation", read_volume_tokens=1_000, output_ceiling_tokens=0).ordered
+        for c in rank(
+            pool, kind_of_work="implementation", read_volume_tokens=1_000, output_ceiling_tokens=0, item_count=1
+        ).ordered
     ] == ["coder"]
     assert [
-        c.model for c in rank(pool, kind_of_work="research", read_volume_tokens=1_000, output_ceiling_tokens=0).ordered
+        c.model
+        for c in rank(
+            pool, kind_of_work="research", read_volume_tokens=1_000, output_ceiling_tokens=0, item_count=1
+        ).ordered
     ] == ["agent"]
 
 

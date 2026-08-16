@@ -3,6 +3,38 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-16 — the agent count is derived, and it corrected #108's filter (#111, PR #139)
+
+The count comes from how many item-shares the winner's window holds at once, with the derivation
+returned beside it. A smaller window forces a finer split rather than a truncation nobody sees.
+
+**#111 could not be satisfied without correcting #108.** #108 sized the required window on the WHOLE
+read, because the count did not exist yet and with one agent the whole read is the share. Keep that
+reading and every surviving candidate holds the entire scope alone — so no candidate could ever need
+more than one seat and "a smaller context window yields a higher count" was **unobservable by
+construction**. The bar is now one item, the smallest share a seat can be given. It is a
+generalisation, not a reversal: at `item_count=1` it returns exactly what #108 returned, and a test
+pins that so it cannot quietly become one.
+
+**Validated** — 12 width tests plus 2 at the tool seam. Suite 1239 → 1252. Six mutations, three of
+which came back **0 red and all three were real gaps**:
+
+- **count floor instead of ceiling → 0 red.** Every case divided exactly, so floor and ceiling agreed
+  everywhere. 100 items at 30 per seat is 4 seats; floor plans 3 and leaves 10 items with no owner —
+  which #113 needs, since the partitions must sum with no gap.
+- **capacity not clamped to the item count → 0 red.** The clamp does not change the count
+  (`ceil(3/90)` and `ceil(3/3)` are both 1), only what the plan says about itself: "90 items per agent"
+  on a scope of three items is a figure a caller would check, find consistent, and be misled by.
+- **`range(count)` → `range(1)` at the tool seam → 0 red.** The test asserting one agent per declared
+  seat used 40 items over 400,000 tokens — a 10,000-token share against million-token windows, so the
+  count was 1 and the identity held trivially. **The vacuous green again**, in a test written to
+  prevent exactly that. It now asserts the count exceeds one before asserting the identity.
+
+**Filed, not fixed: #138.** A budget still bounds one seat while the plan now has N, so an N-agent plan
+can cost up to N times the cap. It is not circular — `width()` depends only on the candidate and the
+scope, never on the budget — so a per-candidate total is computable and the fix is real work rather
+than a redesign. Disclosed in the response, the docs and the module docstring.
+
 ## 2026-08-16 — five priced routes, and a count of what the bound cut (#110, PR #137)
 
 Up to five routes come back, winner first, each carrying the same fields as the winner and the

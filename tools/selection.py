@@ -145,14 +145,37 @@ class Ranking:
     excluded_by_axis: list[str]
 
 
-def required_window(*, read_volume_tokens: int, output_ceiling_tokens: int) -> int:
-    """What a candidate must be able to hold: the input AND its own answer.
+def per_item_read(*, read_volume_tokens: int, item_count: int) -> int:
+    """The read volume one item carries — the smallest share anyone can be given.
+
+    An item is the atom: #113 partitions the scope across agents with no gap and
+    no overlap, so nothing smaller than one item can be handed to a seat.
+    """
+    return -(-read_volume_tokens // item_count)  # ceiling division, no float
+
+
+def required_window(*, read_volume_tokens: int, output_ceiling_tokens: int, item_count: int) -> int:
+    """What a candidate must hold: **its share** of the input, and its own answer.
 
     Sizing on the read alone looks conservative and is not — a model sized
     exactly to the input has nowhere to put the output, and the truncation lands
     in the result rather than in an error.
+
+    **The share, not the whole scope (#111).** #108 wrote this as the entire read
+    because the agent count did not exist yet, and with one agent the whole read
+    IS the share. Once the count is derived, that reading makes #111's own
+    criterion unsatisfiable: filter every candidate that cannot hold the whole
+    scope and no surviving candidate can ever need more than one agent, so "a
+    smaller context window yields a higher count" could never be observed.
+
+    So the bar is one item — the smallest share a seat can be given — and a
+    window above it buys a coarser split rather than admission. #96: "a smaller
+    window forces a finer split rather than a truncation nobody sees."
+
+    This is a generalisation of #108 rather than a reversal: at `item_count=1` it
+    returns exactly what #108 returned.
     """
-    return read_volume_tokens + output_ceiling_tokens
+    return per_item_read(read_volume_tokens=read_volume_tokens, item_count=item_count) + output_ceiling_tokens
 
 
 @dataclass(frozen=True)
@@ -290,6 +313,62 @@ def choose(
     return Choice(ranked=ranked, rule="best_within_budget", excluded_by_budget=priced_out)
 
 
+@dataclass(frozen=True)
+class Width:
+    """How many seats, and every figure the count was derived from.
+
+    The components travel with the count because #111 requires the derivation to
+    appear in the criteria — a bare number is a number chosen in the moment as
+    far as any caller can tell, which is the thing the slice exists to replace.
+    """
+
+    count: int
+    per_item_read_tokens: int
+    usable_window_tokens: int
+    items_per_agent: int
+
+
+def width(candidate: Candidate, *, read_volume_tokens: int, item_count: int, output_ceiling_tokens: int) -> Width:
+    """How many seats this candidate needs for this scope, and why (#111).
+
+    The count is a **consequence of the work**: how many item-shares the window
+    holds at once decides how many passes the scope takes. A bigger window
+    carries more items per seat and needs fewer; a smaller one forces a finer
+    split, which is #96's whole point — the alternative to a finer split is a
+    truncation nobody sees.
+
+    **Precondition: the candidate survived `rank`.** That filter now requires a
+    window of at least one item-share plus the answer, so `items_per_agent` is at
+    least one here and the division below is safe. Stated rather than defended
+    with a guard, because a guard for an unreachable case is dead code that reads
+    like a live one.
+
+    **Not an input yet: difficulty.** #111's prose names it alongside the item
+    count and the scope, but #101 closed the request contract and no field
+    carries it. Inventing a proxy — treating `verification` or `kind_of_work` as
+    a difficulty scale — would be the unmeasured number this layer exists to
+    remove. So the count derives from volume and window only, and the criteria
+    say so rather than implying a factor that is not there.
+    """
+    share = per_item_read(read_volume_tokens=read_volume_tokens, item_count=item_count)
+    usable = candidate.context_window - output_ceiling_tokens
+
+    if share == 0:
+        # Nothing to read means the window constrains nothing. One seat, and the
+        # count does not silently become the item count.
+        return Width(count=1, per_item_read_tokens=0, usable_window_tokens=usable, items_per_agent=item_count)
+
+    items_per_agent = min(item_count, usable // share)
+    count = -(-item_count // items_per_agent)  # ceiling division, no float
+
+    return Width(
+        count=count,
+        per_item_read_tokens=share,
+        usable_window_tokens=usable,
+        items_per_agent=items_per_agent,
+    )
+
+
 def axis_for(kind_of_work: str) -> str:
     try:
         return AXIS_FOR_KIND[kind_of_work]
@@ -303,6 +382,7 @@ def rank(
     kind_of_work: str,
     read_volume_tokens: int,
     output_ceiling_tokens: int,
+    item_count: int,
 ) -> Ranking:
     """Filter hard, then rank what survives. Cheapest per task first.
 
@@ -325,7 +405,11 @@ def rank(
     non-arbitrary pick. Then by name, so the order is stable enough to assert on.
     """
     axis = axis_for(kind_of_work)
-    needed = required_window(read_volume_tokens=read_volume_tokens, output_ceiling_tokens=output_ceiling_tokens)
+    needed = required_window(
+        read_volume_tokens=read_volume_tokens,
+        output_ceiling_tokens=output_ceiling_tokens,
+        item_count=item_count,
+    )
 
     survivors: list[Candidate] = []
     by_window: list[str] = []

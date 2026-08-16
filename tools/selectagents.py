@@ -5,13 +5,14 @@ are filtered on context window before anything is priced (#108), then ranked on
 cost per task along the axis the declared kind of work maps to (#104) — or, with
 a budget in force, the best on that axis that fits (#109). Up to five routes come
 back, winner first, each priced against the one above it, with anything the bound
-cut counted rather than silently omitted (#110). Registered, advertised and
-dispatched by name.
+cut counted rather than silently omitted (#110). The agent count is derived from
+how many item-shares the chosen window holds at once, and the derivation comes
+back with it (#111). Registered, advertised and dispatched by name.
 
 **What it still does not do is stated in the response itself**, not only here:
 the dataset is a committed fixture whose prices are constructed (#102 replaces
-it), the agent count is always one (#111), and the scope is not partitioned
-(#113). That list is guarded in both directions
+it), a budget bounds one seat rather than the whole plan (#138), and the scope is
+not partitioned (#113). That list is guarded in both directions
 — a test fails if it omits an unbuilt slice, and another fails if it still names
 a shipped one. The second half exists because this docstring and the tool's own
 disclosure both went stale by a slice before anything noticed.
@@ -37,7 +38,7 @@ from mcp.types import TextContent
 from pydantic import ConfigDict, Field, ValidationError, field_validator
 
 from tools.models import ToolOutput
-from tools.selection import DatasetError, axis_for, choose, load_candidates, rank, required_window, slate
+from tools.selection import DatasetError, axis_for, choose, load_candidates, rank, required_window, slate, width
 from tools.shared.base_models import ToolRequest
 from tools.shared.base_tool import BaseTool
 
@@ -225,12 +226,17 @@ _PARTIAL_CONTENT = (
     "is then the lowest cost per task — or, if you named a budget, the best on "
     "the axis that fits inside it. Up to five routes are returned, winner first, "
     "each priced against the one above it, with anything the bound cut counted. "
-    "That much is real arithmetic on a committed fixture.\n\n"
+    "The agent count is derived from how many item-shares the chosen window "
+    "holds at once, and the derivation comes back with it. That much is real "
+    "arithmetic on a committed fixture.\n\n"
     "What is NOT here yet, and what you must not assume: the dataset is a "
     "committed fixture whose prices and output volumes are CONSTRUCTED rather "
-    "than measured (#102 replaces it with fetched data); the agent count is "
-    "always one, so a budget bounds one seat rather than the whole run (#111); "
-    "and the scope is not partitioned (#113)."
+    "than measured (#102 replaces it with fetched data); a budget bounds ONE "
+    "SEAT rather than the whole plan, so a plan of N agents can cost up to N "
+    "times what you capped (#138); difficulty is not an input, because the "
+    "request contract carries no field for it; "
+    "and the scope is not partitioned, so every agent is described identically "
+    "and none of them owns a share yet (#113)."
 )
 
 
@@ -450,6 +456,7 @@ class SelectAgentsTool(BaseTool):
             kind_of_work=request.kind_of_work,
             read_volume_tokens=request.read_volume_tokens,
             output_ceiling_tokens=request.output_ceiling_tokens,
+            item_count=request.item_count,
         )
         ordered = ranking.ordered
         if not ordered:
@@ -478,6 +485,18 @@ class SelectAgentsTool(BaseTool):
 
         winner = choice.winner
         routes = slate(choice, read_volume_tokens=request.read_volume_tokens)
+
+        # The count is fixed HERE, before a single agent is described, and every
+        # seat below is generated from it (#111). Describing agents first and
+        # counting them afterwards is how a width grows mid-flight — the failure
+        # the per-phase freeze exists to prevent.
+        seats = width(
+            winner,
+            read_volume_tokens=request.read_volume_tokens,
+            item_count=request.item_count,
+            output_ceiling_tokens=request.output_ceiling_tokens,
+        )
+
         plan = {
             "agents": [
                 {
@@ -485,6 +504,7 @@ class SelectAgentsTool(BaseTool):
                     "effort": winner.effort,
                     "cost_per_task": round(winner.cost_per_task(request.read_volume_tokens), 6),
                 }
+                for _ in range(seats.count)
             ],
             # The routes, winner first, each carrying the SAME fields as the
             # winner so a substitution is decided on the same evidence (#110).
@@ -524,7 +544,24 @@ class SelectAgentsTool(BaseTool):
                 "context_window_required": required_window(
                     read_volume_tokens=request.read_volume_tokens,
                     output_ceiling_tokens=request.output_ceiling_tokens,
+                    item_count=request.item_count,
                 ),
+                # The count AND what it was derived from (#111). A bare number is
+                # indistinguishable from a number someone picked, which is the
+                # thing this slice replaces — so the components a caller would
+                # need to check the arithmetic travel with it.
+                "agent_count": seats.count,
+                "agent_count_derivation": {
+                    "per_item_read_tokens": seats.per_item_read_tokens,
+                    "usable_window_tokens": seats.usable_window_tokens,
+                    "items_per_agent": seats.items_per_agent,
+                    "item_count": request.item_count,
+                    "formula": "ceil(item_count / min(item_count, (context_window - output_ceiling) // per_item_read))",
+                    # Named because #111's prose lists it and the contract has no
+                    # field for it. Silence here would read as "difficulty was
+                    # weighed", which is the unmeasured input the layer removes.
+                    "difficulty": "NOT AN INPUT — the request contract carries no difficulty field (#101)",
+                },
             },
         }
 

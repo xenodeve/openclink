@@ -44,7 +44,9 @@ def _field(count: int) -> list[Candidate]:
 
 
 def _slate_of(candidates: list[Candidate], *, budget_usd: float | None = None, limit: int = ALTERNATIVE_LIMIT):
-    ordered = rank(candidates, kind_of_work="implementation", read_volume_tokens=READ, output_ceiling_tokens=0).ordered
+    ordered = rank(
+        candidates, kind_of_work="implementation", read_volume_tokens=READ, output_ceiling_tokens=0, item_count=1
+    ).ordered
     choice = choose(ordered, axis="coding", read_volume_tokens=READ, budget_usd=budget_usd)
     return choice, slate(choice, read_volume_tokens=READ, limit=limit)
 
@@ -180,7 +182,7 @@ def test_the_committed_dataset_produces_a_slate_rather_than_only_invented_ones()
     changes the expectation instead of breaking the test for the wrong reason.
     """
     ordered = rank(
-        load_candidates(), kind_of_work="implementation", read_volume_tokens=READ, output_ceiling_tokens=0
+        load_candidates(), kind_of_work="implementation", read_volume_tokens=READ, output_ceiling_tokens=0, item_count=1
     ).ordered
     choice = choose(ordered, axis="coding", read_volume_tokens=READ, budget_usd=None)
     result = slate(choice, read_volume_tokens=READ)
