@@ -3,6 +3,46 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-16 — an on-disk record store, the prefactor under #96 and #89 (#98, PR #131)
+
+First persistence in this repository. `utils/storage_backend.py` is an in-memory cache whose own
+docstring says it is "confined to a single Python process", so neither #96's dataset cache nor #89's
+phased-run journal could be built on it. Built once, with no callers, so they share a storage layer
+rather than growing one each.
+
+**One file per record, through a temp file and `os.replace`** — not the append-only JSONL the issue's
+wording suggests, and the two hard acceptance criteria are why. An `O_APPEND` write is atomic only
+below a platform-specific size and Windows guarantees nothing; making it safe needs a lock file, which
+trades a rare failure for a stale lock after a crash. And a log's characteristic damage is a torn final
+line that every reader must then decide about, where under `os.replace` a half-written record is never
+visible under its own name at all.
+
+**Validated** — 22 tests, every assertion mutation-checked. Suite 1152 → 1160.
+
+**The finding worth carrying: my headline test could not fail.**
+`test_concurrent_writers_never_leave_a_spliced_record` inspected the store *after* both threads
+joined, when nothing was in flight, so a torn state was unobservable by construction. Measured: with
+`put` replaced by a bare `path.write_text(payload)`, fully non-atomic, it passed **3 runs out of 3**.
+It pinned that the writers do not crash — never that the write is atomic, which is the whole criterion.
+
+A reader that runs *during* the writes reds 3 of 3 under the same mutation. And it immediately found a
+real defect: `os.replace` is atomic for writers but not transparent to readers, so a `read_bytes`
+racing a rename raises `PermissionError(13)` on Windows — `get` could fail during any concurrent write.
+
+That is the second time in this session a test was strengthened once and remained blind: an earlier
+pass had already fixed this same test for swallowing its threads' exceptions.
+
+**Five more, each reproduced before being acted on.** The `UnicodeDecodeError` guard was dead code —
+`read_text` decodes outside the `try`, and a record cut mid-character is exactly what a torn write
+produces. `Plan-1` and `plan-1` shared one file on NTFS, one plan silently reading another's decision.
+`$` matches before a trailing newline, so `"abc\n"` reached the filesystem. The store had no way to
+enumerate, serving #96 but not #89. And two claims in the branch's own prose were false — a docstring
+saying records are "never mutated in place" while `put` overwrites, and a `Path.cwd() not in parents`
+assertion that passes from `tests/` for a location inside the repo.
+
+**Stated, not fixed:** no `fsync` before the rename, so a crash can make the rename durable and the
+content not. The zero-length check reports that as corruption rather than as an empty record.
+
 ## 2026-08-16 — opencode is fully supported: effort, its own cost, and the class it was dropping (#125, #126, #127, PR #128)
 
 The client shipped working in #86. Three things it was doing badly enough to call it "not fully
