@@ -3,6 +3,59 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-16 — opencode is fully supported: effort, its own cost, and the class it was dropping (#125, #126, #127, PR #128)
+
+The client shipped working in #86. Three things it was doing badly enough to call it "not fully
+supported", each found by comparing what the CLI actually reports against what OpenClink did with it.
+
+**Validated end to end on the real binary with the branch's code**, not through `_build_command`:
+the registry resolved the executable, the agent ran it, the tool projected the result.
+
+```
+--model opencode/deepseek-v4-flash-free --variant high
+resolved_effort: "high"
+normalized_usage.cached_input_tokens: 1792
+cli_reported_cost: {value: 0.0, unit: "USD", source: "opencode_jsonl"}
+```
+
+Every fix is visible in that one payload: the flag reached the CLI, the effort came back, the nested
+cache class landed **non-zero** (so the walk found real data rather than coincidentally matching a
+zero), and a genuinely free call reported `0.0` instead of being swallowed. Suite 1122 → 1133.
+
+- **`reasoning_effort` was accepted and discarded (#125).** `--variant` is a real flag;
+  `OpenCodeAgent` inherited the base `_model_args`, which drops effort because claude and gemini bake
+  the tier into the model name. Third instance of this class — #27 for codex, #43 for antigravity.
+  Both halves shipped: the emission, and `EFFORT_FLAGS` so `_resolve_model_effort` can read it back.
+  **Two measured caveats:** an invalid variant is accepted and *silently ignored* by the CLI, and no
+  observable effect could be demonstrated on `deepseek-v4-flash` across three controlled runs. So
+  OpenClink writes the flag and reads it back; whether the provider acts on it is **unverified**.
+- **OpenCode measured its own cost and it never reached the accounting block (#126).** #77 framed the
+  choice as *ship a rate card* or *reduce the surface*; both assume OpenClink must compute the price.
+  This client makes that false. `cli_reported_cost` carries value, unit and provenance, keyed on the
+  metadata rather than the `cli_name`.
+- **The largest token class on a real run was being dropped (#127).** `cache.read` had the right field
+  and the flat map could not walk into a dict — 144,256 against 102,535 input. `USAGE_FIELD_MAP` now
+  takes a dotted key. `cache.write` stays unmapped; that one is a schema question and still #56's.
+
+**The review caught a crash I had introduced**, and that is the part worth carrying. `_call_accounting`
+read `result.parser_name`, and `result` is `AgentOutput | CLIAgentError` — only the first had it, so
+any failed opencode run would have raised `AttributeError` from inside the error handler and cost the
+caller the whole diagnostic block. `CLIAgentError`'s docstring states the invariant that broke: its
+field names match `AgentOutput`'s so one projection serves both (#41). Fixed by restoring the
+invariant, not by `getattr`.
+
+**And the first regression test for it was green under mutation.** It built the error by hand, so
+deleting `parser_name=self._parser.name` from the raise site changed nothing. Rewritten to drive
+`finalize_output` with a non-zero return code, it reds at `assert None == 'opencode_jsonl'`.
+
+The review also found that **"the caller was told nothing" was false** — parser metadata is merged
+wholesale, so the bare float always reached them; what was missing was a place in `accounting`, a unit
+and a provenance. Corrected in the module docstring, `CHANGES-FORK.md`, and on the issue. And it found
+that **deleting one parser line reverted the whole feature with a green suite**, because every
+projection test hand-fed the metadata: two parser tests now pin the unit and the key name.
+
+Every new assertion was mutation-tested — eight mutations, each applied, observed red, and reverted.
+
 ## 2026-08-16 — the project is OpenClink (#94, PR #114, merged at `7effad8`)
 
 Renamed from PAL MCP. `pal-mcp-server` is taken on PyPI at 10.4.3 by something that is not this

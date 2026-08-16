@@ -103,11 +103,52 @@ same: codex nests the reply under `item`, keys usage at the event root, and repo
 OpenCode puts the reply in `part.text` on `type:"text"`, and the account in `part.tokens` on
 `type:"step_finish"` — plus a `part.cost` that no other client provides.
 
-**It reports the price of its own call.** `part.cost` arrives per step, so OpenClink needs no rate card to
-know what a call cost. That matters because OpenClink's own pricing layer is currently unreachable (#77) —
-no bundled config declares a `rate_card`, so `price_call` returns `no_rate_card` for every client.
-OpenCode hands over the number regardless; today it is published in parser metadata while
-`AgentOutput.cost` still reads `CostUnavailable(no_rate_card)`. Reconciling the two is #77's call.
+**It reports the price of its own call, and that figure is now accounted rather than merely present.**
+`part.cost` arrives per step, so OpenClink needs no rate card to know what a call cost. That matters
+because OpenClink's own pricing layer is unreachable (#77) — no bundled config declares a `rate_card`,
+so `price_call` returns `no_rate_card` for every client and the tool suppresses that reason
+deliberately.
+
+#77 framed the choice as *ship a real rate card* or *reduce the surface*. OpenCode makes a third option
+available, because it is the only client that measures itself: for it the pricing layer is not
+unreachable, it is unnecessary. So the measured figure is projected into the accounting block (#126):
+
+```json
+"cli_reported_cost": { "value": 0.007392, "unit": "USD", "source": "opencode_jsonl" }
+```
+
+**Stated precisely, because the first write-up of this overstated it.** The number was never invisible
+— parser metadata is merged into the response wholesale, so a bare float always reached the caller at
+top level. What it lacked was a place in `accounting` beside the account it belongs to, a unit, and any
+statement of where it came from.
+
+**Its own key, not `cost` — in both places.** In the accounting block, `cost` means *OpenClink
+multiplied an account by a rate card* and this is a vendor's meter; one key carrying both claims would
+leave no way to tell which a figure was. In parser metadata it is published as `cli_cost` for a sharper
+reason: the tool merges parser metadata and then the accounting block into one dict, so a float under
+`cost` is overwritten by the accounting dict the moment any client gets a rate card — silently, and
+with the two claims swapped. `AgentOutput.cost` still reads `CostUnavailable(no_rate_card)`, correctly.
+
+The unit is declared by the parser, which knows the CLI, rather than assumed by the consumer; a cost
+published without one is **not reported at all**, because a bare number invites summing credits with
+currency. And a reported `0` is emitted rather than swallowed — the free tier genuinely bills nothing,
+and "this call was free" is a different claim from "cost unknown". Both halves survive a failed run
+too: the `step_finish` arrives before whatever killed the call, and `CLIAgentError` carries the same
+field names as `AgentOutput` so one projection serves both.
+
+**Reasoning effort reaches it too, as `--variant` (#125).** `opencode run --variant <v>` is a real
+flag, and until #125 `OpenCodeAgent` inherited the base behaviour of discarding the caller's
+`reasoning_effort` — silently, because `resolved_effort` is only reported when non-null. Valid values
+are per model and enumerable: `opencode models opencode --verbose` publishes a `variants` object, with
+`low`/`high`/`max` for `deepseek-v4-flash` and five tiers for `claude-opus-5`.
+
+Two measured caveats, stated because the flag now looks fully supported and is not quite:
+**an invalid variant is accepted and silently ignored** by the CLI (`--variant not-a-real-variant`
+exits 0 and answers normally), and OpenClink does not validate against the per-model list because that
+would cost a ~30s `opencode models` call per delegation. And **no observable effect could be
+demonstrated on `deepseek-v4-flash`** — three runs of one prompt at no variant, `low` and `max` gave
+indistinguishable token profiles. OpenClink writes the flag and can read it back; whether the provider
+acts on it for that model is unverified.
 
 **Per-step accounting, which is the trap.** An agentic run closes a `step_finish` per tool round-trip,
 and each one reports only *its own* spend. Taking the last — the obvious reading, and what the first
@@ -116,10 +157,20 @@ measured on a real two-step file-read at **1,053 input tokens against 102,535 ac
 **0.000248 against 0.007392**. It reads as a plausible small number rather than as an error, and no
 single-step fixture can fail that way. The parser accumulates; a single-step run sums a set of one.
 
-**Cache classes are reported and deliberately unmapped.** `tokens.cache.write` has no field on the
-normalised account at all (#56), and `tokens.cache.read` has one — `cached_input_tokens` — but sits a
-level down, which the base's flat field map cannot reach. Both stay absent rather than being folded
-somewhere plausible: an incomplete account is recoverable, a wrong one is not.
+**Cache-read is now accounted; cache-write still has nowhere to go.** These were bundled once and are
+not the same problem. `tokens.cache.read` has exactly the right home — `cached_input_tokens` — and was
+being dropped only because the base's field map was flat and `cache` is a dict; #127 gave the map a
+dotted path (`"cache.read": "cached_input_tokens"`) and it lands. That mattered more than "incomplete"
+suggests: on the recorded two-step run the dropped class was **larger than the reported one**, 144,256
+against 102,535 input, so anything reasoning about cache effectiveness from that account was wrong by
+over a factor of two with nothing to say so.
+
+`tokens.cache.write` stays absent, for the other reason: the normalised account has no field for
+cache-creation at all (#56). Folding it somewhere plausible would make the account wrong rather than
+incomplete, and an incomplete one is recoverable.
+
+The dotted path is opt-in per client — every other adapter is flat and unchanged — and a path whose
+parent is missing, or arrives as a scalar, yields no field rather than an exception.
 
 **`--auto` is deliberately not passed.** OpenCode's own help calls it *"auto-approve permissions that
 are not explicitly denied (dangerous!)"*, and its docs note that most permissions already default to

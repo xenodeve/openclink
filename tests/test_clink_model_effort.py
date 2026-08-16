@@ -3,8 +3,15 @@
 Tests the pure command-building seam (`_build_command`): a clink call may pass
 `model` / `reasoning_effort` and each agent maps them to its CLI's flags
 (codex: `-m` + `-c model_reasoning_effort=`; antigravity: `--model` + `--effort`,
-mutually exclusive; the rest: `--model` only). Omitting them must leave the
-command untouched (backward compatible).
+mutually exclusive; opencode: `--model` + `--variant`, independent; the rest:
+`--model` only). Omitting them must leave the command untouched (backward
+compatible).
+
+Three of the five clients now need their own `_model_args`, and each was added
+only after the effort was found to be going nowhere — codex (#27), antigravity
+(#43), opencode (#125). The base's "effort is baked into the model name" default
+is right for claude and gemini and wrong for everyone else, so a new client
+should be assumed to need an override until its `--help` says otherwise.
 """
 
 from __future__ import annotations
@@ -15,6 +22,7 @@ import pytest
 
 from clink.agents.base import BaseCLIAgent
 from clink.agents.codex import CodexAgent
+from clink.agents.opencode import OpenCodeAgent
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
 
 
@@ -66,6 +74,98 @@ def test_base_agent_uses_model_flag_and_ignores_effort():
     agent = BaseCLIAgent(client)
     cmd = agent._build_command(role=role, system_prompt=None, model="Gemini 3.5 Flash (High)", reasoning_effort="high")
     assert cmd == ["gemini", "--model", "Gemini 3.5 Flash (High)"]
+
+
+def test_opencode_maps_reasoning_effort_to_variant():
+    """`opencode run --variant <v>` is a real flag, and nothing was writing it (#125).
+
+    Measured 2026-08-16 against the installed binary, `opencode run --help`:
+
+        --variant   model variant (provider-specific reasoning effort,
+                    e.g., high, max, minimal)   [string]
+
+    `OpenCodeAgent` inherited the base `_model_args`, which discards the effort
+    because claude and gemini bake the tier into the model name. For opencode that
+    is false, so a caller's `reasoning_effort` reached the CLI as nothing at all.
+
+    Third instance of this defect class in this fork — #27 closed it for codex,
+    #43 for antigravity.
+    """
+    client, role = _client("opencode", "opencode_jsonl")
+    agent = OpenCodeAgent(client)
+    cmd = agent._build_command(
+        role=role, system_prompt=None, model="opencode/deepseek-v4-flash", reasoning_effort="high"
+    )
+    assert cmd == ["opencode", "--model", "opencode/deepseek-v4-flash", "--variant", "high"]
+
+
+def test_opencode_effort_only_without_model():
+    """The knobs are independent here, unlike antigravity's.
+
+    `agy` refuses `--model` and `--effort` together for every model it serves, so
+    its agent has `refuse_unservable`. opencode's `--variant` is documented as
+    provider-specific rather than mutually exclusive, so effort alone must build.
+
+    **Measured 2026-08-16 against the real binary, and the results are not all
+    comfortable.** Recorded here because the next reader will otherwise assume
+    this fix was verified end to end:
+
+    1. Valid variant names are per model and enumerable —
+       `opencode models opencode --verbose` publishes a `variants` object;
+       `deepseek-v4-flash` has `low` / `high` / `max`, each mapping to a
+       `reasoningEffort`, and `claude-opus-5` has five tiers under `effort`.
+    2. **An invalid variant is accepted and silently ignored.**
+       `--variant definitely-not-a-real-variant` exited 0 and answered normally.
+       So the CLI will not reject a typo on OpenClink's behalf, and nothing here
+       validates against the per-model list — that would cost a ~30s
+       `opencode models` call on every clink call.
+    3. **No observable effect could be demonstrated on the one model the quota
+       constraint permits.** Same prompt on `deepseek-v4-flash-free`, three runs:
+       no variant -> `reasoning=0 output=75`; `--variant low` -> `0 / 59`;
+       `--variant max` -> `0 / 49`. An earlier single `low` run reported
+       `reasoning=67`, which the repeats did not reproduce — that was variance,
+       not signal.
+
+    So what this fix establishes is that OpenClink *writes* the flag and can read
+    it back. Whether the provider acts on it is **unverified for deepseek**, and
+    saying otherwise would repeat the antigravity `--model` mistake this
+    repository already has a scar from. It is still strictly better than the
+    previous behaviour, which was to discard the caller's value in silence.
+    """
+    client, role = _client("opencode", "opencode_jsonl")
+    agent = OpenCodeAgent(client)
+    assert agent._build_command(role=role, system_prompt=None, reasoning_effort="minimal") == [
+        "opencode",
+        "--variant",
+        "minimal",
+    ]
+
+
+def test_opencode_declares_the_variant_flag_so_the_effort_can_be_read_back():
+    """Writing the flag without declaring it is the silent half of this bug.
+
+    `_resolve_model_effort` reads the effort back OFF the built command, and that
+    value is what `tools/clink.py` reports as `resolved_effort`. Declare the flag
+    in `EFFORT_FLAGS` or the CLI honours the variant while the caller is told
+    `resolved_effort: None` — indistinguishable from it having been dropped, which
+    is the very thing being fixed. #27 closed exactly this hole for codex.
+
+    Asserted through `_resolve_model_effort` rather than by reading the constant,
+    so it fails on the behaviour rather than on the spelling.
+    """
+    client, role = _client("opencode", "opencode_jsonl")
+    agent = OpenCodeAgent(client)
+    cmd = agent._build_command(
+        role=role, system_prompt=None, model="opencode/deepseek-v4-flash", reasoning_effort="max"
+    )
+
+    model, effort = agent._resolve_model_effort(cmd)
+
+    assert model == "opencode/deepseek-v4-flash"
+    assert effort == "max", (
+        "the variant was written to the command but cannot be read back, so the "
+        "caller is told resolved_effort=None while the CLI honours it (#125)"
+    )
 
 
 def test_no_overrides_leaves_command_unchanged():

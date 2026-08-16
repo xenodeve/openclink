@@ -68,7 +68,35 @@ def test_the_cli_prices_its_own_call_and_the_number_survives():
     sidesteps that problem.
     """
     parsed = OpenCodeJSONLParser().parse(stdout=RECORDED_SUCCESS, stderr="")
-    assert parsed.metadata["cost"] == pytest.approx(0.00851956)
+    assert parsed.metadata["cli_cost"] == pytest.approx(0.00851956)
+
+
+def test_the_cost_is_published_with_its_unit_or_the_tool_will_not_report_it():
+    """The unit is a precondition, not decoration — so it needs its own assertion.
+
+    `tools/clink.py` emits `cli_reported_cost` only when BOTH keys are present,
+    because a bare figure invites summing credits with currency (#25). Every test
+    of that projection hand-feeds the metadata, so without this one, deleting the
+    `cli_cost_unit` line here would revert #126 end to end with a green suite —
+    the parser would keep reporting a cost and the tool would silently stop
+    projecting it.
+
+    That gap was real and a review found it, not this file.
+    """
+    parsed = OpenCodeJSONLParser().parse(stdout=RECORDED_SUCCESS, stderr="")
+    assert parsed.metadata["cli_cost_unit"] == "USD"
+
+
+def test_the_cost_is_not_published_under_the_rate_card_key():
+    """`cost` belongs to `price_call`'s output, and this is not that.
+
+    The tool merges parser metadata and then the accounting block into one dict.
+    `accounting["cost"]` is a dict; this is a float. Publishing under the same
+    name is harmless only until a client gets a rate card, at which point the
+    later update wins and two different claims have quietly changed places.
+    """
+    parsed = OpenCodeJSONLParser().parse(stdout=RECORDED_SUCCESS, stderr="")
+    assert "cost" not in parsed.metadata
 
 
 # Recorded verbatim 2026-08-11 from a REAL agentic call through OpenClink's own path —
@@ -111,7 +139,7 @@ def test_cost_is_summed_across_every_step():
     alone under-states the call by 96.6%.
     """
     parsed = OpenCodeJSONLParser().parse(stdout=RECORDED_MULTISTEP, stderr="")
-    assert parsed.metadata["cost"] == pytest.approx(0.0071444464 + 0.000247702)
+    assert parsed.metadata["cli_cost"] == pytest.approx(0.0071444464 + 0.000247702)
 
 
 def test_the_reply_is_still_only_the_text_part_on_a_multi_step_run():

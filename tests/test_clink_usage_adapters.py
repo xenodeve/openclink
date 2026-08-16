@@ -207,7 +207,11 @@ OPENCODE_RECORDED_TOKENS = {
 OPENCODE_CASES = [
     pytest.param(
         OPENCODE_RECORDED_TOKENS,
-        TokenUsage(input_tokens=121702, cached_input_tokens=None, output_tokens=3, reasoning_output_tokens=0),
+        # `cached_input_tokens=0` rather than `None` since #127: this run really
+        # did read nothing from cache, and a REPORTED ZERO is a different fact
+        # from an unreported class. Before #127 both read as `None`, which is
+        # exactly the confusion the account's absence convention exists to avoid.
+        TokenUsage(input_tokens=121702, cached_input_tokens=0, output_tokens=3, reasoning_output_tokens=0),
         id="recorded-real-run",
     ),
     pytest.param(
@@ -215,7 +219,7 @@ OPENCODE_CASES = [
         # the map is falsifiable — the recorded run has 0 in three places, and a
         # fixture cannot tell a correct map from a permutation of its own zeros.
         {"total": 9000, "input": 8000, "output": 900, "reasoning": 100, "cache": {"write": 500, "read": 7000}},
-        TokenUsage(input_tokens=8000, cached_input_tokens=None, output_tokens=900, reasoning_output_tokens=100),
+        TokenUsage(input_tokens=8000, cached_input_tokens=7000, output_tokens=900, reasoning_output_tokens=100),
         id="reasoning-and-cache-used",
     ),
 ]
@@ -242,28 +246,76 @@ def test_opencode_totals_are_not_mapped_anywhere():
     assert _account(agent, {"tokens": {"total": 121705}}) is None
 
 
-def test_opencode_cache_tokens_reach_no_field_of_the_account():
-    """A KNOWN GAP, pinned for two separate reasons that must not be conflated.
+def test_opencode_cache_read_lands_in_cached_input_tokens():
+    """The half of the old gap that never needed #56's decision (#127).
 
-    `cache.write` is the same missing field as claude's — #56 — and the account
-    has nowhere to put it. `cache.read` is different: `cached_input_tokens`
-    exists and would be the right home, but the payload nests it one level down
-    and `_extract_token_usage` reads a flat map (`isinstance(usage.get(key), int)`
-    skips a dict), so the map cannot reach it *mechanically*.
+    This test used to assert the opposite, and the reasoning that put it there
+    bundled two different problems: `cache.write` has no field on the account at
+    all — a SCHEMA question, and #56's to answer — while `cache.read` has exactly
+    the right field and merely could not be *reached*, because the field map was
+    flat and `cache` is a dict. The second is a traversal problem, so it waited
+    on a decision it never required.
 
-    Both are left unmapped rather than reached for here, because closing the
-    second needs a nested-key vocabulary in the base — a change to the account
-    #23 shipped, which is #56's decision to make, not this client's. Reporting
-    an absent field is incomplete; reporting a wrong one is a lie.
+    Worth more than "incomplete": on the real two-step run recorded in
+    `CHANGES-FORK.md` the dropped class was **larger than the reported one** —
+    102,535 input against 144,256 cache-read. Anyone reasoning about cache
+    effectiveness from that account was wrong by more than a factor of two, with
+    nothing in the payload to say so.
     """
     agent = _agent(OpenCodeAgent, "opencode", "opencode_jsonl")
     account = _account(
         agent,
         {"tokens": {"input": 8000, "output": 900, "cache": {"write": 500, "read": 7000}}},
     )
-    assert account.cached_input_tokens is None
-    assert 7000 not in vars(account).values()
+    assert account.cached_input_tokens == 7000
+
+
+def test_opencode_cache_write_still_has_nowhere_to_go():
+    """The other half, and it stays pinned — #56 is unanswered.
+
+    Kept as its own test rather than deleted with the split, because the reason
+    it is absent is now different from its neighbour's: not "cannot reach it" but
+    "there is nothing to reach". Reporting an absent field is incomplete;
+    inventing a home for it here would pre-empt the schema decision and make the
+    account wrong instead.
+    """
+    agent = _agent(OpenCodeAgent, "opencode", "opencode_jsonl")
+    account = _account(
+        agent,
+        {"tokens": {"input": 8000, "output": 900, "cache": {"write": 500, "read": 7000}}},
+    )
     assert 500 not in vars(account).values()
+
+
+def test_a_nested_key_whose_parent_is_missing_or_not_a_dict_yields_no_field():
+    """Traversal must fail to absence, never to an exception (#127).
+
+    A CLI that stops reporting a block, or reports it as a scalar in some mode,
+    must degrade to an incomplete account — not take down the call that produced
+    it. Both shapes, because they fail at different steps of the walk.
+    """
+    agent = _agent(OpenCodeAgent, "opencode", "opencode_jsonl")
+
+    missing = _account(agent, {"tokens": {"input": 8000, "output": 900}})
+    assert missing.cached_input_tokens is None
+    assert missing.input_tokens == 8000
+
+    scalar = _account(agent, {"tokens": {"input": 8000, "output": 900, "cache": 12}})
+    assert scalar.cached_input_tokens is None
+    assert scalar.input_tokens == 8000
+
+
+def test_a_boolean_in_a_usage_payload_is_not_counted_as_a_token():
+    """`bool` is a subclass of `int`, so the obvious guard admits `True` as 1.
+
+    The same trap was already fixed once in `clink/parsers/opencode.py::_accumulate`
+    for the same reason. No CLI reports a boolean token count today; this costs
+    one clause and removes a class of silently-wrong account.
+    """
+    agent = _agent(OpenCodeAgent, "opencode", "opencode_jsonl")
+    account = _account(agent, {"tokens": {"input": True, "output": 900}})
+    assert account.input_tokens is None
+    assert account.output_tokens == 900
 
 
 def test_every_configured_client_either_accounts_or_says_it_cannot():

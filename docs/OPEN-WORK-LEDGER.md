@@ -10,6 +10,26 @@ protocol in `docs/agents/` and the entry map (`using-t4`).
 
 ## Active
 
+### ✅ opencode is fully supported (2026-08-16, #125 #126 #127, PR #128)
+
+Three gaps in the client that shipped in #86, each verified end to end against the real binary rather
+than through `_build_command`: `reasoning_effort` was discarded instead of becoming `--variant`; the
+cost opencode measures itself never reached the accounting block; and `cache.read` — the largest token
+class on a real run, 144,256 against 102,535 input — had the right field and no way to reach it.
+
+**Two follow-ups this deliberately did not take**, so they do not get lost:
+
+- **An unsupported `--variant` is accepted and silently ignored by the CLI**, and OpenClink does not
+  validate against the per-model `variants` list because reading it costs a ~30s `opencode models`
+  call. Caching that list would close it (#125).
+- **`--variant` has no demonstrated effect on `deepseek-v4-flash`.** Three controlled runs at no
+  variant, `low` and `max` gave indistinguishable token profiles. OpenClink writes the flag and reads
+  it back; the provider side is unverified, and the quota constraint permits no other model for
+  testing. Worth re-probing on a tiered model if one becomes cheap to call.
+
+`cache.write` stays unmapped — a schema question, still **#56**. `cli_reported_cost` does not reach
+`sum_thread_accounts`, so a thread total still shows nothing; that is **#77**'s remaining half.
+
 ### 🟡 The rename shipped; the tool prefix is the one piece left (2026-08-16, #94 → #122)
 
 **OpenClink is live on `main` at `7effad8`** (PR #114, 22 commits, 176 files; PR #86 / OpenCode client rode

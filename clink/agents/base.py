@@ -71,6 +71,27 @@ class AgentOutput:
 MAX_DRAINED_OUTPUT_CHARS = 10_000
 
 
+def _walk(payload: dict, key: str) -> object:
+    """Read a `USAGE_FIELD_MAP` key, which may name a nested path with dots (#127).
+
+    A flat key costs one lookup and behaves exactly as before, so no existing
+    adapter changes. A dotted one descends, and anything that is not a dict on
+    the way down ends the walk at `None` rather than raising: a CLI that stops
+    reporting a block, or reports it as a scalar in some mode, must degrade to an
+    incomplete account and not take down the call that produced it.
+
+    This exists because `cache.read` had the right field on the account
+    (`cached_input_tokens`) and no way to reach it — on a real opencode run the
+    class it dropped was larger than the one it reported.
+    """
+    node: object = payload
+    for part in key.split("."):
+        if not isinstance(node, dict):
+            return None
+        node = node.get(part)
+    return node
+
+
 def flag_values(command: Sequence[str], flags: Sequence[str], *, prefix: str | None = None) -> list[str]:
     """Return values read for `flags`, in command order.
 
@@ -130,6 +151,7 @@ class CLIAgentError(RuntimeError):
         stderr: str = "",
         parsed: ParsedCLIResponse | None = None,
         sanitized_command: list[str] | None = None,
+        parser_name: str | None = None,
         token_usage: TokenUsage | None = None,
         requested_model: str | None = None,
         resolved_model: str | None = None,
@@ -151,6 +173,14 @@ class CLIAgentError(RuntimeError):
         # HTTP 400 blaming the model (#64). A failed run is exactly when the
         # caller needs to know which executable produced it.
         self.sanitized_command = sanitized_command
+        # Which parser read the output — carried here for the same reason as
+        # everything below it, and added late: a projection that read it off
+        # `AgentOutput` alone turned every failed run into an `AttributeError`
+        # raised from inside the error handler, costing the caller the whole
+        # diagnostic block. The match between these names and `AgentOutput`'s is
+        # the invariant, not a coincidence, and it is only load-bearing while it
+        # is complete.
+        self.parser_name = parser_name
         # A run that failed still spent the tokens it spent. Making the outcome
         # honest must not make the call unaccountable.
         self.token_usage = token_usage
@@ -408,6 +438,7 @@ class BaseCLIAgent:
                 stderr=stderr,
                 parsed=parsed,
                 sanitized_command=sanitized_command,
+                parser_name=self._parser.name,
                 token_usage=token_usage,
                 requested_model=requested_model,
                 resolved_model=resolved_model,
@@ -477,7 +508,15 @@ class BaseCLIAgent:
         usage = parsed.metadata.get(self.USAGE_METADATA_KEY)
         if not isinstance(usage, dict):
             return None
-        reported = {field: usage[key] for key, field in self.USAGE_FIELD_MAP.items() if isinstance(usage.get(key), int)}
+        reported: dict[str, int] = {}
+        for key, field in self.USAGE_FIELD_MAP.items():
+            value = _walk(usage, key)
+            # `bool` is a subclass of `int`, so the obvious guard admits `True` as
+            # a token count of 1. Same trap already fixed in the opencode parser's
+            # `_accumulate`; costs one clause here and removes a class of account
+            # that is wrong rather than incomplete.
+            if isinstance(value, int) and not isinstance(value, bool):
+                reported[field] = value
         return TokenUsage(**reported) if reported else None
 
     def _resolve_model_effort(self, command: Sequence[str]) -> tuple[str | None, str | None]:
