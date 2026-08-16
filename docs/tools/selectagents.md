@@ -1,9 +1,16 @@
 # SelectAgents Tool
 
-> ⚠️ **Not implemented yet.** As of #99 the tool is registered and reachable and returns a stub that says
-> so. It does not rank models, read a dataset, or compute anything. Do not treat its response as a
-> delegation decision. This page describes what it is being built to do, and is marked up front so it
-> cannot be mistaken for a description of what it does today.
+> ⚠️ **Partly implemented.** The tool ranks real candidates on cost per task (#104), filters on context
+> window before pricing (#108) and honours an optional budget (#109) — against a **committed fixture
+> whose prices and output volumes are constructed, not measured** (#102 replaces it with fetched data).
+> Still unbuilt: alternatives (#110), the agent count, which is always one (#111), and the scope
+> partition (#113). Every response says the same thing in its own body, and that list is guarded by a
+> test in both directions — it must name everything unbuilt and nothing already shipped.
+>
+> This banner said "does not rank models, read a dataset, or compute anything" for two slices after it
+> had begun doing all three. A stale disclaimer understates a tool exactly as confidently as an
+> overstated one oversells it, so it is a change site for every slice — not documentation to revisit
+> at the end.
 
 The `selectagents` tool computes a **delegation plan** — whether to delegate at all, to how many agents,
 and on which model and effort each — from a measured model dataset rather than from an agent's
@@ -26,6 +33,42 @@ composite therefore imports a majority signal about something a delegation is no
 
 **A worker with a loose scope bills the caller for work nobody asked for.** Nothing today bounds what a
 spawned agent may do, and nothing records what it was authorised to do.
+
+## What You Pass It
+
+Seven required fields and one optional. Nothing is defaulted, because a default here is a decision made
+silently — an omitted `item_count` falling back to 1 would turn a fan-out into a single agent and
+nothing in the response would say you never asked for that.
+
+| Field | Meaning |
+|---|---|
+| `kind_of_work` | One of `implementation`, `refactor`, `bulk_transform`, `research`, `review`, `analysis`. Closed, because it decides the capability axis. |
+| `item_count` | How many separate items the scope contains. |
+| `read_volume_tokens` | Tokens that must be read to do the work. |
+| `already_in_context` | Whether that volume is already in your context. |
+| `output_ceiling_tokens` | Most tokens the result may occupy. Added to the read volume to size the context window a candidate must have. |
+| `verification` | One of `automated_tests`, `diff_review`, `spot_check`, `unverifiable`. What will confirm the result — work a suite checks tolerates a weaker seat. |
+| `description` | The work in your own words. Used **only** to map it onto a capability axis, never as an input to the arithmetic. |
+| `budget_usd` *(optional)* | A ceiling in USD for one task. See below. |
+
+Unknown fields are refused rather than dropped. A caller that sent a budget before #109 existed would
+otherwise have been told the request succeeded, and would have believed it had bounded a run that was
+not bounded.
+
+### The budget changes which rule runs
+
+**Omit it and you get the cheapest qualifying candidate.** Frugality is the default rather than a
+setting you have to remember.
+
+**Supply it and you get the best candidate on the axis that fits inside it.** You have already said what
+you will spend, so the layer spends it on capability instead of handing back change. This is why the
+same scope can return a different — and better — model once a budget is named.
+
+If nothing fits, it **refuses and names the cheapest qualifying candidate and its cost**, rather than
+returning a plan your own ceiling forbids and letting you find out from the bill. A budget of `0` is a
+contract error, not a refusal: omitting the field is how you say "choose on cost".
+
+While the agent count is fixed at one (#111), a budget bounds **one seat** rather than the whole run.
 
 ## What It Will Return
 
