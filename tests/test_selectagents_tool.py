@@ -117,7 +117,7 @@ async def test_the_response_names_what_is_still_missing(tool):
     """
     content = json.loads((await tool.execute(dict(SCOPE)))[0].text)["content"]
 
-    for unbuilt in ("#102", "#138"):
+    for unbuilt in ("#102",):
         assert unbuilt in content, f"the response does not disclose that {unbuilt} is unbuilt"
 
 
@@ -136,7 +136,7 @@ async def test_the_response_stops_naming_a_slice_once_it_ships(tool):
     """
     content = json.loads((await tool.execute(dict(SCOPE)))[0].text)["content"]
 
-    for shipped in ("#98", "#99", "#101", "#104", "#108", "#109", "#110", "#111", "#113"):
+    for shipped in ("#98", "#99", "#101", "#104", "#108", "#109", "#110", "#111", "#113", "#138"):
         assert shipped not in content, f"{shipped} has shipped, but the response still calls it unbuilt"
 
 
@@ -359,6 +359,44 @@ async def test_model_and_effort_sit_on_the_agent_rather_than_on_the_plan(tool):
     # Priced on its OWN share, not on the whole scope — the seat reads a quarter
     # of it, and charging each seat for the whole read would quadruple the plan.
     assert all(agent["cost_per_task"] < agents[0]["cost_per_task"] * len(agents) for agent in agents)
+
+
+@pytest.mark.asyncio
+async def test_the_plan_total_is_reported_beside_the_budget(tool):
+    """#138: the budget is compared against this, so the caller must see it.
+
+    **The seats must ADD UP to the total**, and that is the assertion worth
+    making. Each agent is priced on its own share of the read (#113), so the
+    per-seat figures already sum to the plan — a caller that adds them up and a
+    caller that reads `plan_cost_usd` must not get two answers.
+
+    A first version asserted the opposite: that the total would DIFFER from
+    seat-cost times seats. That confused two different multiplications.
+    Multiplying the per-SHARE cost by the seat count is correct and equals the
+    total; the mistake #138 is about is multiplying the cost of reading the WHOLE
+    scope by the seat count, which is asserted below as a strict upper bound.
+    Fifth time this epic that a hand-written expectation was wrong and the
+    assertion caught it.
+    """
+    from tools.selection import load_candidates
+
+    scope = dict(SCOPE) | {"item_count": 4, "read_volume_tokens": 1_600_000, "output_ceiling_tokens": 4_000}
+    plan = json.loads((await tool.execute(scope))[0].text)["metadata"]["plan"]
+    criteria = plan["criteria"]
+
+    assert criteria["agent_count"] > 1, "the scope no longer exercises a multi-seat plan"
+    assert criteria["plan_cost_usd"] > 0
+
+    seats_added_up = sum(agent["cost_per_task"] for agent in plan["agents"])
+    assert criteria["plan_cost_usd"] == pytest.approx(
+        seats_added_up, abs=1e-5
+    ), "the seats do not add up to the plan total, so a caller summing them gets a different bill"
+
+    # The mistake #138 exists to remove: charging the WHOLE read once per seat.
+    winner = next(c for c in load_candidates() if c.model == plan["agents"][0]["model"])
+    charged_per_seat = winner.cost_per_task(scope["read_volume_tokens"]) * criteria["agent_count"]
+
+    assert criteria["plan_cost_usd"] < charged_per_seat, "the read is being charged once per seat"
 
 
 @pytest.mark.asyncio

@@ -2,8 +2,10 @@
 
 **It validates its input (#101) and computes a real, partial plan.** Candidates
 are filtered on context window before anything is priced (#108), then ranked on
-cost per task along the axis the declared kind of work maps to (#104) — or, with
-a budget in force, the best on that axis that fits (#109). Up to five routes come
+what the whole PLAN costs along the axis the declared kind of work maps to
+(#104, #138) — or, with a budget in force, the best on that axis whose plan fits
+inside it (#109). A budget bounds the plan rather than one seat: the read is
+charged once across the agents and each agent's answer once. Up to five routes come
 back, winner first, each priced against the one above it, with anything the bound
 cut counted rather than silently omitted (#110). The agent count is derived from
 how many item-shares the chosen window holds at once, and the derivation comes
@@ -13,9 +15,8 @@ dispatched by name.
 
 **What it still does not do is stated in the response itself**, not only here:
 the dataset is a committed fixture whose prices are constructed (#102 replaces
-it), a budget bounds one seat rather than the whole plan (#138), and every seat
-names the same model and effort because nothing here yet decides one should
-differ. That list is guarded in both directions
+it), and every seat names the same model and effort because nothing here yet
+decides one should differ. That list is guarded in both directions
 — a test fails if it omits an unbuilt slice, and another fails if it still names
 a shipped one. The second half exists because this docstring and the tool's own
 disclosure both went stale by a slice before anything noticed.
@@ -48,6 +49,7 @@ from tools.selection import (
     choose,
     load_candidates,
     partition,
+    plan_cost,
     rank,
     required_window,
     slate,
@@ -235,10 +237,12 @@ _PARTIAL_CONTENT = (
     # caller nothing and dated the string on every merge; #96 is where the whole
     # plan is, and it stays right until the layer is finished.
     "selectagents is INCOMPLETE (#96).\n\n"
-    "The plan below names one agent. Candidates that cannot hold the read plus "
-    "your output ceiling are excluded before anything is priced, and the winner "
-    "is then the lowest cost per task — or, if you named a budget, the best on "
-    "the axis that fits inside it. Up to five routes are returned, winner first, "
+    "Candidates that cannot hold their share of the read plus your output "
+    "ceiling are excluded before anything is priced, and the winner is then the "
+    "lowest-cost PLAN — or, if you named a budget, the best on the axis whose "
+    "whole plan fits inside it. A budget bounds the plan, not one seat: the read "
+    "is charged once across the agents and each agent's answer once. Up to five "
+    "routes are returned, winner first, "
     "each priced against the one above it, with anything the bound cut counted. "
     "The agent count is derived from how many item-shares the chosen window "
     "holds at once, the derivation comes back with it, and each agent owns a "
@@ -246,10 +250,8 @@ _PARTIAL_CONTENT = (
     "much is real arithmetic on a committed fixture.\n\n"
     "What is NOT here yet, and what you must not assume: the dataset is a "
     "committed fixture whose prices and output volumes are CONSTRUCTED rather "
-    "than measured (#102 replaces it with fetched data); a budget bounds ONE "
-    "SEAT rather than the whole plan, so a plan of N agents can cost up to N "
-    "times what you capped (#138); difficulty is not an input, because the "
-    "request contract carries no field for it; and every agent names the same "
+    "than measured (#102 replaces it with fetched data); difficulty is not an "
+    "input, because the request contract carries no field for it; and every agent names the same "
     "model and effort — the fields sit on the agent so a survey seat and a "
     "working seat CAN differ, but nothing here yet decides that one should."
 )
@@ -502,6 +504,8 @@ class SelectAgentsTool(BaseTool):
             ordered,
             axis=axis,
             read_volume_tokens=request.read_volume_tokens,
+            item_count=request.item_count,
+            output_ceiling_tokens=request.output_ceiling_tokens,
             budget_usd=request.budget_usd,
         )
         if choice.winner is None:
@@ -520,7 +524,12 @@ class SelectAgentsTool(BaseTool):
             ]
 
         winner = choice.winner
-        routes = slate(choice, read_volume_tokens=request.read_volume_tokens)
+        routes = slate(
+            choice,
+            read_volume_tokens=request.read_volume_tokens,
+            item_count=request.item_count,
+            output_ceiling_tokens=request.output_ceiling_tokens,
+        )
 
         # The count is fixed HERE, before a single agent is described, and every
         # seat below is generated from it (#111). Describing agents first and
@@ -599,6 +608,20 @@ class SelectAgentsTool(BaseTool):
                 "budget_usd": request.budget_usd,
                 "selection_rule": choice.rule,
                 "excluded_by_budget": choice.excluded_by_budget,
+                # Beside the budget, because that is what the budget is compared
+                # against (#138). The read is charged once and each seat's answer
+                # once, so this is NOT the per-agent figure multiplied by the
+                # count — a caller checking it against `agent_count` would
+                # otherwise find a mismatch and trust the wrong one.
+                "plan_cost_usd": round(
+                    plan_cost(
+                        winner,
+                        read_volume_tokens=request.read_volume_tokens,
+                        item_count=request.item_count,
+                        output_ceiling_tokens=request.output_ceiling_tokens,
+                    ),
+                    6,
+                ),
                 "context_window_required": required_window(
                     read_volume_tokens=request.read_volume_tokens,
                     output_ceiling_tokens=request.output_ceiling_tokens,

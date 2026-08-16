@@ -3,6 +3,38 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-16 — a budget bounds the whole plan, not one seat (#138, PR #142)
+
+#109 compared the budget against one seat's `cost_per_task`. That was right while the count was fixed
+at one — #109's docstring said so explicitly — and #111 made it wrong **without touching #109's code**,
+so nothing failed. An N-agent plan could pass a budget it exceeded by nearly N times.
+
+**The arithmetic is not "seat cost times seats".** The read is partitioned across the seats (#113), so
+the input term is paid once however many seats there are; each seat emits its own answer, so only the
+output term multiplies. Multiplying the whole per-seat figure would overstate a read-heavy plan — the
+direction that refuses work the caller could afford.
+
+**Ranking had to move to the same figure.** Budgeting on the plan total while ranking on the per-seat
+cost puts the incoherence back one function along: "cheapest qualifying" would name a candidate the
+budget rule refuses, from the same data in the same call. #96 wants "the figure I optimise" to be "the
+figure I spend"; there is one such figure. At a single seat it equals `cost_per_task`, so #104's
+arithmetic is extended rather than replaced, and a test pins that.
+
+**Validated** — 6 plan-cost tests plus the tool seam. Suite 1273 → 1280. Four mutations red (plan cost
+reverts to per-seat → 5; read charged once per seat → 3; cheapest rule falls back to per-seat order →
+1; budget compares one seat → 1).
+
+**Fifth hand-written expectation caught by its own assertion**, twice in this slice alone: a budget
+figure that did not sit between the per-seat and total costs, and then a seam test asserting the total
+would *differ* from seat-cost times seats. The second confused two multiplications — per-**share** cost
+times seats is correct and equals the total; per-**whole-read** cost times seats is the bug. The test
+now pins that the seats add up to the total, which is the property a caller actually needs.
+
+**How #138 got closed without being fixed.** Commit `9c33a2b` (#111) said *"Filed rather than fixed:
+#138"* and GitHub parsed `fixed: #138` as a closing keyword. Reopened, with the cause recorded on the
+issue. **Any closing verb adjacent to `#n` closes it, whatever the surrounding prose means** — negating
+it in words does not help.
+
 ## 2026-08-16 — plan identity, persisted before the response (#103, PR #141)
 
 Every plan carries a fresh random identity, is written whole to #98's store **before** the response

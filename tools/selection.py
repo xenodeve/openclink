@@ -178,6 +178,34 @@ def required_window(*, read_volume_tokens: int, output_ceiling_tokens: int, item
     return per_item_read(read_volume_tokens=read_volume_tokens, item_count=item_count) + output_ceiling_tokens
 
 
+def plan_cost(candidate: Candidate, *, read_volume_tokens: int, item_count: int, output_ceiling_tokens: int) -> float:
+    """What the WHOLE plan costs, not what one seat costs (#138).
+
+    #109 compared a budget against one seat, which was right while the count was
+    fixed at one and wrong the moment #111 made it a variable — without touching
+    #109's code, which is why nothing failed.
+
+    **It is not "seat cost times seats".** The read is partitioned across the
+    seats (#113), so the input term is paid ONCE however many seats there are;
+    each seat emits its own answer, so only the output term multiplies.
+    Multiplying the whole per-seat figure would overstate a read-heavy plan — the
+    direction that refuses work the caller could comfortably afford.
+
+    At one seat this returns exactly what `cost_per_task` returns, so #104's
+    arithmetic is extended rather than replaced. A test pins that.
+    """
+    seats = width(
+        candidate,
+        read_volume_tokens=read_volume_tokens,
+        item_count=item_count,
+        output_ceiling_tokens=output_ceiling_tokens,
+    ).count
+    return (
+        read_volume_tokens * candidate.input_price_per_mtok
+        + seats * candidate.output_tokens_per_task * candidate.output_price_per_mtok
+    ) / 1_000_000
+
+
 @dataclass(frozen=True)
 class Choice:
     """The eligible field in the applied rule's own order, best first.
@@ -228,7 +256,14 @@ class Slate:
 ALTERNATIVE_LIMIT = 5
 
 
-def slate(choice: Choice, *, read_volume_tokens: int, limit: int = ALTERNATIVE_LIMIT) -> Slate:
+def slate(
+    choice: Choice,
+    *,
+    read_volume_tokens: int,
+    item_count: int,
+    output_ceiling_tokens: int,
+    limit: int = ALTERNATIVE_LIMIT,
+) -> Slate:
     """The winner and its runners-up, each priced against the route above it.
 
     **Bounded by rank, never culled on merit (#96, #110).** A candidate beaten on
@@ -245,6 +280,10 @@ def slate(choice: Choice, *, read_volume_tokens: int, limit: int = ALTERNATIVE_L
     **The delta is to the predecessor and it is signed.** Falling back is often
     cheaper — under the budget rule it usually is — and a magnitude would leave a
     caller unable to tell a saving from a surcharge.
+
+    **It is a delta between PLAN totals (#138), not between seats.** A route that
+    needs three seats costs three answers more than one that needs one, and a
+    per-seat delta would price the fallback at a figure nobody is billed.
     """
     offered = choice.ranked[:limit]
 
@@ -256,7 +295,12 @@ def slate(choice: Choice, *, read_volume_tokens: int, limit: int = ALTERNATIVE_L
             entries.append(Alternative(candidate=candidate, cost_delta_usd=None))
             continue
         above = offered[position - 1]
-        delta = candidate.cost_per_task(read_volume_tokens) - above.cost_per_task(read_volume_tokens)
+        scope = {
+            "read_volume_tokens": read_volume_tokens,
+            "item_count": item_count,
+            "output_ceiling_tokens": output_ceiling_tokens,
+        }
+        delta = plan_cost(candidate, **scope) - plan_cost(above, **scope)
         entries.append(Alternative(candidate=candidate, cost_delta_usd=round(delta, 6)))
 
     return Slate(entries=entries, dropped=max(0, len(choice.ranked) - limit))
@@ -267,6 +311,8 @@ def choose(
     *,
     axis: str,
     read_volume_tokens: int,
+    item_count: int,
+    output_ceiling_tokens: int,
     budget_usd: float | None,
 ) -> Choice:
     """Cheapest by default; the best that fits once a ceiling is named (#109).
@@ -287,18 +333,32 @@ def choose(
     criterion is "says so rather than exceeding it", and quietly returning a plan
     the caller's own ceiling forbids is the overrun it exists to prevent.
 
-    Scope boundary, stated because it will not stay true: with the agent count
-    fixed at one, the plan costs what the winner costs, so bounding the winner
-    bounds the plan. **#111 makes the count a variable and this comparison has to
-    become count x cost.** Until then a budget bounds one seat.
+    **The figure is the PLAN total, not one seat (#138).** #109 compared against
+    one seat, which was right while the count was fixed at one and wrong the
+    moment #111 made it a variable. Budgeting on the total while ranking on the
+    per-seat figure would put the incoherence back one function along: the
+    "cheapest qualifying" rule would name a candidate the budget rule refuses,
+    from the same data in the same call. #96 wants "the figure I optimise" to be
+    "the figure I spend", and there is one such figure.
     """
-    if budget_usd is None:
-        # `ordered` is already cheapest-first, which IS this rule's preference
-        # order — so the runners-up need no resorting.
-        return Choice(ranked=list(ordered), rule="cheapest_qualifying", excluded_by_budget=[])
 
-    affordable = [c for c in ordered if c.cost_per_task(read_volume_tokens) <= budget_usd]
-    priced_out = [c.model for c in ordered if c.cost_per_task(read_volume_tokens) > budget_usd]
+    def cost(candidate: Candidate) -> float:
+        return plan_cost(
+            candidate,
+            read_volume_tokens=read_volume_tokens,
+            item_count=item_count,
+            output_ceiling_tokens=output_ceiling_tokens,
+        )
+
+    if budget_usd is None:
+        # Re-sorted on the plan total rather than trusting `ordered`, which #104
+        # ranks on the per-seat figure. The two agree only while every candidate
+        # needs one seat, and a rule named "cheapest" must be cheapest on the
+        # figure the caller is actually billed.
+        return Choice(ranked=sorted(ordered, key=cost), rule="cheapest_qualifying", excluded_by_budget=[])
+
+    affordable = [c for c in ordered if cost(c) <= budget_usd]
+    priced_out = [c.model for c in ordered if cost(c) > budget_usd]
 
     # Highest on the axis; ties to the cheaper seat, because cost is always
     # weighted (#96) and "either" would make the layer non-deterministic. The
@@ -308,7 +368,7 @@ def choose(
     # decision than the one made.
     ranked = sorted(
         affordable,
-        key=lambda c: (-(c.score_on(axis) or 0.0), c.cost_per_task(read_volume_tokens)),
+        key=lambda c: (-(c.score_on(axis) or 0.0), cost(c)),
     )
     return Choice(ranked=ranked, rule="best_within_budget", excluded_by_budget=priced_out)
 
