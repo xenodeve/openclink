@@ -21,6 +21,9 @@ than assumed: **#98 and #99 are the roots**; then #101 ← 99, #103 ← 98+99; #
 at all; #107 (and so #112) waits on **#100**, which carries no agent label. Nine slices are workable
 without them.
 
+- ✅ **#103 plan identity** (PR #141) — `tools/plan_record.py`, on #98's store. Written before the
+  response exists, and the test **records the order** rather than looking afterwards, because both
+  orders leave the same directory behind. Not-found raises; it never resolves to `{}`.
 - ✅ **#113 scope partition** (PR #140) — every item exactly one owner, shares sum on both axes, an
   undividable count refused rather than rebalanced. The read follows the items and the boundaries are
   cumulative, so nothing is lost or invented to rounding.

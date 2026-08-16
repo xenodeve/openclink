@@ -118,8 +118,18 @@ is not there.
   The routes follow the rule that picked the winner. With no budget that is ascending cost; with a
   budget it is descending capability. Ranking them by price under a budget would offer fallbacks for a
   decision nobody made.
-- An identity for the plan, so a spawn can be tied back to the decision that authorised it.
-- The dataset's fetch time and fingerprint, so the decision can be reproduced later.
+- **An identity for the plan**, so a spawn can be tied back to the decision that authorised it. The
+  plan is written to the on-disk store *before* the response exists — an identity you hold that is not
+  yet on disk is one a gate cannot validate. If the store cannot be written, the tool **refuses**
+  rather than returning a plan whose identity resolves to nothing.
+
+  Look one up with `tools.plan_record.fetch(identity)`. An unknown identity raises `PlanNotFound`; it
+  never resolves to an empty plan, because "never authorised" and "authorised to do nothing" demand
+  opposite responses.
+
+- **The dataset's fetch time and fingerprint**, so the decision can be reproduced later. Until #102
+  fetches, `source` reads `committed_fixture` and `fetched_at` is the file's modification time — said
+  plainly, so the field does not quietly become a claim about a network call when #102 lands.
 
 ## What It Will Not Do
 

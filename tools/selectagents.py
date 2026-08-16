@@ -41,6 +41,7 @@ from mcp.types import TextContent
 from pydantic import ConfigDict, Field, ValidationError, field_validator
 
 from tools.models import ToolOutput
+from tools.plan_record import dataset_provenance, new_identity, save
 from tools.selection import (
     DatasetError,
     axis_for,
@@ -285,6 +286,27 @@ def _no_candidate_refusal(axis: str) -> ToolOutput:
             "your declared kind of work ranks on. Nothing was ranked — a candidate with no "
             "score on an axis has not been measured on it, and ranking it anyway would invent "
             "the number this layer exists to avoid inventing."
+        ),
+        content_type="text",
+        metadata={"tool_name": "selectagents", "partial": True},
+    )
+
+
+def _unstorable_refusal(reason: str) -> ToolOutput:
+    """The plan could not be persisted, so no plan is returned (#103).
+
+    Returning it anyway would hand the caller an identity that resolves to
+    nothing. The gate rejecting it would fail at spawn time, in a different
+    process, with nothing pointing back at the write that never landed — so the
+    refusal happens here, where the cause is still in hand.
+    """
+    return ToolOutput(
+        status="error",
+        content=(
+            "selectagents computed a plan and could not store it, so no plan was returned. "
+            "An identity that is not on disk cannot be validated by anything that receives it.\n\n"
+            f"{reason}\n\n"
+            "Check that the store directory is writable, or set OPENCLINK_STORE_DIR to one that is."
         ),
         content_type="text",
         metadata={"tool_name": "selectagents", "partial": True},
@@ -601,6 +623,22 @@ class SelectAgentsTool(BaseTool):
             },
         }
 
+        # On disk BEFORE the response exists (#103). An identity handed to a
+        # caller that does not yet exist on disk is one the paired repository's
+        # gate cannot validate, and the window between the two is exactly when a
+        # fast caller acts. A test records the order rather than inspecting the
+        # store afterwards, because afterwards both orders look the same.
+        plan["identity"] = new_identity()
+        provenance = dataset_provenance()
+        try:
+            save(plan["identity"], plan, provenance)
+        except (OSError, ValueError) as exc:
+            # Refuse rather than return a plan whose identity was never stored:
+            # otherwise the failure surfaces at spawn time, in another process,
+            # with nothing pointing back here.
+            return [TextContent(type="text", text=_unstorable_refusal(str(exc)).model_dump_json())]
+
+        plan["dataset"] = provenance
         output = ToolOutput(
             status="success",
             content=_PARTIAL_CONTENT,
