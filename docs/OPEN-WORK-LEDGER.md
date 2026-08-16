@@ -21,6 +21,10 @@ than assumed: **#98 and #99 are the roots**; then #101 ← 99, #103 ← 98+99; #
 at all; #107 (and so #112) waits on **#100**, which carries no agent label. Nine slices are workable
 without them.
 
+- ✅ **#108 context-window filter** (PR #135) — a hard filter ahead of pricing, with both exclusion
+  reasons named rather than counted. `rank()` returns a `Ranking`, not a list, and
+  `output_ceiling_tokens` is **required** — it defaulted to 0, which is fail-open on a safety filter.
+  Unblocks #111.
 - ✅ **#98 on-disk record store** (PR #131) — first persistence in the repo. See `DONE.md` for the
   finding: the test for its hardest criterion passed 3/3 against a fully non-atomic implementation.
 - ✅ **#104 cost-per-task ranking** (PR #134) — the arithmetic core, pure and fixture-backed.

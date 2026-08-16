@@ -3,6 +3,38 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-16 — context window as a hard filter, applied before pricing (#108, PR #135)
+
+A candidate whose window cannot hold the share it would be given is removed, not down-ranked. A
+weight would let a cheap-enough model outrank the constraint and be handed work it silently
+truncates. `rank()` now returns a `Ranking` carrying `excluded_by_window` and `excluded_by_axis`
+**separately** — "your scope is larger than most context windows" is actionable, "nobody measured
+these on your axis" is not, and one number loses the half a caller can act on.
+
+**Validated** — 10 filter tests plus the tool seam. Suite 1213 → 1215. Three mutations, each with an
+assert that it applied: filter records but does not remove → 5 red; `<` → `<=` at the boundary → 1
+red; `required_window` drops the ceiling term → **1 red, and that was the finding**.
+
+**The finding: a fail-open default on a hard filter, and no test that could see it.**
+`output_ceiling_tokens` defaulted to `0`, sizing the requirement on the read alone — the exact
+mistake `required_window` exists to prevent, reachable by not passing the argument. Fail-open is the
+bad direction: it admits *more* candidates, so nothing errors and a model that cannot hold its own
+answer is quietly eligible. Now required, with a test pinning the `TypeError`, because a default that
+has to stay gone is one keyword away from coming back.
+
+Deleting the ceiling term entirely reddened **only the hand-checked arithmetic identity** and no
+behaviour at all: every candidate in the file was comfortably over the requirement or far under it,
+and nothing sat in the gap between the read and the read-plus-answer — the only place the ceiling
+decides anything. A 44,000 window against a 40,000 read and an 8,000 answer now does, and it is the
+cheaper of the pair. **The identity assertion was true; true is not the same as load-bearing.**
+
+One criteria key was renamed: `candidates_scored_on_axis` → `candidates_ranked`. It described one of
+the two filters while counting both, and a count whose name says "on axis" while it also excludes for
+context window is a label that will be believed.
+
+**Not claimed:** the "excluded candidates never return as alternatives" half of the criterion is
+structural (the sort runs over survivors only) and cannot be asserted end to end until #110 exists.
+
 ## 2026-08-16 — ranking on cost per task, one axis, from a committed fixture (#104, PR #134)
 
 The arithmetic core of #96, split from the language half on purpose: mapping described work onto a
