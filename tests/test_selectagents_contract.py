@@ -188,11 +188,22 @@ async def test_the_description_reaches_nothing_that_is_computed(tool):
     apart from the echo of that description. Written now rather than with #104,
     because by then the coupling it forbids would already be in place and the
     test would be documenting it instead of preventing it.
+
+    **The plan identity is excluded, and only the identity (#103).** It is a
+    fresh random value per call by design — two identical scopes are two separate
+    authorisations — so it differs between any two calls, description or not.
+    Popping it keeps this test about the coupling it was written to forbid.
+
+    Popped explicitly rather than by ignoring every key that varies: a blanket
+    "compare the parts that match" would silently absorb the next field that
+    starts depending on the description, which is exactly what this test exists
+    to catch.
     """
     first = json.loads((await tool.execute({**VALID, "description": "alpha"}))[0].text)
     second = json.loads((await tool.execute({**VALID, "description": "omega"}))[0].text)
 
-    first["metadata"]["scope"].pop("description")
-    second["metadata"]["scope"].pop("description")
+    for response in (first, second):
+        response["metadata"]["scope"].pop("description")
+        response["metadata"]["plan"].pop("identity")
 
     assert first == second

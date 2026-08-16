@@ -3,6 +3,37 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-16 — plan identity, persisted before the response (#103, PR #141)
+
+Every plan carries a fresh random identity, is written whole to #98's store **before** the response
+object exists, and is retrievable by that identity. An unknown identity raises `PlanNotFound` rather
+than returning `{}`: a gate that reads a missing plan as an empty one cannot tell "never authorised"
+from "authorised to do nothing", and the two demand opposite responses. A store that cannot be written
+refuses rather than handing back a plan whose identity resolves to nothing — otherwise the failure
+surfaces at spawn time, in another process, with nothing pointing back here.
+
+**Validated** — 8 tests. Suite 1265 → 1273. Six mutations red, including the one that matters:
+**moving `save()` to after the `ToolOutput` is constructed**, which is the actual defect the criterion
+names and which "look in the store afterwards" cannot see.
+
+**"Asserted, not assumed" was taken literally, because this repo has the scar.** Inspecting the store
+after the call proves only that both steps happened — both orders leave the same directory behind. So
+each step appends to a log as it runs and the log is asserted. This is the same shape as #98's
+concurrency test, which passed 3 runs out of 3 against a fully non-atomic implementation for exactly
+this reason: it looked after the fact.
+
+**Identity is random, not derived from the scope.** Two identical scopes are two separate
+authorisations; deriving it would let one plan's identity authorise a different plan's run.
+
+**Provenance says what it is.** Until #102 fetches, `source` is `committed_fixture` and `fetched_at` is
+the file's mtime — named explicitly so that when #102 lands, `fetched_at` keeping its name does not
+turn a file timestamp into a claim about a network call.
+
+One #101 test needed narrowing: it pins that two descriptions produce identical output, and the
+identity now legitimately differs per call. The identity alone is popped — not every key that varies —
+because a blanket "compare what matches" would absorb the next field that starts depending on the
+description, which is what that test exists to catch.
+
 ## 2026-08-16 — every agent owns its share of the scope (#113, PR #140)
 
 The partition is decided once, in `partition()`, rather than by each worker separately. Every item has
