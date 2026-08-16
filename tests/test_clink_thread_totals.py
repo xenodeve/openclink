@@ -224,6 +224,111 @@ def test_mixed_units_are_not_summed():
     assert totals["cumulative_usage"] == {"input_tokens": 150, "output_tokens": 30}
 
 
+def _reported(value: float | None, unit: str = "USD") -> dict:
+    """The accounting block an opencode turn produces, via the real projection.
+
+    Built through `OpenCodeAgent` and `_call_accounting` rather than hand-written,
+    so a change to either key name reds these tests instead of leaving them
+    passing against a shape nothing produces any more.
+    """
+    from clink.agents.opencode import OpenCodeAgent
+
+    role = ResolvedCLIRole(name="default", prompt_path=Path("systemprompts/clink/default.txt").resolve(), role_args=[])
+    client = ResolvedCLIClient(
+        name="opencode",
+        executable=["opencode"],
+        internal_args=[],
+        config_args=[],
+        env={},
+        timeout_seconds=30,
+        parser="opencode_jsonl",
+        runner=None,
+        roles={"default": role},
+        output_to_file=None,
+        working_dir=None,
+    )
+    metadata: dict = {"tokens": {"input": 100, "output": 20}}
+    if value is not None:
+        metadata["cli_cost"] = value
+        metadata["cli_cost_unit"] = unit
+    output = OpenCodeAgent(client).finalize_output(
+        parsed=ParsedCLIResponse(content="OK", metadata=metadata),
+        sanitized_command=["opencode"],
+        returncode=0,
+        stdout="",
+        stderr="",
+        duration_seconds=0.1,
+    )
+    return CLinkTool()._call_accounting(output)
+
+
+def test_a_thread_of_opencode_turns_totals_the_cost_they_measured():
+    """The figure existed per call and vanished at the thread (#129).
+
+    `sum_thread_accounts` read only `account["cost"]` — the rate-card figure.
+    #126 filed opencode's measured cost under `cli_reported_cost` deliberately,
+    and the aggregator had never heard of it, so every opencode turn fell to
+    `unpriced_turns`. With `priced_turns == 0` the cost branch never ran at all:
+    a thread of opencode calls returned usage and **complete silence about
+    money**, while every turn in it carried a real measured number.
+    """
+    totals = _sum([_reported(0.0071), _reported(0.0077)])
+
+    assert totals["cumulative_cli_reported_cost"] == {"value": pytest.approx(0.0148), "unit": "USD"}
+
+
+def test_the_measured_total_is_kept_apart_from_the_priced_one():
+    """Collapsing them at the thread level throws away what #126 preserved.
+
+    The per-call view keeps a vendor's meter and OpenClink's own multiplication
+    under different keys precisely so a consumer can tell which a figure is.
+    Summing them one layer up would undo that, and a mixed thread is exactly
+    where it matters — each total must say what it covers.
+    """
+    totals = _sum([_account({"input_tokens": 100, "output_tokens": 20}), _reported(0.0071)])
+
+    assert totals["cumulative_cost"] == {"value": pytest.approx(1.40), "unit": "USD"}
+    assert totals["cumulative_cli_reported_cost"] == {"value": pytest.approx(0.0071), "unit": "USD"}
+
+
+def test_mixed_units_among_measured_figures_are_refused_not_summed():
+    """The module's existing rule, applied to the new total rather than restated.
+
+    A subscription backend metering in credits and opencode metering in dollars
+    have no common unit; adding them produces a number that is wrong in a way no
+    caller can see.
+    """
+    totals = _sum([_reported(0.0071, unit="USD"), _reported(4.0, unit="credits")])
+
+    assert "cumulative_cli_reported_cost" not in totals
+    assert totals["cumulative_cli_reported_cost_unavailable"] == "mixed_units"
+
+
+def test_a_turn_with_no_measured_cost_makes_the_measured_total_incomplete():
+    """Absence is preserved, not filled — the docstring's own rule.
+
+    A turn that reported nothing must leave the total partial rather than
+    shrinking it, because a total that quietly drops a turn is wrong invisibly.
+    """
+    totals = _sum([_reported(0.0071), _reported(None)])
+
+    assert totals["cumulative_cli_reported_cost"] == {"value": pytest.approx(0.0071), "unit": "USD"}
+    assert totals["cumulative_cli_reported_cost_incomplete"] is True
+
+
+def test_a_measured_zero_counts_as_a_covered_turn():
+    """The free tier bills nothing, and that is a fact, not a missing one.
+
+    A truthiness check would move this turn into the uncovered pile and mark the
+    total incomplete — turning "every turn was free" into "some turns are
+    unknown". Same trap #126 closed one layer down.
+    """
+    totals = _sum([_reported(0.0), _reported(0.0)])
+
+    assert totals["cumulative_cli_reported_cost"] == {"value": pytest.approx(0.0), "unit": "USD"}
+    assert "cumulative_cli_reported_cost_incomplete" not in totals
+
+
 def test_the_per_call_figures_are_not_replaced_by_the_cumulative_ones():
     # Control: passes before and after. The AC says "alongside", not "instead
     # of" — a caller must still see what THIS call cost.
