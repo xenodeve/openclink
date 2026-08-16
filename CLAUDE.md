@@ -51,10 +51,20 @@ Before making any changes or submitting PRs, always run the comprehensive qualit
 source venv/bin/activate
 
 # Run all quality checks (linting, formatting, tests)
-./code_quality_checks.sh
+./code_quality_checks.sh          # POSIX
+.\code_quality_checks.ps1         # Windows — same contract
 ```
 
-This script **reports; it does not rewrite**. It runs:
+**There are two copies of this gate and they must agree.** #63 was fixed on the
+`.sh` alone and the guard test read only that file, so the `.ps1` kept auto-fixing
+for six weeks — on the platform this repo is primarily developed on (#121).
+`tests/test_quality_gate_does_not_mutate.py` now parametrizes over both, and
+fails if a third gate script appears uncovered.
+
+Neither script auto-discovers `.venv`; both look for `.openclink_venv` and
+otherwise fall back to an activated `VIRTUAL_ENV`. Activate first.
+
+Both **report; they do not rewrite**. They run:
 - Ruff linting (`check`, no `--fix`)
 - Black formatting check (`--check`)
 - Import-order check with isort (`--check-only`)

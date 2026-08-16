@@ -3,6 +3,44 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-16 — the PowerShell quality gate stopped rewriting the tree (#121, PR #143)
+
+#63 was fixed on `code_quality_checks.sh` and the guard test was anchored to that one path, so
+`code_quality_checks.ps1` ran `ruff --fix`, `black` and `isort` in **write** mode for six weeks — on
+Windows, which is the copy that actually runs here. **The guard passed on the platform that did not
+need it and was silent on the one that did.**
+
+Also removed: the script's "Verifying all linting passes..." re-run. It only ever existed because the
+first ruff pass auto-fixed, and a second pass after an auto-fix cannot fail — the mechanism that made
+#63 invisible in the first place.
+
+**Validated by running it**, not only by reading it: the fixed gate reports `Linting (ruff): PASSED /
+Formatting (black): PASSED / Import sorting (isort): PASSED`, exits 0, and `git status` afterwards
+shows **only the files this change edited**. That last part is the whole claim.
+
+**Running it also surfaced a live lint error** — `B007` in `scripts/blueprint.py`, an unused loop
+variable — which the auto-fixing version would have rewritten silently. Fixed here, per the precedent
+#63 set: a gate turned honest while the tree is dirty just moves the failure from silent to permanent.
+
+**Validated** — the guard is now parametrized over both scripts, plus a new test asserting the covered
+set equals every `code_quality_checks.*` in the repo, because *the defect was a file nobody asserted
+on, not a wrong assertion*. Suite 1280 → 1285. Five mutations red, including dropping the `.ps1` from
+the covered set.
+
+One self-inflicted catch worth keeping: the `--fix` assertion searched the whole file, so the **comment
+explaining why `--fix` is absent** made it red. The check now strips full-line comments — a flag search
+over raw text cannot tell a command from a note about one.
+
+**#121's third item does not apply, and the measurement says so.** It asked whether `black --check`
+needs `--fast` under Python 3.11 against a `py313` target. Measured: `--check` warns and exits 0, and
+with a deliberately misformatted file it correctly reports `would reformat`. The safety check only
+fires when black actually writes, so neither gate needs `--fast` — and adding it would skip a real
+check for nothing. The earlier session note claiming `--check` refuses was wrong; it was write mode.
+
+Noted, not fixed: neither script auto-discovers `.venv` (both look for `.openclink_venv`, then fall
+back to an activated `VIRTUAL_ENV`). Recorded in `CLAUDE.md` rather than changed, since it is not what
+#121 asked for.
+
 ## 2026-08-16 — a budget bounds the whole plan, not one seat (#138, PR #142)
 
 #109 compared the budget against one seat's `cost_per_task`. That was right while the count was fixed
