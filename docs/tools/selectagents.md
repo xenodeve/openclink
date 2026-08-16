@@ -5,9 +5,8 @@
 > a count of what the bound cut (#110) and derives the agent count from the chosen window (#111) —
 > against a **committed fixture whose prices and output volumes are constructed, not measured** (#102
 > replaces it with fetched data), and partitions the scope across the planned agents (#113). Still
-> unbuilt: **a budget bounds one seat rather than the whole plan** (#138), so an N-agent plan can cost
-> up to N times the cap; and every seat names the same model and effort — the fields sit on the agent
-> so a survey seat and a working seat *can* differ, but nothing here yet decides that one should. Every response says the same thing in its own body, and that list is guarded by a
+> unbuilt: every seat names the same model and effort — the fields sit on the agent so a survey seat
+> and a working seat *can* differ, but nothing here yet decides that one should. Every response says the same thing in its own body, and that list is guarded by a
 > test in both directions — it must name everything unbuilt and nothing already shipped.
 >
 > This banner said "does not rank models, read a dataset, or compute anything" for two slices after it
@@ -63,15 +62,21 @@ not bounded.
 **Omit it and you get the cheapest qualifying candidate.** Frugality is the default rather than a
 setting you have to remember.
 
-**Supply it and you get the best candidate on the axis that fits inside it.** You have already said what
-you will spend, so the layer spends it on capability instead of handing back change. This is why the
-same scope can return a different — and better — model once a budget is named.
+**Supply it and you get the best candidate on the axis whose *whole plan* fits inside it.** You have
+already said what you will spend, so the layer spends it on capability instead of handing back change.
+This is why the same scope can return a different — and better — model once a budget is named.
+
+**The budget bounds the plan, not one seat (#138).** A model with a small window needs several agents
+and emits several answers, so its plan costs more than its seat does. The read is charged **once**
+across the agents — it is partitioned, not repeated — and only the answers multiply. The figure the
+budget was tested against comes back as `plan_cost_usd`, and the per-agent costs sum to it.
 
 If nothing fits, it **refuses and names the cheapest qualifying candidate and its cost**, rather than
 returning a plan your own ceiling forbids and letting you find out from the bill. A budget of `0` is a
 contract error, not a refusal: omitting the field is how you say "choose on cost".
 
-While the agent count is fixed at one (#111), a budget bounds **one seat** rather than the whole run.
+The same figure decides the no-budget rule, so "cheapest" means the cheapest **plan** — a layer that
+budgeted on one number and ranked on another would recommend a candidate its own budget rule refuses.
 
 ### The agent count is derived, not chosen
 

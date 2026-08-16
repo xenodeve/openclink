@@ -70,7 +70,12 @@ def test_the_hand_computed_costs_are_what_the_code_computes():
 def test_no_budget_takes_the_cheapest_qualifying_candidate():
     """Frugality is the default, not a setting to remember (#96, story 8)."""
     result = choose(
-        _ranked([THRIFTY, MIDDLING, LAVISH], read=READ), axis="coding", read_volume_tokens=READ, budget_usd=None
+        _ranked([THRIFTY, MIDDLING, LAVISH], read=READ),
+        axis="coding",
+        read_volume_tokens=READ,
+        item_count=1,
+        output_ceiling_tokens=0,
+        budget_usd=None,
     )
 
     assert result.winner is not None
@@ -89,8 +94,12 @@ def test_a_budget_changes_the_winner():
     """
     ordered = _ranked([THRIFTY, MIDDLING, LAVISH], read=READ)
 
-    unbudgeted = choose(ordered, axis="coding", read_volume_tokens=READ, budget_usd=None)
-    budgeted = choose(ordered, axis="coding", read_volume_tokens=READ, budget_usd=0.02)
+    unbudgeted = choose(
+        ordered, axis="coding", read_volume_tokens=READ, item_count=1, output_ceiling_tokens=0, budget_usd=None
+    )
+    budgeted = choose(
+        ordered, axis="coding", read_volume_tokens=READ, item_count=1, output_ceiling_tokens=0, budget_usd=0.02
+    )
 
     assert unbudgeted.winner.model == "thrifty"
     assert budgeted.winner.model == "middling"
@@ -104,7 +113,12 @@ def test_a_budget_that_admits_everything_buys_the_best_on_the_axis():
     walked one rank up from the cheapest would pass that one and fail this.
     """
     result = choose(
-        _ranked([THRIFTY, MIDDLING, LAVISH], read=READ), axis="coding", read_volume_tokens=READ, budget_usd=1.0
+        _ranked([THRIFTY, MIDDLING, LAVISH], read=READ),
+        axis="coding",
+        read_volume_tokens=READ,
+        item_count=1,
+        output_ceiling_tokens=0,
+        budget_usd=1.0,
     )
 
     assert result.winner.model == "lavish"
@@ -118,7 +132,12 @@ def test_a_candidate_priced_out_is_named_rather_than_counted():
     caller told `lavish` was priced out can raise the budget deliberately.
     """
     result = choose(
-        _ranked([THRIFTY, MIDDLING, LAVISH], read=READ), axis="coding", read_volume_tokens=READ, budget_usd=0.02
+        _ranked([THRIFTY, MIDDLING, LAVISH], read=READ),
+        axis="coding",
+        read_volume_tokens=READ,
+        item_count=1,
+        output_ceiling_tokens=0,
+        budget_usd=0.02,
     )
 
     assert result.excluded_by_budget == ["lavish"]
@@ -132,7 +151,12 @@ def test_a_budget_nothing_fits_refuses_instead_of_overrunning():
     arrived. `winner is None` is what the tool turns into a refusal.
     """
     result = choose(
-        _ranked([THRIFTY, MIDDLING, LAVISH], read=READ), axis="coding", read_volume_tokens=READ, budget_usd=0.0001
+        _ranked([THRIFTY, MIDDLING, LAVISH], read=READ),
+        axis="coding",
+        read_volume_tokens=READ,
+        item_count=1,
+        output_ceiling_tokens=0,
+        budget_usd=0.0001,
     )
 
     assert result.winner is None
@@ -146,7 +170,14 @@ def test_a_budget_exactly_equal_to_a_cost_still_affords_it():
     `<` instead of `<=` here rejects the candidate the caller priced the run
     against, and the plan simply names a cheaper one without saying why.
     """
-    result = choose(_ranked([THRIFTY, MIDDLING], read=READ), axis="coding", read_volume_tokens=READ, budget_usd=0.0110)
+    result = choose(
+        _ranked([THRIFTY, MIDDLING], read=READ),
+        axis="coding",
+        read_volume_tokens=READ,
+        item_count=1,
+        output_ceiling_tokens=0,
+        budget_usd=0.0110,
+    )
 
     assert result.winner.model == "middling"
 
@@ -158,7 +189,14 @@ def test_a_tie_on_the_axis_within_budget_goes_to_the_cheaper():
     dearer, and "either" is the answer that makes the layer non-deterministic.
     """
     frugal_twin = _candidate("frugal-twin", score=70.0, in_price=0.1, out_price=0.1, out_tokens=1_000)
-    result = choose(_ranked([MIDDLING, frugal_twin], read=READ), axis="coding", read_volume_tokens=READ, budget_usd=1.0)
+    result = choose(
+        _ranked([MIDDLING, frugal_twin], read=READ),
+        axis="coding",
+        read_volume_tokens=READ,
+        item_count=1,
+        output_ceiling_tokens=0,
+        budget_usd=1.0,
+    )
 
     assert result.winner.model == "frugal-twin"
 
@@ -177,7 +215,14 @@ def test_the_tie_goes_to_the_cheaper_even_when_it_is_handed_over_last():
     """
     frugal_twin = _candidate("frugal-twin", score=70.0, in_price=0.1, out_price=0.1, out_tokens=1_000)
 
-    result = choose([MIDDLING, frugal_twin], axis="coding", read_volume_tokens=READ, budget_usd=1.0)
+    result = choose(
+        [MIDDLING, frugal_twin],
+        axis="coding",
+        read_volume_tokens=READ,
+        item_count=1,
+        output_ceiling_tokens=0,
+        budget_usd=1.0,
+    )
 
     assert MIDDLING.cost_per_task(READ) > frugal_twin.cost_per_task(READ)
     assert result.winner.model == "frugal-twin"
@@ -196,8 +241,12 @@ def test_the_committed_fixture_carries_a_case_where_a_budget_changes_the_winner(
     ).ordered
     axis = axis_for("implementation")
 
-    cheapest = choose(ordered, axis=axis, read_volume_tokens=READ, budget_usd=None)
-    afforded = choose(ordered, axis=axis, read_volume_tokens=READ, budget_usd=0.12)
+    cheapest = choose(
+        ordered, axis=axis, read_volume_tokens=READ, item_count=1, output_ceiling_tokens=0, budget_usd=None
+    )
+    afforded = choose(
+        ordered, axis=axis, read_volume_tokens=READ, item_count=1, output_ceiling_tokens=0, budget_usd=0.12
+    )
 
     assert cheapest.winner.model != afforded.winner.model
     assert afforded.winner.score_on(axis) > cheapest.winner.score_on(axis)

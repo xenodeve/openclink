@@ -27,9 +27,10 @@ without them.
 - ✅ **#113 scope partition** (PR #140) — every item exactly one owner, shares sum on both axes, an
   undividable count refused rather than rebalanced. The read follows the items and the boundaries are
   cumulative, so nothing is lost or invented to rounding.
-- 🟡 **#138 a budget bounds one seat, not the whole plan** — opened by #111, which made the count a
-  variable while `choose` still compares against one seat's cost. Not circular: `width()` never depends
-  on the budget. `ready-for-agent`.
+- ✅ **#138 a budget bounds the whole plan** (PR #142) — `plan_cost()` is now the one cost figure the
+  layer ranks and budgets on. The read is charged once across the seats, only the answers multiply.
+  **Beware:** this issue was auto-closed once by a commit saying *"Filed rather than fixed: #138"* —
+  GitHub reads `fixed: #n` as a closing keyword regardless of the surrounding words.
 - ✅ **#111 derived agent count** (PR #139) — and it **corrected #108's filter**: the required window is
   one item-share, not the whole read, or no candidate could ever need a second seat. A generalisation
   (identical at `item_count=1`), pinned by test. Three mutations came back 0 red and all three were

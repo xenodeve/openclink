@@ -47,8 +47,10 @@ def _slate_of(candidates: list[Candidate], *, budget_usd: float | None = None, l
     ordered = rank(
         candidates, kind_of_work="implementation", read_volume_tokens=READ, output_ceiling_tokens=0, item_count=1
     ).ordered
-    choice = choose(ordered, axis="coding", read_volume_tokens=READ, budget_usd=budget_usd)
-    return choice, slate(choice, read_volume_tokens=READ, limit=limit)
+    choice = choose(
+        ordered, axis="coding", read_volume_tokens=READ, item_count=1, output_ceiling_tokens=0, budget_usd=budget_usd
+    )
+    return choice, slate(choice, read_volume_tokens=READ, item_count=1, output_ceiling_tokens=0, limit=limit)
 
 
 def test_the_bound_is_five_and_the_overflow_is_counted():
@@ -184,8 +186,10 @@ def test_the_committed_dataset_produces_a_slate_rather_than_only_invented_ones()
     ordered = rank(
         load_candidates(), kind_of_work="implementation", read_volume_tokens=READ, output_ceiling_tokens=0, item_count=1
     ).ordered
-    choice = choose(ordered, axis="coding", read_volume_tokens=READ, budget_usd=None)
-    result = slate(choice, read_volume_tokens=READ)
+    choice = choose(
+        ordered, axis="coding", read_volume_tokens=READ, item_count=1, output_ceiling_tokens=0, budget_usd=None
+    )
+    result = slate(choice, read_volume_tokens=READ, item_count=1, output_ceiling_tokens=0)
 
     assert len(result.entries) == min(len(ordered), ALTERNATIVE_LIMIT)
     assert result.dropped == max(0, len(ordered) - ALTERNATIVE_LIMIT)
