@@ -26,6 +26,7 @@ from mcp.types import TextContent
 from pydantic import ConfigDict, Field, ValidationError, field_validator
 
 from tools.models import ToolOutput
+from tools.selection import DatasetError, axis_for, load_candidates, rank
 from tools.shared.base_models import ToolRequest
 from tools.shared.base_tool import BaseTool
 
@@ -173,13 +174,55 @@ class SelectAgentsRequest(ToolRequest):
 # a real answer is worse than an error: #96 exists because a delegation resting
 # on something nobody measured is the failure, and a confident-looking plan from
 # a tool that ranks nothing is exactly that failure wearing the fix's clothes.
-_STUB_CONTENT = (
-    "selectagents is not implemented yet.\n\n"
-    "Your scope was accepted and is echoed in the metadata, which is all this "
-    "response proves (#99, #101). It does not rank models, read a dataset, or "
-    "compute a plan — do not treat anything here as a delegation decision. The "
-    "model dataset lands in #102 and the first real ranking in #104."
+_PARTIAL_CONTENT = (
+    "selectagents is INCOMPLETE (#104).\n\n"
+    "The plan below names one agent, chosen as the lowest cost per task among "
+    "candidates measured on the axis your kind of work maps to. That much is real "
+    "arithmetic on a committed fixture.\n\n"
+    "What is NOT here yet, and what you must not assume: the dataset is a "
+    "committed fixture whose prices and output volumes are CONSTRUCTED rather "
+    "than measured (#102 replaces it with fetched data); the context window is "
+    "not yet applied as a filter (#108); no budget is honoured (#109); no "
+    "alternatives are returned (#110); the agent count is always one (#111); and "
+    "the scope is not partitioned (#113)."
 )
+
+
+def _dataset_refusal(reason: str) -> ToolOutput:
+    """No dataset means no plan, said at once rather than degraded.
+
+    #96 gives the missing dataset no middle rung on purpose: with no prices and
+    no rankings there is nothing to compute, and a plan produced anyway would be
+    the unmeasured decision the whole layer exists to remove.
+    """
+    return ToolOutput(
+        status="error",
+        content=(
+            "selectagents cannot compute a plan: the model dataset is unavailable. " f"Nothing was ranked.\n\n{reason}"
+        ),
+        content_type="text",
+        metadata={"tool_name": "selectagents", "partial": True},
+    )
+
+
+def _no_candidate_refusal(axis: str) -> ToolOutput:
+    """Nothing was measured on the axis this work needs.
+
+    Distinct from a missing dataset: the dataset loaded and simply carries no
+    score on this axis for anything. Reported rather than answered with the
+    cheapest unmeasured candidate, which is what a zero-fill would have done.
+    """
+    return ToolOutput(
+        status="error",
+        content=(
+            f"selectagents found no candidate measured on the '{axis}' axis, which is the one "
+            "your declared kind of work ranks on. Nothing was ranked — a candidate with no "
+            "score on an axis has not been measured on it, and ranking it anyway would invent "
+            "the number this layer exists to avoid inventing."
+        ),
+        content_type="text",
+        metadata={"tool_name": "selectagents", "partial": True},
+    )
 
 
 class SelectAgentsTool(BaseTool):
@@ -308,10 +351,43 @@ class SelectAgentsTool(BaseTool):
         # until the plan looks wrong.
         scope = request.model_dump(include=set(_SCOPE_FIELDS))
 
+        try:
+            candidates = load_candidates()
+        except DatasetError as exc:
+            # No prices and no rankings means nothing to compute, and #96 refuses
+            # at once rather than degrading: a plan produced without a dataset is
+            # precisely the unmeasured decision this layer exists to remove.
+            return [TextContent(type="text", text=_dataset_refusal(str(exc)).model_dump_json())]
+
+        axis = axis_for(request.kind_of_work)
+        ordered = rank(candidates, kind_of_work=request.kind_of_work, read_volume_tokens=request.read_volume_tokens)
+        if not ordered:
+            return [TextContent(type="text", text=_no_candidate_refusal(axis).model_dump_json())]
+
+        winner = ordered[0]
+        plan = {
+            "agents": [
+                {
+                    "model": winner.model,
+                    "effort": winner.effort,
+                    "cost_per_task": round(winner.cost_per_task(request.read_volume_tokens), 6),
+                }
+            ],
+            # The criteria the choice rested on, returned with it, so a caller can
+            # disagree with a reason rather than with a feeling (#96).
+            "criteria": {
+                "axis": axis,
+                "axis_score": winner.score_on(axis),
+                "ranked_on": "cost_per_task",
+                "candidates_considered": len(candidates),
+                "candidates_scored_on_axis": len(ordered),
+            },
+        }
+
         output = ToolOutput(
             status="success",
-            content=_STUB_CONTENT,
+            content=_PARTIAL_CONTENT,
             content_type="text",
-            metadata={"tool_name": self.name, "stub": True, "scope": scope},
+            metadata={"tool_name": self.name, "partial": True, "scope": scope, "plan": plan},
         )
         return [TextContent(type="text", text=output.model_dump_json())]
