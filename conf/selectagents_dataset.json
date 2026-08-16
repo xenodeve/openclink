@@ -1,0 +1,55 @@
+{
+  "_provenance": {
+    "note": "Committed fixture for #104. Replaced by the fetched, disk-cached dataset in #102 — this file exists so the ranking arithmetic can be built and tested with no network and no key, per #104's acceptance criteria.",
+    "axis_scores": "Taken from the table in the `clink-masteragent` skill, itself generated from Artificial Analysis' published figures. A blank axis means NOT PUBLISHED, never zero: AA publishes only the top 25 per axis, so a missing score is absence of evidence and a candidate carrying one cannot be ranked on it.",
+    "prices_and_output_volume": "CONSTRUCTED, not measured. That table publishes a total suite cost rather than a per-token price, so the two figures this slice needs — price per token and tokens emitted per task — are not in it. The RATIO between the two constructed entries is the one #104 states: a mid tier 2.5x cheaper per token that lands at the same cost per task because it emits more output. Replaced wholesale by #102.",
+    "captured": "2026-08-16"
+  },
+  "candidates": [
+    {
+      "model": "gpt-5.6-luna",
+      "effort": "max",
+      "context_window": 1000000,
+      "axes": { "index": 51.2, "coding": 71.4, "agentic": 45.6 },
+      "input_price_per_mtok": 0.4,
+      "output_price_per_mtok": 1.6,
+      "output_tokens_per_task": 30000
+    },
+    {
+      "model": "gpt-5.6-terra",
+      "effort": "max",
+      "context_window": 1000000,
+      "axes": { "index": 55.0, "coding": 76.7, "agentic": 47.4 },
+      "input_price_per_mtok": 1.0,
+      "output_price_per_mtok": 4.0,
+      "output_tokens_per_task": 10000
+    },
+    {
+      "model": "gpt-5.6-sol",
+      "effort": "max",
+      "context_window": 1000000,
+      "axes": { "index": 58.9, "coding": 77.4, "agentic": 54.0 },
+      "input_price_per_mtok": 2.5,
+      "output_price_per_mtok": 10.0,
+      "output_tokens_per_task": 9000
+    },
+    {
+      "model": "claude-opus-5",
+      "effort": "low",
+      "context_window": 1000000,
+      "axes": { "index": 50.6, "coding": 66.9, "agentic": 39.8 },
+      "input_price_per_mtok": 3.0,
+      "output_price_per_mtok": 15.0,
+      "output_tokens_per_task": 8000
+    },
+    {
+      "model": "gpt-oss-120b",
+      "effort": "low",
+      "context_window": 131072,
+      "axes": { "index": 14.9, "agentic": 1.0 },
+      "input_price_per_mtok": 0.05,
+      "output_price_per_mtok": 0.2,
+      "output_tokens_per_task": 30000
+    }
+  ]
+}

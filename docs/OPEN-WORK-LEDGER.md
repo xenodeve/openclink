@@ -23,6 +23,9 @@ without them.
 
 - ✅ **#98 on-disk record store** (PR #131) — first persistence in the repo. See `DONE.md` for the
   finding: the test for its hardest criterion passed 3/3 against a fully non-atomic implementation.
+- ✅ **#104 cost-per-task ranking** (PR #134) — the arithmetic core, pure and fixture-backed.
+  `conf/selectagents_dataset.json` is a committed fixture whose prices are CONSTRUCTED; #102 replaces
+  it. Unblocks #108, #109, #110.
 - ✅ **#101 input contract** (PR #133) — seven required fields, a closed kind-of-work list, one
   free-text description that reaches nothing computed. Three published-but-unenforced constraints
   found and closed; see `DONE.md`.

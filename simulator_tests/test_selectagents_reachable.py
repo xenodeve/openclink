@@ -12,9 +12,10 @@ and an earlier version of this docstring claimed it did. The advertised list is
 covered in-process instead, by `tests/test_selectagents_tool.py` calling
 `handle_list_tools()`.
 
-Deliberately checks nothing about the answer. Until #104 there is no ranking
-behind `selectagents`, so the only honest assertion is that the path exists and
-that the stub says it is a stub.
+Deliberately checks almost nothing about the answer. The plan it now returns is
+real arithmetic on a committed fixture, but six of the layer's promises are still
+unbuilt, so the assertions here are that the path exists and
+that the response declares itself incomplete.
 """
 
 from .base_test import BaseSimulatorTest
@@ -54,15 +55,15 @@ class SelectAgentsReachableTest(BaseSimulatorTest):
             # The stub must announce itself. A placeholder that reads like a real
             # plan is the failure #96 exists to prevent, one layer earlier: a
             # caller would act on a delegation nobody computed.
-            if "not implemented" not in response.lower():
+            if "incomplete" not in response.lower():
                 self.logger.error(
-                    "❌ selectagents answered without declaring itself a stub — "
-                    "a caller could mistake this for a computed plan"
+                    "❌ selectagents answered without declaring itself incomplete — "
+                    "a caller could mistake a partial plan for a finished one"
                 )
                 self.logger.error(f"   response: {response[:300]}")
                 return False
 
-            self.logger.info("✅ selectagents is reachable and honest about being a stub")
+            self.logger.info("✅ selectagents is reachable and honest about being incomplete")
             return True
 
         except Exception as e:

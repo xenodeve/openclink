@@ -3,6 +3,45 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-16 — ranking on cost per task, one axis, from a committed fixture (#104, PR #134)
+
+The arithmetic core of #96, split from the language half on purpose: mapping described work onto a
+capability axis is a language task, ranking candidates once the axis is fixed is arithmetic, and only
+the second is testable by assertion. `tools/selection.py` is pure — no network, no key, no clock —
+for the same reason `clink/pricing.py` is.
+
+**Validated** — 15 ranking tests plus 6 at the tool seam. Suite 1187 → 1205.
+
+**The case the slice exists for: price per token and cost per task order the same pair differently.**
+A model 2.5× cheaper per token costs MORE per task when it emits 3× the output to finish the same
+work, and scores lower on the axis while doing it. A layer ranking by price recommends it.
+
+**And my hand-computed docstring was wrong, which the test caught.** The first version of that case
+used figures where both output costs came out identical, so the input term decided and the cheap model
+still won — the assertion failed against a comment that had already computed the "answer". A comment
+that computes the result is worth exactly what the assertion checking it is worth.
+
+A second test pins the flip: on a large read the input term dominates and the cheap-per-token model
+genuinely wins. Without it, someone "fixes" the ranking into always preferring the terser model, which
+is the same rule-of-thumb error in the other direction.
+
+**A blank axis score excludes a candidate rather than scoring it zero.** The source publishes only its
+top 25 per axis, so a blank is *not published* — absence of a measurement, not a measurement of
+absence. Zero-filling would rank the unmeasured candidates last on quality while their cheapness pulled
+them first on cost, and on this dataset the unmeasured ones are exactly the cheap ones.
+
+**Half the fixture is constructed and it says so in the file.** The axis scores come from a published
+table; per-token prices and output-per-task do not exist in that table and were built to make the
+disagreement expressible. A test asserts the provenance block still says `CONSTRUCTED`, because #102
+replaces the file wholesale and the distinction has to survive until it does.
+
+**The response now declares itself INCOMPLETE and names the six unbuilt promises** (#102, #108–#111,
+#113). The honesty requirement got harder rather than easier at this point: there is a real plan now,
+so a caller can no longer tell from the shape of the response what the layer does not yet do.
+
+Mutations, each applied with an assert that it applied, observed red, reverted: ranked on price per
+token → 1 red; missing axis score no longer excludes → 3 red; axis fixed instead of derived → 6 red.
+
 ## 2026-08-16 — the selectagents input contract (#101, PR #133)
 
 Seven required fields plus one free-text description, validated at the edge. The closed kind-of-work

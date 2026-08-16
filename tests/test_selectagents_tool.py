@@ -93,18 +93,62 @@ async def test_calling_it_returns_a_constant_rather_than_an_error(tool):
 
 
 @pytest.mark.asyncio
-async def test_the_stub_says_it_is_a_stub(tool):
-    """A placeholder that reads like a real answer is worse than an error.
+async def test_the_response_declares_that_it_is_incomplete(tool):
+    """A partial answer that reads like a finished one is worse than an error.
 
-    Until #104 there is no ranking behind this. A caller that received a
-    confident-looking plan would act on one that was never computed, and #96's
-    whole argument is that a delegation must not rest on something nobody
-    measured.
+    This test pinned "stub" until #104; now there IS a plan, computed by real
+    arithmetic, and the honesty requirement gets harder rather than easier. A
+    caller can no longer tell from the shape of the response that six of the
+    layer's promises are unbuilt, so the response has to say so.
     """
     response = json.loads((await tool.execute(dict(SCOPE)))[0].text)
 
-    assert response["metadata"]["stub"] is True
-    assert "not implemented" in response["content"].lower()
+    assert response["metadata"]["partial"] is True
+    assert "incomplete" in response["content"].lower()
+
+
+@pytest.mark.asyncio
+async def test_the_response_names_what_is_still_missing(tool):
+    """ "Incomplete" without a list is a disclaimer; with one it is information.
+
+    Each of these is a promise #96 makes that a caller might otherwise assume the
+    plan already honours — a budget it does not enforce, a context filter it does
+    not apply, alternatives it does not return.
+    """
+    content = json.loads((await tool.execute(dict(SCOPE)))[0].text)["content"]
+
+    for unbuilt in ("#102", "#108", "#109", "#110", "#111", "#113"):
+        assert unbuilt in content, f"the response does not disclose that {unbuilt} is unbuilt"
+
+
+@pytest.mark.asyncio
+async def test_a_plan_names_one_model_and_effort_from_the_dataset(tool):
+    """#104's first criterion, at the tool seam rather than the pure one."""
+    response = json.loads((await tool.execute(dict(SCOPE)))[0].text)
+    agents = response["metadata"]["plan"]["agents"]
+
+    assert len(agents) == 1
+    assert agents[0]["model"]
+    assert agents[0]["effort"]
+    assert agents[0]["cost_per_task"] > 0
+
+
+@pytest.mark.asyncio
+async def test_the_plan_carries_the_criteria_it_rested_on(tool):
+    """#96: the criteria come back with the plan, so a caller can disagree with a reason.
+
+    `candidates_scored_on_axis` next to `candidates_considered` is the part that
+    matters most — it says how much of the dataset was actually eligible, so a
+    plan chosen from two of five candidates does not read like one chosen from
+    five.
+    """
+    response = json.loads((await tool.execute(dict(SCOPE)))[0].text)
+    criteria = response["metadata"]["plan"]["criteria"]
+
+    assert criteria["axis"] == "coding"  # SCOPE declares implementation
+    assert criteria["ranked_on"] == "cost_per_task"
+    assert criteria["axis_score"] is not None
+    assert criteria["candidates_scored_on_axis"] <= criteria["candidates_considered"]
 
 
 @pytest.mark.asyncio
