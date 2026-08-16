@@ -157,15 +157,86 @@ def required_window(*, read_volume_tokens: int, output_ceiling_tokens: int) -> i
 
 @dataclass(frozen=True)
 class Choice:
-    """Who won, under which rule, and who the budget priced out.
+    """The eligible field in the applied rule's own order, best first.
+
+    `ranked` rather than a lone winner, because #110 needs the runners-up ordered
+    the way the WINNER was chosen. Once a budget is in force those two orders
+    diverge — the cheapest is no longer the winner — and alternatives ranked by
+    cost would then be a fallback list for a decision nobody made.
 
     `rule` is carried rather than inferred because the two rules answer different
     questions and a caller cannot tell which one ran from the winner alone.
     """
 
-    winner: Candidate | None
+    ranked: list[Candidate]
     rule: str
     excluded_by_budget: list[str]
+
+    @property
+    def winner(self) -> Candidate | None:
+        return self.ranked[0] if self.ranked else None
+
+
+@dataclass(frozen=True)
+class Alternative:
+    """One route, and what taking it costs relative to the route above it."""
+
+    candidate: Candidate
+    cost_delta_usd: float | None
+
+
+@dataclass(frozen=True)
+class Slate:
+    """The routes offered, and how many qualifying ones did not fit the bound.
+
+    `dropped` is not decoration. #96 refuses to cull anything qualifying and
+    bounds the set by rank instead, so the count is what stops a truncated list
+    being read as the whole field.
+    """
+
+    entries: list[Alternative]
+    dropped: int
+
+
+# Five, from #96 directly. A bound rather than a filter: nothing qualifying is
+# culled on merit, because a candidate beaten on every measured axis is still the
+# only route when the winner's lane is down, and availability is not one of the
+# axes being compared.
+ALTERNATIVE_LIMIT = 5
+
+
+def slate(choice: Choice, *, read_volume_tokens: int, limit: int = ALTERNATIVE_LIMIT) -> Slate:
+    """The winner and its runners-up, each priced against the route above it.
+
+    **Bounded by rank, never culled on merit (#96, #110).** A candidate beaten on
+    every axis in play is still the only route once the winner's lane is down,
+    and availability is not one of the axes being compared — so nothing eligible
+    is dropped for being worse, only for being further down than the bound
+    reaches. What the bound cuts is COUNTED, because a truncated list read as the
+    whole list is the failure the criterion exists to prevent.
+
+    **The order is `choice.ranked`, which is the rule that picked the winner.**
+    Under a budget that is descending capability, not ascending cost, and using
+    cost order instead would offer fallbacks for a decision nobody made.
+
+    **The delta is to the predecessor and it is signed.** Falling back is often
+    cheaper — under the budget rule it usually is — and a magnitude would leave a
+    caller unable to tell a saving from a surcharge.
+    """
+    offered = choice.ranked[:limit]
+
+    entries: list[Alternative] = []
+    for position, candidate in enumerate(offered):
+        if position == 0:
+            # Nothing above the winner to be a delta to. `None` rather than 0.0,
+            # which would read as "the same price as the route above".
+            entries.append(Alternative(candidate=candidate, cost_delta_usd=None))
+            continue
+        above = offered[position - 1]
+        delta = candidate.cost_per_task(read_volume_tokens) - above.cost_per_task(read_volume_tokens)
+        entries.append(Alternative(candidate=candidate, cost_delta_usd=round(delta, 6)))
+
+    return Slate(entries=entries, dropped=max(0, len(choice.ranked) - limit))
 
 
 def choose(
@@ -199,26 +270,24 @@ def choose(
     become count x cost.** Until then a budget bounds one seat.
     """
     if budget_usd is None:
-        return Choice(
-            winner=ordered[0] if ordered else None,
-            rule="cheapest_qualifying",
-            excluded_by_budget=[],
-        )
+        # `ordered` is already cheapest-first, which IS this rule's preference
+        # order — so the runners-up need no resorting.
+        return Choice(ranked=list(ordered), rule="cheapest_qualifying", excluded_by_budget=[])
 
     affordable = [c for c in ordered if c.cost_per_task(read_volume_tokens) <= budget_usd]
     priced_out = [c.model for c in ordered if c.cost_per_task(read_volume_tokens) > budget_usd]
 
     # Highest on the axis; ties to the cheaper seat, because cost is always
-    # weighted (#96) and "either" would make the layer non-deterministic. Any
-    # remaining tie falls to `max` returning the first maximal element, which
-    # `rank` has already ordered by name and effort — so the tiebreak is not
-    # restated here, where it could drift from the one that decides `ordered`.
-    winner = max(
+    # weighted (#96) and "either" would make the layer non-deterministic. The
+    # whole field is sorted rather than only its maximum taken, so that #110's
+    # alternatives are the runners-up under the rule that picked the winner —
+    # ranking them by cost instead would offer fallbacks for a different
+    # decision than the one made.
+    ranked = sorted(
         affordable,
-        key=lambda c: (c.score_on(axis) or 0.0, -c.cost_per_task(read_volume_tokens)),
-        default=None,
+        key=lambda c: (-(c.score_on(axis) or 0.0), c.cost_per_task(read_volume_tokens)),
     )
-    return Choice(winner=winner, rule="best_within_budget", excluded_by_budget=priced_out)
+    return Choice(ranked=ranked, rule="best_within_budget", excluded_by_budget=priced_out)
 
 
 def axis_for(kind_of_work: str) -> str:

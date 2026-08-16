@@ -117,7 +117,7 @@ async def test_the_response_names_what_is_still_missing(tool):
     """
     content = json.loads((await tool.execute(dict(SCOPE)))[0].text)["content"]
 
-    for unbuilt in ("#102", "#110", "#111", "#113"):
+    for unbuilt in ("#102", "#111", "#113"):
         assert unbuilt in content, f"the response does not disclose that {unbuilt} is unbuilt"
 
 
@@ -136,7 +136,7 @@ async def test_the_response_stops_naming_a_slice_once_it_ships(tool):
     """
     content = json.loads((await tool.execute(dict(SCOPE)))[0].text)["content"]
 
-    for shipped in ("#98", "#99", "#101", "#104", "#108", "#109"):
+    for shipped in ("#98", "#99", "#101", "#104", "#108", "#109", "#110"):
         assert shipped not in content, f"{shipped} has shipped, but the response still calls it unbuilt"
 
 
@@ -244,6 +244,33 @@ async def test_a_budget_of_zero_is_refused_as_a_contract_violation(tool):
     assert response["status"] == "error"
     assert "budget_usd" in response["content"]
     assert "greater than 0" in response["content"]
+
+
+@pytest.mark.asyncio
+async def test_the_alternatives_carry_the_winners_fields_and_the_dropped_count(tool):
+    """#110 at the tool seam: substituting must be decided on the same evidence.
+
+    Asserted as "the winner's key set equals every alternative's key set" rather
+    than by listing the keys, so a field added to one and forgotten on the other
+    fails here — which is the drift the shared builder exists to prevent, checked
+    rather than trusted.
+    """
+    plan = json.loads((await tool.execute(dict(SCOPE)))[0].text)["metadata"]["plan"]
+    alternatives = plan["alternatives"]
+
+    assert alternatives, "no routes were offered"
+    assert alternatives[0]["model"] == plan["agents"][0]["model"], "the winner does not lead the slate"
+    assert alternatives[0]["cost_delta_usd"] is None, "nothing is above the winner to be a delta to"
+
+    shape = set(alternatives[0])
+    for route in alternatives[1:]:
+        assert set(route) == shape, "an alternative does not carry the same fields as the winner"
+        assert route["cost_delta_usd"] is not None
+
+    # Reported even when it is zero: a caller reading five routes cannot tell a
+    # field of five from a field of eighty without it.
+    assert "alternatives_dropped" in plan
+    assert plan["alternatives_dropped"] >= 0
 
 
 @pytest.mark.asyncio

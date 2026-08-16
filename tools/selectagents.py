@@ -3,13 +3,15 @@
 **It validates its input (#101) and computes a real, partial plan.** Candidates
 are filtered on context window before anything is priced (#108), then ranked on
 cost per task along the axis the declared kind of work maps to (#104) — or, with
-a budget in force, the best on that axis that fits (#109). Registered, advertised
-and dispatched by name.
+a budget in force, the best on that axis that fits (#109). Up to five routes come
+back, winner first, each priced against the one above it, with anything the bound
+cut counted rather than silently omitted (#110). Registered, advertised and
+dispatched by name.
 
 **What it still does not do is stated in the response itself**, not only here:
 the dataset is a committed fixture whose prices are constructed (#102 replaces
-it), no alternatives are returned (#110), the agent count is always one (#111),
-and the scope is not partitioned (#113). That list is guarded in both directions
+it), the agent count is always one (#111), and the scope is not partitioned
+(#113). That list is guarded in both directions
 — a test fails if it omits an unbuilt slice, and another fails if it still names
 a shipped one. The second half exists because this docstring and the tool's own
 disclosure both went stale by a slice before anything noticed.
@@ -35,7 +37,7 @@ from mcp.types import TextContent
 from pydantic import ConfigDict, Field, ValidationError, field_validator
 
 from tools.models import ToolOutput
-from tools.selection import DatasetError, axis_for, choose, load_candidates, rank, required_window
+from tools.selection import DatasetError, axis_for, choose, load_candidates, rank, required_window, slate
 from tools.shared.base_models import ToolRequest
 from tools.shared.base_tool import BaseTool
 
@@ -221,13 +223,14 @@ _PARTIAL_CONTENT = (
     "The plan below names one agent. Candidates that cannot hold the read plus "
     "your output ceiling are excluded before anything is priced, and the winner "
     "is then the lowest cost per task — or, if you named a budget, the best on "
-    "the axis that fits inside it. That much is real arithmetic on a committed "
-    "fixture.\n\n"
+    "the axis that fits inside it. Up to five routes are returned, winner first, "
+    "each priced against the one above it, with anything the bound cut counted. "
+    "That much is real arithmetic on a committed fixture.\n\n"
     "What is NOT here yet, and what you must not assume: the dataset is a "
     "committed fixture whose prices and output volumes are CONSTRUCTED rather "
-    "than measured (#102 replaces it with fetched data); no alternatives are "
-    "returned (#110); the agent count is always one, so a budget bounds one seat "
-    "rather than the whole run (#111); and the scope is not partitioned (#113)."
+    "than measured (#102 replaces it with fetched data); the agent count is "
+    "always one, so a budget bounds one seat rather than the whole run (#111); "
+    "and the scope is not partitioned (#113)."
 )
 
 
@@ -266,6 +269,24 @@ def _no_candidate_refusal(axis: str) -> ToolOutput:
         content_type="text",
         metadata={"tool_name": "selectagents", "partial": True},
     )
+
+
+def _route(candidate, cost_delta_usd: float | None, axis: str, read_volume_tokens: int) -> dict[str, Any]:
+    """One route in the plan's shape — used for the winner and every alternative.
+
+    #110 asks that each alternative carry "the same criteria fields as the
+    winner", so that substituting is decided on the same evidence. One function
+    is how that stays true: two literals spelling one shape would drift, and the
+    drift would land exactly where a caller is comparing them.
+    """
+    return {
+        "model": candidate.model,
+        "effort": candidate.effort,
+        "cost_per_task": round(candidate.cost_per_task(read_volume_tokens), 6),
+        "axis_score": candidate.score_on(axis),
+        "context_window": candidate.context_window,
+        "cost_delta_usd": cost_delta_usd,
+    }
 
 
 def _over_budget_refusal(budget_usd: float, cheapest: float, model: str) -> ToolOutput:
@@ -456,6 +477,7 @@ class SelectAgentsTool(BaseTool):
             ]
 
         winner = choice.winner
+        routes = slate(choice, read_volume_tokens=request.read_volume_tokens)
         plan = {
             "agents": [
                 {
@@ -464,6 +486,19 @@ class SelectAgentsTool(BaseTool):
                     "cost_per_task": round(winner.cost_per_task(request.read_volume_tokens), 6),
                 }
             ],
+            # The routes, winner first, each carrying the SAME fields as the
+            # winner so a substitution is decided on the same evidence (#110).
+            # Built from one helper rather than two literals, because two places
+            # spelling one shape is how they stop agreeing — and the whole point
+            # is that an alternative is comparable to the winner.
+            "alternatives": [
+                _route(entry.candidate, entry.cost_delta_usd, axis, request.read_volume_tokens)
+                for entry in routes.entries
+            ],
+            # Never silently omitted. A caller reading five routes cannot tell a
+            # field of five from a field of eighty without this, and would rule
+            # out routes it was never shown (#96, #110).
+            "alternatives_dropped": routes.dropped,
             # The criteria the choice rested on, returned with it, so a caller can
             # disagree with a reason rather than with a feeling (#96).
             "criteria": {
