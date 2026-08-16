@@ -224,6 +224,46 @@ def test_an_identity_cannot_escape_the_store_directory(tmp_path):
             store.put(hostile, {"n": 1})
 
 
+def test_an_over_long_identity_is_refused_with_a_readable_reason(tmp_path):
+    """Found by scrutinizing this module, not by a criterion.
+
+    A 300-character identity produced
+    `FileNotFoundError: [WinError 3] The system cannot find the path specified`
+    — measured. The path exists; the *filename component* exceeds the platform
+    limit, and every word of that message points the reader at a missing
+    directory instead. Filesystem limits are not something a caller should have
+    to know to use a keyed store, so the store states its own bound.
+    """
+    store = RecordStore(tmp_path)
+
+    with pytest.raises(ValueError) as caught:
+        store.put("a" * 300, {"n": 1})
+
+    assert "too long" in str(caught.value)
+    # Generous next to what #103 actually mints — a UUID is 36 characters.
+    store.put("a" * 60, {"n": 1})
+
+
+def test_a_store_directory_too_deep_for_the_identity_names_the_directory(tmp_path):
+    """The same misleading error, reached the other way.
+
+    Windows caps the WHOLE path at 260 by default, so a deep store directory
+    shrinks the usable identity below the component limit and fails with the same
+    `cannot find the path specified`. Reported here naming the DIRECTORY, because
+    that is the part the caller configured and can change; the identity usually
+    is not theirs to shorten.
+    """
+    deep = tmp_path.joinpath(*[f"segment{n:03d}" for n in range(20)])
+    store = RecordStore(deep)
+
+    with pytest.raises(ValueError) as caught:
+        store.put("plan-1", {"n": 1})
+
+    message = str(caught.value)
+    assert "too long" in message
+    assert "OPENCLINK_STORE_DIR" in message
+
+
 def test_the_default_location_is_outside_the_repository(monkeypatch):
     """A store inside the tree gets committed, or wiped by a clean checkout.
 

@@ -40,6 +40,17 @@ from utils.env import get_env
 # means no identity can address anything outside the store directory.
 _SAFE_IDENTITY = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
+# A filename component is capped at 255 on every filesystem this runs on, and
+# `.json` takes five of them. Bounded here because the platform's own complaint
+# is actively misleading: a 300-character identity raises
+# `FileNotFoundError: [WinError 3] The system cannot find the path specified`,
+# every word of which points the reader at a missing directory. Generous next to
+# a UUID's 36.
+_MAX_IDENTITY_LENGTH = 200
+
+# Windows' default MAX_PATH, minus a little room for the temp file's own prefix.
+_MAX_PATH_LENGTH = 240
+
 STORE_DIR_ENV = "OPENCLINK_STORE_DIR"
 
 
@@ -105,7 +116,26 @@ class RecordStore:
                 f"unusable record identity {identity!r}: expected [A-Za-z0-9][A-Za-z0-9._-]*, "
                 "so that an identity cannot address anything outside the store directory"
             )
-        return self.directory / f"{identity}.json"
+        if len(identity) > _MAX_IDENTITY_LENGTH:
+            raise ValueError(
+                f"record identity is too long ({len(identity)} characters, limit "
+                f"{_MAX_IDENTITY_LENGTH}) — the filesystem would reject the filename "
+                "with a message about a missing path"
+            )
+        path = self.directory / f"{identity}.json"
+        # The other half of the same trap, and it fails identically: Windows caps
+        # the WHOLE path at 260 by default, so a deep store directory shrinks the
+        # usable identity below the component limit above. Checked here because
+        # the platform's complaint is the same misleading "cannot find the path
+        # specified", and because the actionable part is the directory — which
+        # the caller configured and can change — not the identity.
+        if len(str(path)) > _MAX_PATH_LENGTH:
+            raise ValueError(
+                f"record path is too long ({len(str(path))} characters, limit {_MAX_PATH_LENGTH}): "
+                f"the store directory {self.directory} is too deeply nested for identity {identity!r}. "
+                f"Set {STORE_DIR_ENV} to a shorter path."
+            )
+        return path
 
     def put(self, identity: str, record: dict) -> None:
         path = self.path_for(identity)
