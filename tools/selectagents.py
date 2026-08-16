@@ -23,7 +23,7 @@ from __future__ import annotations
 from typing import Any
 
 from mcp.types import TextContent
-from pydantic import Field, ValidationError, field_validator
+from pydantic import ConfigDict, Field, ValidationError, field_validator
 
 from tools.models import ToolOutput
 from tools.shared.base_models import ToolRequest
@@ -111,6 +111,16 @@ class SelectAgentsRequest(ToolRequest):
     would say the caller never asked for that.
     """
 
+    # `extra="forbid"`, so the model agrees with the schema's
+    # `additionalProperties: false`. Without it an unknown key was accepted and
+    # discarded — measured — which is the same defect as declaring an `enum` and
+    # typing the field `str`: a published constraint nobody enforces.
+    #
+    # It bites hardest on fields that do not exist YET. `budget` arrives in #109;
+    # a caller sending it today would be told the request succeeded and would
+    # believe it had bounded a run that is not bounded.
+    model_config = ConfigDict(extra="forbid")
+
     kind_of_work: str = Field(..., description=f"One of: {', '.join(KIND_OF_WORK)}.")
     item_count: int = Field(..., ge=1, description="How many separate items the scope contains.")
     read_volume_tokens: int = Field(..., ge=0, description="Tokens that must be read to do the work.")
@@ -144,6 +154,18 @@ class SelectAgentsRequest(ToolRequest):
     def _known_verification(cls, value: str) -> str:
         if value not in VERIFICATION:
             raise ValueError(f"must be one of: {', '.join(VERIFICATION)}")
+        return value
+
+    @field_validator("description")
+    @classmethod
+    def _description_says_something(cls, value: str) -> str:
+        # `min_length=1` counts characters, and whitespace is characters — `"   "`
+        # was accepted, measured. This field is the ONLY input to the
+        # capability-axis mapping, so a blank one leaves that mapping with nothing
+        # while the record shows a description was supplied: missing data that
+        # does not look missing.
+        if not value.strip():
+            raise ValueError("must describe the work; whitespace is not a description")
         return value
 
 

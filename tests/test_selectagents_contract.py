@@ -149,6 +149,38 @@ async def test_the_description_is_free_text(tool):
 
 
 @pytest.mark.asyncio
+async def test_a_blank_description_is_refused(tool):
+    """`min_length=1` counts characters, and whitespace is characters.
+
+    Measured: `"   "` was accepted. The description is the ONLY input to the
+    capability-axis mapping, so an empty-in-practice one leaves that mapping with
+    nothing to work from while the contract records that a description was
+    supplied — the shape of missing data that does not look missing.
+    """
+    response = json.loads((await tool.execute({**VALID, "description": "   "}))[0].text)
+
+    assert response["status"] == "error"
+
+
+@pytest.mark.asyncio
+async def test_an_unknown_field_is_refused_rather_than_silently_dropped(tool):
+    """The schema says `additionalProperties: false`; the edge must agree.
+
+    Measured before the fix: an extra key was accepted and discarded. That is the
+    same defect as declaring an `enum` and typing the field `str` — a published
+    constraint nobody enforces — in a second place.
+
+    It matters most for fields that do not exist YET. `budget` arrives in #109; a
+    caller sending it today would be told the request succeeded and would believe
+    it had bounded a run that is not bounded.
+    """
+    response = json.loads((await tool.execute({**VALID, "budget": 500}))[0].text)
+
+    assert response["status"] == "error"
+    assert "budget" in response["content"]
+
+
+@pytest.mark.asyncio
 async def test_the_description_reaches_nothing_that_is_computed(tool):
     """The rule #101 exists to hold, pinned before there is anything to compute.
 

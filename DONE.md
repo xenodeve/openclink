@@ -3,6 +3,44 @@
 What shipped in this fork, newest on top, one dated `##` entry per unit. The record a future
 agent reads to learn how a change was validated. Fork-specific; upstream history is in git.
 
+## 2026-08-16 — the selectagents input contract (#101, PR #133)
+
+Seven required fields plus one free-text description, validated at the edge. The closed kind-of-work
+list is the substance: a caller able to invent a category moves the mapping from work to capability
+axis out of tested code and into an agent's head, which is what #96 exists to stop.
+
+The list is grounded rather than invented — its members are the shapes `clink-subagents` already names
+as delegable leaves, plus the two judgment shapes that skill routes elsewhere, because a caller will
+ask for those and the tool must be able to say what it is looking at.
+
+**Validated** — 19 contract tests. Suite 1168 → 1187.
+
+**The lesson, and it recurred inside one slice: a published constraint nobody enforces is worse than
+none.** Three instances, all found by probing rather than reading:
+
+1. The enumerations were declared `enum` in the JSON schema while the fields were typed plain `str`.
+   The advertisement said closed and the edge accepted anything.
+2. The schema said `additionalProperties: false` while the model silently accepted and discarded
+   unknown keys. That bites hardest on fields that do not exist *yet* — a caller sending `budget`
+   (#109) today would be told it succeeded and would believe it had bounded a run that is not bounded.
+3. `min_length=1` on the description counts characters, and whitespace is characters. `"   "` passed —
+   and that field is the ONLY input to the capability-axis mapping, so a blank one is missing data
+   that does not look missing.
+
+Each reads as enforcement to anyone who looks at the schema. All three now check against the same
+tuples the schema publishes, so there is one source for the list, the docs and the validation.
+
+**Mutation found redundant code rather than a gap.** `_refusal` restated the allowed values a second
+time; removing that block reddened nothing, because the coverage came entirely from the validator
+messages. Deleted — two places spelling one list is how they stop agreeing. The 0-red result was only
+believed after asserting the mutation had actually applied; an earlier attempt reported 0 red because
+the shell had mangled the pattern and the replacement never happened.
+
+**The description-isolation rule is pinned now, not with #104.** Two requests differing only in the
+description must produce identical output apart from the echo. Written before there is anything to
+compute, because by #104 the coupling it forbids would already exist and the test would document it
+instead of preventing it.
+
 ## 2026-08-16 — the selectagents skeleton, registered and reachable (#99, PR #132)
 
 A tracer bullet for #96's selection layer: the whole path proven before anything worth computing runs
