@@ -190,3 +190,10 @@ logs/
 test_simulation_files/
 .mcp.json
 Obsidian-OpenClink/.obsidian/
+
+# Scratch output from tooling run against this checkout, not part of the project.
+# Added after a `git add -A` swept them into an unrelated commit (#99) -- the same
+# shape as #63, where the quality gate rewrote tracked files and the next `add -A`
+# carried them along.
+.playwright-mcp/
+aa-home-snapshot.md
