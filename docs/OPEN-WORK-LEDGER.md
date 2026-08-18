@@ -10,6 +10,41 @@ protocol in `docs/agents/` and the entry map (`using-t4`).
 
 ## Active
 
+### 🟡 Two PRDs were uncut, and now are — #20 and #89 (2026-08-19)
+
+Both said their deliverables would be split into issues; neither had a single child. Cut today into
+**#144–#148** (from #20) and **#149–#153** (from #89).
+
+**Start here — these two are un-gated and everything else in #20 waits behind them:**
+
+- **#144** own the whole process tree. `clink/agents/base.py:301` spawns with **no `start_new_session`
+  and no `creationflags`**, and `:319` kills the direct child only ⇒ every descendant survives
+  cancellation, holding the working directory with bypass-approvals write access.
+- **#145** drain concurrently and boundedly. `base.py:314-317` is one combined `communicate()`
+  (a real pipe-buffer deadlock, and no byte offsets for liveness), and `:319-322` drains after
+  `kill()` **with no `wait_for`**. That last one is the blocker #89 names for its own engine.
+
+**#149** (the run journal) is the third `ready-for-agent` item, and builds on #98.
+
+**Three findings from the cut, each of which would have cost a re-plan mid-implementation:**
+
+1. **#89 asks for append-only JSONL, which #98 measured and rejected.** `utils/record_store.py:9-20`
+   states why — `O_APPEND` atomicity is platform-dependent and "Windows guarantees nothing here", and
+   a torn final line lands on every reader. A phased run is concurrent by construction, so that is the
+   normal case, not an edge one. #149 resolves it: one record per agent return under a compound
+   identity on the existing store, reconstructed by prefix. **Do not rebuild JSONL.**
+2. **Every `file:line` in both PRDs had drifted** (they date from 2026-08-13). The facts all still
+   hold; only the locations moved. The new issues carry re-verified ones.
+3. **Three of #89's parts were already filed** — Tier 1 is #14, Tier 2 is #16, Tier 3 is #115+#116,
+   and the lane policy is #112. Mapped on the epic rather than duplicated.
+
+**Not re-filed on purpose:** #20's solution change 3 ("return a handle, then supervise") **is #15**.
+
+Two decisions came out `ready-for-human` — **#152** (which mechanism owns response shape: `--json-schema`
+vs `clink_phase`'s `schema` vs a role preset) and **#153** (what PAL does when the strongest available
+enforcement tier is only "detect"). Both are answerable today and both are ADR-shaped; #152 gates
+#150's `schema` field.
+
 ### 🟢 The #96 selection layer — every agent-workable slice is merged (2026-08-16)
 
 `#96` is the PRD, cut into #98–#113. Dependency order, read off the issues rather than assumed:
