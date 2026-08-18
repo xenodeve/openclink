@@ -177,12 +177,12 @@ a field changes the account #23 shipped.
 carries no prices, because none was fetched and verified. A client without a card loads and runs, and
 says nothing about it. Populating the cards is #26's input.
 
-🔴 **`code_quality_checks.sh` silently rewrites tracked files on every run.** `ruff`, `black` and
-`isort` all run in **write** mode, so the script the docs tell every agent to run leaves unrelated
-modifications in the tree — the mechanism behind two contaminated commits on 2026-08-04. `ruff` is now
-clean on `main` (#54), but **`black` would still rewrite 10 files** under `tests/` and
-`simulator_tests/`. Inventoried in PR #55, not fixed: a 10-file reformat inside a lint PR is the
-muddied diff #54 was opened to avoid. **No issue yet.**
+✅ **Both quality-gate scripts report instead of rewriting** (#63 for `.sh`, **#121** for `.ps1`,
+PR #143). `ruff`, `black` and `isort` all run in checking mode in both copies, and the repo is
+formatted so the gate has nothing to rewrite. The `.ps1` kept auto-fixing for six weeks after #63
+because `tests/test_quality_gate_does_not_mutate.py` read only the `.sh`; it now parametrizes over
+both **and asserts that the covered set equals every `code_quality_checks.*` in the repo**, because
+the defect was a file nobody asserted on rather than a wrong assertion.
 
 ✅ **The T4 label vocabulary is real as of 2026-08-05** (#66). 16 → **25 labels**; the nine missing
 were created and `#54`/`#63` re-triaged onto `tech-debt`. **The fix that mattered was not the labels:**
