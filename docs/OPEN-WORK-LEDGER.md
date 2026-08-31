@@ -10,6 +10,30 @@ protocol in `docs/agents/` and the entry map (`using-t4`).
 
 ## Active
 
+### 🟡 #144 is done and parked on the ship gate — the suite is red on this box (2026-08-31)
+
+PR #154 is `MERGEABLE`, the merge with `main` (186 commits) is resolved and committed, and every
+gate ran (`/simplify`, `/code-review`, `/scrutinize`, `/security-review`, real-CLI verify). It is
+**not merged**: `t4-gate`'s verify blocks it.
+
+**The gate blocks every merge on this machine, not just #154.** `pytest tests/ -m "not integration"`
+→ 1267–1268 passed, 21–22 failed, and **20 of the 21 reproduce on a clean `main` (200fcb9)
+worktree** in the same environment: 13 tests assert POSIX absolute paths that are not absolute on
+Windows, 7 are driven by this box's `.env` (`CUSTOM_MODELS_CONFIG_PATH` — proven by copying `.env`
+into the `main` worktree and watching it fail identically), 1 is `black` walking a stray
+virtualenv directory in the working tree that is not `.venv` and so is not excluded.
+`.claude/t4.json` records the verify command as green here on 2026-08-09
+(1050 passed) — **the environment has drifted since, and nothing was tracking that.**
+
+Decision needed (on #144): fix the 13 Windows-path tests, narrow the `verify` command to what is
+honestly green, or merge #154 by hand. The 13 are filed separately as discovered work.
+
+**Two review findings on #144, neither a regression** — `_terminate_windows` holds no handle to pin
+a discovered pid, so a recycled PID could be terminated (`clink/agents/process_tree.py:241-256`);
+and the POSIX branch has never been executed (all evidence is Windows-only, CI is billing-blocked),
+where `killpg` additionally misses any descendant that calls `setsid()`.
+
+
 ### 🟡 Two PRDs were uncut, and now are — #20 and #89 (2026-08-19)
 
 Both said their deliverables would be split into issues; neither had a single child. Cut today into
