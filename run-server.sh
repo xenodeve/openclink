@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ============================================================================
-# PAL MCP Server Setup Script
+# OpenClink Setup Script
 #
 # A platform-agnostic setup script that works on macOS, Linux, and WSL.
 # Handles environment setup, dependency installation, and configuration.
@@ -29,11 +29,24 @@ readonly RED='\033[0;31m'
 readonly NC='\033[0m' # No Color
 
 # Configuration
-readonly VENV_PATH=".pal_venv"
+readonly VENV_PATH=".openclink_venv"
 readonly DOCKER_CLEANED_FLAG=".docker_cleaned"
 readonly DESKTOP_CONFIG_FLAG=".desktop_configured"
 readonly LOG_DIR="logs"
 readonly LOG_FILE="mcp_server.log"
+# Registrations this setup should REMOVE, because nothing addresses them any more.
+# Leaving one behind gives the user two entries for one server -- the duplicate
+# state this exists to prevent. Bare, hyphenated and underscored forms are all
+# listed because all three have appeared in real client configs.
+#
+# EXTENDED on each rename, never replaced -- but a name only belongs here once it
+# is genuinely stale. `pal` is deliberately ABSENT: skills still call
+# `mcp__pal__<tool>`, so deleting that entry would break the callers. It joins this
+# list once xeno-skills stops naming that prefix (#94).
+# `openclink` must never appear here -- it is the entry this script creates.
+#
+# This is the ONLY list of names to delete. Do not write another one at a
+# deletion site; `tests/test_mcp_server_key.py` fails if you do.
 readonly LEGACY_MCP_NAMES=("zen" "zen-mcp" "zen-mcp-server" "zen_mcp" "zen_mcp_server")
 
 # Determine portable arguments for sed -i (GNU vs BSD)
@@ -754,7 +767,7 @@ setup_venv() {
                     print_error "Permission denied creating virtual environment"
                     echo ""
                     echo "Try running in a different directory:"
-                    echo "  cd ~ && git clone <repository-url> && cd pal-mcp-server && ./run-server.sh"
+                    echo "  cd ~ && git clone <repository-url> && cd openclink && ./run-server.sh"
                     echo ""
                     exit 1
                 else
@@ -961,7 +974,7 @@ install_dependencies() {
     fi
 
     echo ""
-    print_info "Setting up PAL MCP Server..."
+    print_info "Setting up OpenClink..."
     echo "Installing required components:"
     echo "  • MCP protocol library"
     echo "  • AI model connectors"
@@ -1255,7 +1268,7 @@ check_claude_cli_integration() {
         echo ""
         print_warning "Claude CLI not found"
         echo ""
-        read -p "Would you like to add PAL to Claude Code? (Y/n): " -n 1 -r
+        read -p "Would you like to add OpenClink to Claude Code? (Y/n): " -n 1 -r
         echo ""
         if [[ $REPLY =~ ^[Nn]$ ]]; then
             print_info "Skipping Claude Code integration"
@@ -1275,9 +1288,9 @@ check_claude_cli_integration() {
         claude mcp remove "$legacy_name" -s user >/dev/null 2>&1 || true
     done
 
-    # Check if pal is registered
+    # Check if this server is registered, under either name.
     local mcp_list=$(claude mcp list 2>/dev/null)
-    if echo "$mcp_list" | grep -q "pal"; then
+    if echo "$mcp_list" | grep -qE "openclink|pal"; then
         # Check if it's using the old Docker command
         if echo "$mcp_list" | grep -E "zen.*docker|zen.*compose" &>/dev/null; then
             print_warning "Found old Docker-based Zen registration, updating..."
@@ -1298,7 +1311,7 @@ check_claude_cli_integration() {
             
             local claude_cmd="claude mcp add pal -s user$env_args -- \"$python_cmd\" \"$server_path\""
             if eval "$claude_cmd" 2>/dev/null; then
-                print_success "Updated PAL to become a standalone script with environment variables"
+                print_success "Updated OpenClink to become a standalone script with environment variables"
                 return 0
             else
                 echo ""
@@ -1308,12 +1321,19 @@ check_claude_cli_integration() {
                 return 1
             fi
         else
-            # Verify the registered path matches current setup
+            # Verify the registered command matches current setup -- the
+            # INTERPRETER as well as the script. Matching `$server_path` alone was
+            # harmless while the virtualenv kept its name; this rename moved it
+            # from `.pal_venv` to `.openclink_venv` and left `server.py` where it
+            # was, so a path-only match declares every existing registration
+            # current and leaves it running an env setup no longer installs into.
+            # Nothing errors -- the old directory is still on disk -- which is why
+            # this needs an assertion rather than a report (#94).
             local expected_cmd="$python_cmd $server_path"
-            if echo "$mcp_list" | grep -F "$server_path" &>/dev/null; then
+            if echo "$mcp_list" | grep -F "$expected_cmd" &>/dev/null; then
                 return 0
             else
-                print_warning "PAL registered with different path, updating..."
+                print_warning "OpenClink registered with different path, updating..."
                 claude mcp remove pal -s user 2>/dev/null || true
 
                 # Re-add with current path and environment variables
@@ -1331,7 +1351,7 @@ check_claude_cli_integration() {
                 
                 local claude_cmd="claude mcp add pal -s user$env_args -- \"$python_cmd\" \"$server_path\""
                 if eval "$claude_cmd" 2>/dev/null; then
-                    print_success "Updated PAL with current path and environment variables"
+                    print_success "Updated OpenClink with current path and environment variables"
                     return 0
                 else
                     echo ""
@@ -1345,7 +1365,7 @@ check_claude_cli_integration() {
     else
         # Not registered at all, ask user if they want to add it
         echo ""
-        read -p "Add PAL to Claude Code? (Y/n): " -n 1 -r
+        read -p "Add OpenClink to Claude Code? (Y/n): " -n 1 -r
         echo ""
         if [[ $REPLY =~ ^[Nn]$ ]]; then
             local env_vars=$(parse_env_variables)
@@ -1365,7 +1385,7 @@ check_claude_cli_integration() {
             return 0
         fi
 
-        print_info "Registering PAL with Claude Code..."
+        print_info "Registering OpenClink with Claude Code..."
         
         # Add with environment variables
         local env_vars=$(parse_env_variables)
@@ -1382,7 +1402,7 @@ check_claude_cli_integration() {
         
         local claude_cmd="claude mcp add pal -s user$env_args -- \"$python_cmd\" \"$server_path\""
         if eval "$claude_cmd" 2>/dev/null; then
-            print_success "Successfully added PAL to Claude Code with environment variables"
+            print_success "Successfully added OpenClink to Claude Code with environment variables"
             return 0
         else
             echo ""
@@ -1414,7 +1434,7 @@ check_claude_desktop_integration() {
     legacy_names_csv=$(IFS=,; echo "${LEGACY_MCP_NAMES[*]}")
 
     echo ""
-    read -p "Configure PAL for Claude Desktop? (Y/n): " -n 1 -r
+    read -p "Configure OpenClink for Claude Desktop? (Y/n): " -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         print_info "Skipping Claude Desktop integration"
@@ -1432,32 +1452,17 @@ check_claude_desktop_integration() {
 
         # Check for old Docker config and remove it
         if grep -q "docker.*compose.*pal\|pal.*docker" "$config_path" 2>/dev/null; then
-            print_warning "Removing old Docker-based MCP configuration..."
+            print_warning "Found old Docker-based MCP configuration, replacing..."
             # Create backup
             cp "$config_path" "${config_path}.backup_$(date +%Y%m%d_%H%M%S)"
-
-            # Remove old pal config using a more robust approach
-            local temp_file=$(mktemp)
-            python3 -c "
-import json
-import sys
-
-try:
-    with open('$config_path', 'r') as f:
-        config = json.load(f)
-
-    # Remove pal from mcpServers if it exists
-    if 'mcpServers' in config and 'pal' in config['mcpServers']:
-        del config['mcpServers']['pal']
-        print('Removed old pal MCP configuration')
-
-    with open('$temp_file', 'w') as f:
-        json.dump(config, f, indent=2)
-
-except Exception as e:
-    print(f'Error processing config: {e}', file=sys.stderr)
-    sys.exit(1)
-" && mv "$temp_file" "$config_path"
+            # The rewrite below is what replaces it. This branch used to run its
+            # own `python3 -c` first, deleting the keys ('openclink', 'pal') --
+            # a second cleanup list, written at the deletion site, which #94
+            # forbade ("Reuse it; do not invent a second one"). It disagreed with
+            # LEGACY_MCP_NAMES about the one name that matters: that array spares
+            # `pal` because skills still call `mcp__pal__<tool>`, and this block
+            # deleted it anyway. It was also redundant -- the rewrite already pops
+            # every legacy key and overwrites `openclink` itself.
         fi
 
         # Add new config with environment variables
@@ -1470,12 +1475,12 @@ except Exception as e:
             echo "$env_vars" > "$env_file"
         fi
         
-        PAL_LEGACY_NAMES="$legacy_names_csv" python3 -c "
+        OPENCLINK_LEGACY_NAMES="$legacy_names_csv" python3 -c "
 import json
 import os
 import sys
 
-legacy_keys = [k for k in os.environ.get('PAL_LEGACY_NAMES', '').split(',') if k]
+legacy_keys = [k for k in os.environ.get('OPENCLINK_LEGACY_NAMES', '').split(',') if k]
 
 try:
     with open('$config_path', 'r') as f:
@@ -1497,8 +1502,8 @@ for container in ('mcpServers', 'servers'):
         for key in legacy_keys:
             servers.pop(key, None)
 
-# Add pal server
-pal_config = {
+# Add openclink server
+openclink_config = {
     'command': '$python_cmd',
     'args': ['$server_path']
 }
@@ -1516,9 +1521,20 @@ except Exception:
     pass
 
 if env_dict:
-    pal_config['env'] = env_dict
+    openclink_config['env'] = env_dict
 
-config['mcpServers']['pal'] = pal_config
+config['mcpServers']['openclink'] = openclink_config
+
+# An existing 'pal' entry is the one skills still address, and it names the
+# pre-rename virtualenv that setup no longer installs into. Refreshed to the same
+# command rather than deleted (that breaks the callers) or left alone (that lets
+# it rot silently, because .pal_venv is still on disk so nothing errors).
+# GUARDED: refreshed only when already present, never created -- registering
+# every client under both names would put a second copy of every tool in front of
+# users who never had 'pal'. Delete this block at cutover, when 'pal' joins
+# LEGACY_MCP_NAMES (#94).
+if 'pal' in config['mcpServers']:
+    config['mcpServers']['pal'] = dict(openclink_config)
 
 with open('$temp_file', 'w') as f:
     json.dump(config, f, indent=2)
@@ -1546,8 +1562,8 @@ import sys
 
 config = {'mcpServers': {}}
 
-# Add pal server
-pal_config = {
+# Add openclink server
+openclink_config = {
     'command': '$python_cmd',
     'args': ['$server_path']
 }
@@ -1565,9 +1581,9 @@ except:
     pass
 
 if env_dict:
-    pal_config['env'] = env_dict
+    openclink_config['env'] = env_dict
 
-config['mcpServers']['pal'] = pal_config
+config['mcpServers']['openclink'] = openclink_config
 
 with open('$temp_file', 'w') as f:
     json.dump(config, f, indent=2)
@@ -1610,7 +1626,7 @@ with open('$temp_file', 'w') as f:
         cat << EOF
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "command": "$python_cmd",
       "args": ["$server_path"]$(if [[ -n "$example_env" ]]; then echo ","; fi)$(if [[ -n "$example_env" ]]; then echo "
       \"env\": {
@@ -1626,7 +1642,7 @@ EOF
 # Check and update Gemini CLI configuration
 check_gemini_cli_integration() {
     local script_dir="$1"
-    local pal_wrapper="$script_dir/pal-mcp-server"
+    local openclink_wrapper="$script_dir/openclink"
 
     # Check if Gemini settings file exists
     local gemini_config="$HOME/.gemini/settings.json"
@@ -1635,24 +1651,24 @@ check_gemini_cli_integration() {
         return 0
     fi
 
-    # Clean up legacy zen entries and detect existing pal configuration
+    # Clean up legacy zen entries and detect existing openclink configuration
     local legacy_names_csv
     legacy_names_csv=$(IFS=,; echo "${LEGACY_MCP_NAMES[*]}")
 
     local gemini_status
     gemini_status=$(
-        PAL_LEGACY_NAMES="$legacy_names_csv" PAL_WRAPPER="$pal_wrapper" PAL_GEMINI_CONFIG="$gemini_config" python3 - <<'PY' 2>/dev/null
+        OPENCLINK_LEGACY_NAMES="$legacy_names_csv" OPENCLINK_WRAPPER="$openclink_wrapper" OPENCLINK_GEMINI_CONFIG="$gemini_config" python3 - <<'PY' 2>/dev/null
 import json
 import os
 import pathlib
 import sys
 
-config_path = pathlib.Path(os.environ["PAL_GEMINI_CONFIG"])
-legacy = [n for n in os.environ.get("PAL_LEGACY_NAMES", "").split(",") if n]
-wrapper = os.environ["PAL_WRAPPER"]
+config_path = pathlib.Path(os.environ["OPENCLINK_GEMINI_CONFIG"])
+legacy = [n for n in os.environ.get("OPENCLINK_LEGACY_NAMES", "").split(",") if n]
+wrapper = os.environ["OPENCLINK_WRAPPER"]
 
 changed = False
-has_pal = False
+has_openclink = False
 
 try:
     data = json.loads(config_path.read_text())
@@ -1671,39 +1687,39 @@ for key in legacy:
     if servers.pop(key, None) is not None:
         changed = True
 
-pal_cfg = servers.get("pal")
-if isinstance(pal_cfg, dict):
-    has_pal = True
-    if pal_cfg.get("command") != wrapper:
-        pal_cfg["command"] = wrapper
-        servers["pal"] = pal_cfg
+openclink_cfg = servers.get("openclink")
+if isinstance(openclink_cfg, dict):
+    has_openclink = True
+    if openclink_cfg.get("command") != wrapper:
+        openclink_cfg["command"] = wrapper
+        servers["openclink"] = openclink_cfg
         changed = True
 
 if changed:
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(json.dumps(data, indent=2))
 
-status = ("CHANGED" if changed else "UNCHANGED") + ":" + ("HAS_PAL" if has_pal else "NO_PAL")
+status = ("CHANGED" if changed else "UNCHANGED") + ":" + ("HAS_OPENCLINK" if has_openclink else "NO_OPENCLINK")
 sys.stdout.write(status)
 sys.exit(0)
 PY
     ) || true
 
     local gemini_changed=false
-    local gemini_has_pal=false
+    local gemini_has_openclink=false
     [[ "$gemini_status" == CHANGED:* ]] && gemini_changed=true
-    [[ "$gemini_status" == *:HAS_PAL ]] && gemini_has_pal=true
+    [[ "$gemini_status" == *:HAS_OPENCLINK ]] && gemini_has_openclink=true
 
-    if [[ "$gemini_has_pal" == true ]]; then
+    if [[ "$gemini_has_openclink" == true ]]; then
         if [[ "$gemini_changed" == true ]]; then
             print_success "Removed legacy Gemini MCP entries"
         fi
         return 0
     fi
 
-    # Ask user if they want to add PAL to Gemini CLI
+    # Ask user if they want to add OpenClink to Gemini CLI
     echo ""
-    read -p "Configure PAL for Gemini CLI? (Y/n): " -n 1 -r
+    read -p "Configure OpenClink for Gemini CLI? (Y/n): " -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Nn]$ ]]; then
         print_info "Skipping Gemini CLI integration"
@@ -1711,17 +1727,17 @@ PY
     fi
 
     # Ensure wrapper script exists
-    if [[ ! -f "$pal_wrapper" ]]; then
+    if [[ ! -f "$openclink_wrapper" ]]; then
         print_info "Creating wrapper script for Gemini CLI..."
-        cat > "$pal_wrapper" << 'EOF'
+        cat > "$openclink_wrapper" << 'EOF'
 #!/bin/bash
 # Wrapper script for Gemini CLI compatibility
 DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DIR"
-exec .pal_venv/bin/python server.py "$@"
+exec .openclink_venv/bin/python server.py "$@"
 EOF
-        chmod +x "$pal_wrapper"
-        print_success "Created pal-mcp-server wrapper script"
+        chmod +x "$openclink_wrapper"
+        print_success "Created openclink wrapper script"
     fi
 
     # Update Gemini settings
@@ -1730,7 +1746,7 @@ EOF
     # Create backup
     cp "$gemini_config" "${gemini_config}.backup_$(date +%Y%m%d_%H%M%S)"
 
-    # Add pal configuration using Python for proper JSON handling
+    # Add openclink configuration using Python for proper JSON handling
     local temp_file=$(mktemp)
     python3 -c "
 import json
@@ -1744,10 +1760,15 @@ try:
     if 'mcpServers' not in config:
         config['mcpServers'] = {}
 
-    # Add pal server
-    config['mcpServers']['pal'] = {
-        'command': '$pal_wrapper'
+    # Add openclink server
+    config['mcpServers']['openclink'] = {
+        'command': '$openclink_wrapper'
     }
+
+    # Same rule as the Claude Desktop path: refresh an existing 'pal' entry to the
+    # current command, never create one. See the note there (#94).
+    if 'pal' in config['mcpServers']:
+        config['mcpServers']['pal'] = dict(config['mcpServers']['openclink'])
 
     with open('$temp_file', 'w') as f:
         json.dump(config, f, indent=2)
@@ -1760,7 +1781,7 @@ except Exception as e:
     if [[ $? -eq 0 ]]; then
         print_success "Successfully configured Gemini CLI"
         echo "  Config: $gemini_config"
-        echo "  Restart Gemini CLI to use PAL MCP Server"
+        echo "  Restart Gemini CLI to use OpenClink"
     else
         print_error "Failed to update Gemini CLI config"
         echo "Manual config location: $gemini_config"
@@ -1768,8 +1789,8 @@ except Exception as e:
         cat << EOF
 {
   "mcpServers": {
-    "pal": {
-      "command": "$pal_wrapper"
+    "openclink": {
+      "command": "$openclink_wrapper"
     }
   }
 }
@@ -1790,14 +1811,14 @@ check_codex_cli_integration() {
     if [[ -f "$codex_config" ]]; then
         local codex_cleanup_status
         codex_cleanup_status=$(
-            PAL_LEGACY_NAMES="$legacy_names_csv" PAL_CODEX_CONFIG="$codex_config" python3 - <<'PY' 2>/dev/null
+            OPENCLINK_LEGACY_NAMES="$legacy_names_csv" OPENCLINK_CODEX_CONFIG="$codex_config" python3 - <<'PY' 2>/dev/null
 import os
 import pathlib
 import re
 import sys
 
-config_path = pathlib.Path(os.environ["PAL_CODEX_CONFIG"])
-legacy = [n for n in os.environ.get("PAL_LEGACY_NAMES", "").split(",") if n]
+config_path = pathlib.Path(os.environ["OPENCLINK_CODEX_CONFIG"])
+legacy = [n for n in os.environ.get("OPENCLINK_LEGACY_NAMES", "").split(",") if n]
 
 if not config_path.exists():
     sys.exit(0)
@@ -1848,7 +1869,7 @@ PY
 
     if [[ "$codex_has_pal" == false ]]; then
         echo ""
-        read -p "Configure PAL for Codex CLI? (Y/n): " -n 1 -r
+        read -p "Configure OpenClink for Codex CLI? (Y/n): " -n 1 -r
         echo ""
         if [[ $REPLY =~ ^[Nn]$ ]]; then
             print_info "Skipping Codex CLI integration"
@@ -1869,7 +1890,7 @@ PY
             echo ""
             echo "[mcp_servers.pal]"
             echo "command = \"bash\""
-            echo "args = [\"-c\", \"for p in \$(which uvx 2>/dev/null) \$HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \\\"\$p\\\" ] && exec \\\"\$p\\\" --from git+https://github.com/BeehiveInnovations/pal-mcp-server.git pal-mcp-server; done; echo 'uvx not found' >&2; exit 1\"]"
+            echo "args = [\"-c\", \"for p in \$(which uvx 2>/dev/null) \$HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \\\"\$p\\\" ] && exec \\\"\$p\\\" --from git+https://github.com/xenodeve/openclink.git pal-mcp-server; done; echo 'uvx not found' >&2; exit 1\"]"
             echo "tool_timeout_sec = 1200"
             echo ""
             echo "[mcp_servers.pal.env]"
@@ -1894,7 +1915,7 @@ PY
 cat <<'CODExEOF'
 [mcp_servers.pal]
 command = "sh"
-args = ["-c", "exec \$(which uvx 2>/dev/null || echo uvx) --from git+https://github.com/BeehiveInnovations/pal-mcp-server.git pal-mcp-server"]
+args = ["-c", "exec \$(which uvx 2>/dev/null || echo uvx) --from git+https://github.com/xenodeve/openclink.git pal-mcp-server"]
 tool_timeout_sec = 1200
 
 [mcp_servers.pal.env]
@@ -1919,7 +1940,7 @@ CODExEOF
 
         print_success "Successfully configured Codex CLI"
         echo "  Config: $codex_config"
-        echo "  Restart Codex CLI to use PAL MCP Server"
+        echo "  Restart Codex CLI to use OpenClink"
         codex_has_pal=true
     else
         print_info "Codex CLI already configured; refreshing Codex settings..."
@@ -1928,7 +1949,7 @@ CODExEOF
     if [[ "$codex_has_pal" == true ]]; then
         if ! grep -Eq '^\s*web_search_request\s*=' "$codex_config" 2>/dev/null; then
             echo ""
-            print_info "Web search requests let Codex pull fresh documentation for PAL's API lookup tooling."
+            print_info "Web search requests let Codex pull fresh documentation for OpenClink's API lookup tooling."
             read -p "Enable Codex CLI web search requests? (Y/n): " -n 1 -r
             echo ""
             if [[ ! $REPLY =~ ^[Nn]$ ]]; then
@@ -2063,7 +2084,7 @@ print_qwen_manual_instructions() {
         cat << EOF
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "command": "$python_cmd",
       "args": ["$server_path"],
       "cwd": "$script_dir",
@@ -2076,7 +2097,7 @@ EOF
         cat << EOF
 {
   "mcpServers": {
-    "pal": {
+    "openclink": {
       "command": "$python_cmd",
       "args": ["$server_path"],
       "cwd": "$script_dir"
@@ -2120,14 +2141,14 @@ check_qwen_cli_integration() {
     legacy_names_csv=$(IFS=,; echo "${LEGACY_MCP_NAMES[*]}")
 
     if [[ -f "$qwen_config" ]]; then
-        PAL_QWEN_LEGACY="$legacy_names_csv" PAL_QWEN_CONFIG="$qwen_config" python3 - <<'PYCLEANCONF' 2>/dev/null || true
+        OPENCLINK_QWEN_LEGACY="$legacy_names_csv" OPENCLINK_QWEN_CONFIG="$qwen_config" python3 - <<'PYCLEANCONF' 2>/dev/null || true
 import json
 import os
 import pathlib
 import sys
 
-config_path = pathlib.Path(os.environ.get("PAL_QWEN_CONFIG", ""))
-legacy = [n for n in os.environ.get("PAL_QWEN_LEGACY", "").split(",") if n]
+config_path = pathlib.Path(os.environ.get("OPENCLINK_QWEN_CONFIG", ""))
+legacy = [n for n in os.environ.get("OPENCLINK_QWEN_LEGACY", "").split(",") if n]
 
 if not config_path.exists():
     sys.exit(0)
@@ -2172,7 +2193,7 @@ servers = data.get('mcpServers')
 if not isinstance(servers, dict):
     sys.exit(3)
 
-config = servers.get('pal')
+config = servers.get('openclink')
 if not isinstance(config, dict):
     sys.exit(3)
 
@@ -2203,14 +2224,14 @@ PYCONF
     echo ""
 
     if [[ $config_status -eq 4 ]]; then
-        print_warning "Found existing Qwen CLI pal configuration with different settings."
+        print_warning "Found existing Qwen CLI openclink configuration with different settings."
     elif [[ $config_status -eq 5 ]]; then
         print_warning "Unable to parse Qwen CLI settings; replacing with a fresh entry may help."
     fi
 
-    local prompt="Configure PAL for Qwen CLI? (Y/n): "
+    local prompt="Configure OpenClink for Qwen CLI? (Y/n): "
     if [[ $config_status -eq 4 || $config_status -eq 5 ]]; then
-        prompt="Update Qwen CLI pal configuration? (Y/n): "
+        prompt="Update Qwen CLI openclink configuration? (Y/n): "
     fi
 
     read -p "$prompt" -n 1 -r
@@ -2228,17 +2249,17 @@ PYCONF
 
     local update_output
     local update_status=0
-    update_output=$(PAL_QWEN_ENV="$env_lines" PAL_QWEN_CMD="$python_cmd" PAL_QWEN_ARG="$server_path" PAL_QWEN_CWD="$script_dir" python3 - "$qwen_config" <<'PYUPDATE'
+    update_output=$(OPENCLINK_QWEN_ENV="$env_lines" OPENCLINK_QWEN_CMD="$python_cmd" OPENCLINK_QWEN_ARG="$server_path" OPENCLINK_QWEN_CWD="$script_dir" python3 - "$qwen_config" <<'PYUPDATE'
 import json
 import os
 import pathlib
 import sys
 
 config_path = pathlib.Path(sys.argv[1])
-cmd = os.environ['PAL_QWEN_CMD']
-arg = os.environ['PAL_QWEN_ARG']
-cwd = os.environ['PAL_QWEN_CWD']
-env_lines = os.environ.get('PAL_QWEN_ENV', '').splitlines()
+cmd = os.environ['OPENCLINK_QWEN_CMD']
+arg = os.environ['OPENCLINK_QWEN_ARG']
+cwd = os.environ['OPENCLINK_QWEN_CWD']
+env_lines = os.environ.get('OPENCLINK_QWEN_ENV', '').splitlines()
 
 env_map = {}
 for line in env_lines:
@@ -2265,16 +2286,21 @@ if not isinstance(servers, dict):
     servers = {}
     data['mcpServers'] = servers
 
-pal_config = {
+openclink_config = {
     'command': cmd,
     'args': [arg],
     'cwd': cwd,
 }
 
 if env_map:
-    pal_config['env'] = env_map
+    openclink_config['env'] = env_map
 
-servers['pal'] = pal_config
+servers['openclink'] = openclink_config
+
+# Same rule as the Claude Desktop path: refresh an existing 'pal' entry to the
+# current command, never create one. See the note there (#94).
+if 'pal' in servers:
+    servers['pal'] = dict(openclink_config)
 
 config_path.parent.mkdir(parents=True, exist_ok=True)
 tmp_path = config_path.with_suffix(config_path.suffix + '.tmp')
@@ -2288,7 +2314,7 @@ PYUPDATE
     if [[ $update_status -eq 0 ]]; then
         print_success "Successfully configured Qwen CLI"
         echo "  Config: $qwen_config"
-        echo "  Restart Qwen CLI to use PAL MCP Server"
+        echo "  Restart Qwen CLI to use OpenClink"
     else
         print_error "Failed to update Qwen CLI config"
         if [[ -n "$update_output" ]]; then
@@ -2307,11 +2333,11 @@ display_config_instructions() {
     local script_dir=$(dirname "$server_path")
 
     echo ""
-    local config_header="PAL MCP SERVER CONFIGURATION"
+    local config_header="OpenClink SERVER CONFIGURATION"
     echo "===== $config_header ====="
     printf '%*s\n' "$((${#config_header} + 12))" | tr ' ' '='
     echo ""
-    echo "To use PAL MCP Server with your CLI clients:"
+    echo "To use OpenClink with your CLI clients:"
     echo ""
 
     print_info "1. For Claude Code (CLI):"
@@ -2356,7 +2382,7 @@ display_config_instructions() {
         cat << EOF
    {
      "mcpServers": {
-       "pal": {
+       "openclink": {
          "command": "$python_cmd",
          "args": ["$server_path"],
          "cwd": "$script_dir",
@@ -2371,7 +2397,7 @@ EOF
         cat << EOF
    {
      "mcpServers": {
-       "pal": {
+       "openclink": {
          "command": "$python_cmd",
          "args": ["$server_path"],
          "cwd": "$script_dir"
@@ -2399,8 +2425,8 @@ EOF
     cat << EOF
    {
      "mcpServers": {
-       "pal": {
-         "command": "$script_dir/pal-mcp-server"
+       "openclink": {
+         "command": "$script_dir/openclink"
        }
      }
    }
@@ -2414,7 +2440,7 @@ EOF
         cat << EOF
    {
      "mcpServers": {
-       "pal": {
+       "openclink": {
          "command": "$python_cmd",
          "args": ["$server_path"],
          "cwd": "$script_dir",
@@ -2429,7 +2455,7 @@ EOF
         cat << EOF
    {
      "mcpServers": {
-       "pal": {
+       "openclink": {
          "command": "$python_cmd",
          "args": ["$server_path"],
          "cwd": "$script_dir"
@@ -2446,7 +2472,7 @@ EOF
     cat << EOF
    [mcp_servers.pal]
    command = "bash"
-   args = ["-c", "for p in \$(which uvx 2>/dev/null) \$HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \\\"\$p\\\" ] && exec \\\"\$p\\\" --from git+https://github.com/BeehiveInnovations/pal-mcp-server.git pal-mcp-server; done; echo 'uvx not found' >&2; exit 1"]
+   args = ["-c", "for p in \$(which uvx 2>/dev/null) \$HOME/.local/bin/uvx /opt/homebrew/bin/uvx /usr/local/bin/uvx uvx; do [ -x \\\"\$p\\\" ] && exec \\\"\$p\\\" --from git+https://github.com/xenodeve/openclink.git pal-mcp-server; done; echo 'uvx not found' >&2; exit 1"]
 
    [mcp_servers.pal.env]
    PATH = "/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin:\$HOME/.local/bin:\$HOME/.cargo/bin:\$HOME/bin"
@@ -2465,7 +2491,7 @@ display_setup_instructions() {
     echo "===== $setup_header ====="
     printf '%*s\n' "$((${#setup_header} + 12))" | tr ' ' '='
     echo ""
-    print_success "PAL is ready to use!"
+    print_success "OpenClink is ready to use!"
     
     # Display enabled/disabled tools if DISABLED_TOOLS is configured
     if [[ -n "${DISABLED_TOOLS:-}" ]]; then
@@ -2545,7 +2571,7 @@ display_setup_instructions() {
 # Show help message
 show_help() {
     local version=$(get_version)
-    local header="🤖 PAL MCP Server v$version"
+    local header="🤖 OpenClink v$version"
     echo "$header"
     printf '%*s\n' "${#header}" | tr ' ' '='
     echo ""
@@ -2566,7 +2592,7 @@ show_help() {
     echo "  $0 --clear-cache Clear Python cache (fixes import issues)"
     echo ""
     echo "For more information, visit:"
-    echo "  https://github.com/BeehiveInnovations/pal-mcp-server"
+    echo "  https://github.com/xenodeve/openclink"
 }
 
 # Show version only
@@ -2641,7 +2667,7 @@ main() {
     esac
 
     # Display header
-    local main_header="🤖 PAL MCP Server"
+    local main_header="🤖 OpenClink"
     echo "$main_header"
     printf '%*s\n' "${#main_header}" | tr ' ' '='
 

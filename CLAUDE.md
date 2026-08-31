@@ -1,6 +1,44 @@
-# Claude Development Guide for PAL MCP Server
+# Claude Development Guide for OpenClink
 
-This file contains essential commands and workflows for developing and maintaining the PAL MCP Server when working with Claude. Use these instructions to efficiently run quality checks, manage the server, check logs, and run tests.
+This file contains essential commands and workflows for developing and maintaining the OpenClink when working with Claude. Use these instructions to efficiently run quality checks, manage the server, check logs, and run tests.
+
+## Operating standard (T4, fork)
+
+This fork is run **agent-primary** under the T4 operating standard. **At session start, before picking up work:**
+
+1. Invoke **`karpathy-guidelines`** (surgical, simple, verify) and **`using-t4`** (the entry map).
+   **`using-t4` is a standing default, not a one-off** — re-route through its map at every phase
+   boundary (after writing code → `simplify`; before merge → `code-review` + `scrutinize`; touched a
+   security boundary → `security-review`). A check at task start does not discharge a later trigger.
+2. Read **`Obsidian-OpenClink/Home.md`** (memory vault index — open only the notes your task touches), **`docs/OPEN-WORK-LEDGER.md`** (open work), and **`DONE.md`** (what shipped + how it was validated).
+3. Then the specific GitHub issue you're picking up (`gh issue view <n> --repo xenodeve/openclink`).
+
+Non-negotiables (details in `docs/agents/`): **issue → PR gate** (no PR without a referenced issue);
+**bilingual TH+EN tracker bodies** (issue/PR only — see `docs/agents/issue-tracker.md`); **TDD**, and
+**verify clink changes against a real CLI** (a `_build_command` unit test doesn't prove the CLI honored
+the flags — cf. the antigravity `--model` bug); **ADR** for hard-to-reverse decisions (`docs/adr/`),
+**post-mortem/investigation** in `docs/reports/` for a fixed+validated bug; append `DONE.md` + keep the
+ledger current. **Package manager is Python/`uv` + `pytest`/`ruff` (NOT Bun).** Fork-specific additions:
+`CHANGES-FORK.md`. Map: `docs/agents/domain.md` · `workflow.md` · `issue-tracker.md` · `triage-labels.md`.
+
+### Delegate by default (`clink-subagents`)
+
+**The orchestrator's context window is the scarce resource here** — the clink back-ends bill against
+flat subscriptions, the master agent does not. So **delegation is the default, not the optimisation**:
+hand every self-contained, verifiable leaf to `clink-subagents` and keep decomposition, integration,
+and final verification. Follow that skill's routing table (`gpt-5.6-luna` at `high` clears routine
+leaves; judgment goes to `clink-brainstorm`, never to the small model).
+
+Two rules that do **not** relax when you delegate:
+
+- **Verify everything that comes back.** A subagent's report is a hypothesis until you check it —
+  a worker has invented repo facts here (claimed a merged PR that did not exist), and a delegated
+  green has hidden a test that pinned wording rather than behaviour. Mutation-test a delegated core.
+- **Never delegate what you cannot check**, the final verification, or a security-boundary change.
+
+Ask for the **RED first** and require the failing output back before the implementation is written —
+a prompt that says "write the function and its tests" returns a suite in which no test has ever
+been observed to fail.
 
 ## Quick Reference Commands
 
@@ -13,15 +51,29 @@ Before making any changes or submitting PRs, always run the comprehensive qualit
 source venv/bin/activate
 
 # Run all quality checks (linting, formatting, tests)
-./code_quality_checks.sh
+./code_quality_checks.sh          # POSIX
+.\code_quality_checks.ps1         # Windows — same contract
 ```
 
-This script automatically runs:
-- Ruff linting with auto-fix
-- Black code formatting 
-- Import sorting with isort
+**There are two copies of this gate and they must agree.** #63 was fixed on the
+`.sh` alone and the guard test read only that file, so the `.ps1` kept auto-fixing
+for six weeks — on the platform this repo is primarily developed on (#121).
+`tests/test_quality_gate_does_not_mutate.py` now parametrizes over both, and
+fails if a third gate script appears uncovered.
+
+Neither script auto-discovers `.venv`; both look for `.openclink_venv` and
+otherwise fall back to an activated `VIRTUAL_ENV`. Activate first.
+
+Both **report; they do not rewrite**. They run:
+- Ruff linting (`check`, no `--fix`)
+- Black formatting check (`--check`)
+- Import-order check with isort (`--check-only`)
 - Complete unit test suite (excluding integration tests)
-- Verification that all checks pass 100%
+
+**A red gate means run the formatter yourself** — the same commands without
+`--check` / `--check-only`. It used to auto-fix, which meant it exited 0 having
+edited tracked files, and a following `git add -A` swept them into an unrelated
+commit (#63).
 
 **Run Integration Tests (requires API keys):**
 ```bash
@@ -237,7 +289,7 @@ python -m pytest tests/ -v
 ### Development Workflow
 
 #### Before Making Changes
-1. Ensure virtual environment is activated: `source .pal_venv/bin/activate`
+1. Ensure virtual environment is activated: `source .openclink_venv/bin/activate`
 2. Run quality checks: `./code_quality_checks.sh`
 3. Check logs to ensure server is healthy: `tail -n 50 logs/mcp_server.log`
 
@@ -268,7 +320,7 @@ grep "ERROR" logs/mcp_server.log | tail -20
 
 # Check virtual environment
 which python
-# Should show: .../pal-mcp-server/.pal_venv/bin/python
+# Should show: .../openclink/.openclink_venv/bin/python
 ```
 
 #### Test Failures
@@ -317,4 +369,4 @@ isort --check-only .
 - All dependencies from `requirements.txt` installed
 - Proper API keys configured in `.env` file
 
-This guide provides everything needed to efficiently work with the PAL MCP Server codebase using Claude. Always run quality checks before and after making changes to ensure code integrity.
+This guide provides everything needed to efficiently work with the OpenClink codebase using Claude. Always run quality checks before and after making changes to ensure code integrity.

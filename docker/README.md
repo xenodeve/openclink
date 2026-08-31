@@ -1,4 +1,31 @@
-# PAL MCP Server - Docker Setup
+# OpenClink - Docker Setup
+
+## Migration: upgrading from the `pal-mcp` Docker names
+
+The Docker service, image, and named volume were renamed from the `pal-mcp` family
+to `openclink` (service `pal-mcp` → `openclink`, volume `pal-mcp-config` →
+`openclink-config`, image `pal-mcp-server:latest` → `openclink:latest`). Docker
+Compose does **not** carry data over automatically when a named volume is renamed
+— it will create a new, empty `openclink-config` volume, and your existing
+`pal-mcp-config` volume stays on disk untouched but unused.
+
+If you have existing configuration in `pal-mcp-config`, copy it into the new
+volume before starting the renamed stack:
+
+```bash
+# Create the new volume and copy the old volume's contents into it
+docker volume create openclink-config
+docker run --rm \
+  -v pal-mcp-config:/from \
+  -v openclink-config:/to \
+  alpine sh -c "cp -a /from/. /to/"
+```
+
+Then start the stack as usual (`docker-compose up -d`). If you skip this step,
+the stack still starts fine — it just starts with default/empty configuration.
+Nothing is deleted; your old `pal-mcp-config` volume remains on disk and can be
+removed later with `docker volume rm pal-mcp-config` once you've confirmed the
+new volume has what you need.
 
 ## Quick Start
 
@@ -22,7 +49,7 @@ nano .env
 
 ```bash
 # Build the Docker image
-docker build -t pal-mcp-server:latest .
+docker build -t openclink:latest .
 
 # Or use the build script (Bash)
 chmod +x docker/scripts/build.sh
@@ -41,14 +68,14 @@ docker/scripts/build.ps1
 # Run with environment file
 docker run --rm -i --env-file .env \
   -v $(pwd)/logs:/app/logs \
-  pal-mcp-server:latest
+  openclink:latest
 
 # Run with inline environment variables
 docker run --rm -i \
   -e GEMINI_API_KEY="your_key_here" \
   -e LOG_LEVEL=INFO \
   -v $(pwd)/logs:/app/logs \
-  pal-mcp-server:latest
+  openclink:latest
 ```
 
 #### B. Docker Compose (For Development/Monitoring)
@@ -62,7 +89,7 @@ chmod +x docker/scripts/deploy.sh
 docker/scripts/deploy.ps1
 
 # Interactive stdio mode
-docker-compose exec pal-mcp python server.py
+docker-compose exec openclink python server.py
 ```
 
 ## Service Management
@@ -76,8 +103,8 @@ docker ps
 # View logs from container
 docker logs <container_id>
 
-# Stop all pal-mcp containers
-docker stop $(docker ps -q --filter "ancestor=pal-mcp-server:latest")
+# Stop all openclink containers
+docker stop $(docker ps -q --filter "ancestor=openclink:latest")
 
 # Remove old containers and images
 docker container prune
@@ -88,20 +115,20 @@ docker image prune
 
 ```bash
 # View logs
-docker-compose logs -f pal-mcp
+docker-compose logs -f openclink
 
 # Check status
 docker-compose ps
 
 # Restart service
-docker-compose restart pal-mcp
+docker-compose restart openclink
 
 # Stop services
 docker-compose down
 
 # Rebuild and update
-docker-compose build --no-cache pal-mcp
-docker-compose up -d pal-mcp
+docker-compose build --no-cache openclink
+docker-compose up -d openclink
 ```
 
 ## Health Monitoring
@@ -117,19 +144,19 @@ The container includes health checks that verify:
 The Docker setup includes persistent volumes to preserve data between container runs:
 
 - **`./logs:/app/logs`** - Persistent log storage (local folder mount)
-- **`pal-mcp-config:/app/conf`** - Configuration persistence (named Docker volume)
+- **`openclink-config:/app/conf`** - Configuration persistence (named Docker volume)
 - **`/etc/localtime:/etc/localtime:ro`** - Host timezone synchronization (read-only)
 
 ### How Persistent Volumes Work
 
-The `pal-mcp` service (used by `pal-docker-compose` and Docker Compose commands) mounts the named volume `pal-mcp-config` persistently. All data placed in `/app/conf` inside the container is preserved between runs thanks to this Docker volume.
+The `openclink` service (used by `docker-compose.yml` and Docker Compose commands) mounts the named volume `openclink-config` persistently. All data placed in `/app/conf` inside the container is preserved between runs thanks to this Docker volume.
 
 In the `docker-compose.yml` file, you will find:
 
 ```yaml
 volumes:
   - ./logs:/app/logs
-  - pal-mcp-config:/app/conf
+  - openclink-config:/app/conf
   - /etc/localtime:/etc/localtime:ro
 ```
 
@@ -137,7 +164,7 @@ and the named volume definition:
 
 ```yaml
 volumes:
-  pal-mcp-config:
+  openclink-config:
     driver: local
 ```
 
@@ -154,16 +181,16 @@ volumes:
 
 ```bash
 # Check if image exists
-docker images pal-mcp-server
+docker images openclink
 
 # Test container interactively
-docker run --rm -it --env-file .env pal-mcp-server:latest bash
+docker run --rm -it --env-file .env openclink:latest bash
 
 # Check environment variables
-docker run --rm --env-file .env pal-mcp-server:latest env | grep API
+docker run --rm --env-file .env openclink:latest env | grep API
 
 # Test with minimal configuration
-docker run --rm -i -e GEMINI_API_KEY="test" pal-mcp-server:latest python server.py
+docker run --rm -i -e GEMINI_API_KEY="test" openclink:latest python server.py
 ```
 
 ### MCP Connection Issues
@@ -173,7 +200,7 @@ docker run --rm -i -e GEMINI_API_KEY="test" pal-mcp-server:latest python server.
 docker run --rm hello-world
 
 # Verify container stdio
-echo '{"jsonrpc": "2.0", "method": "ping"}' | docker run --rm -i --env-file .env pal-mcp-server:latest python server.py
+echo '{"jsonrpc": "2.0", "method": "ping"}' | docker run --rm -i --env-file .env openclink:latest python server.py
 
 # Check Claude Desktop logs for connection errors
 ```
@@ -182,10 +209,10 @@ echo '{"jsonrpc": "2.0", "method": "ping"}' | docker run --rm -i --env-file .env
 
 ```bash
 # Verify API keys are loaded
-docker run --rm --env-file .env pal-mcp-server:latest python -c "import os; print('GEMINI_API_KEY:', bool(os.getenv('GEMINI_API_KEY')))"
+docker run --rm --env-file .env openclink:latest python -c "import os; print('GEMINI_API_KEY:', bool(os.getenv('GEMINI_API_KEY')))"
 
 # Test API connectivity
-docker run --rm --env-file .env pal-mcp-server:latest python /usr/local/bin/healthcheck.py
+docker run --rm --env-file .env openclink:latest python /usr/local/bin/healthcheck.py
 ```
 
 ### Permission Issues
@@ -205,10 +232,10 @@ chmod 755 logs/
 docker stats
 
 # Run with memory limits
-docker run --rm -i --memory="512m" --env-file .env pal-mcp-server:latest
+docker run --rm -i --memory="512m" --env-file .env openclink:latest
 
 # Monitor Docker logs
-docker run --rm -i --env-file .env pal-mcp-server:latest 2>&1 | tee docker.log
+docker run --rm -i --env-file .env openclink:latest 2>&1 | tee docker.log
 ```
 
 ## MCP Integration (Claude Desktop)
@@ -218,17 +245,17 @@ docker run --rm -i --env-file .env pal-mcp-server:latest 2>&1 | tee docker.log
 ```json
 {
   "servers": {
-    "pal-docker": {
+    "openclink-docker": {
       "command": "docker",
       "args": [
         "run",
         "--rm",
         "-i",
         "--env-file",
-        "/absolute/path/to/pal-mcp-server/.env",
+        "/absolute/path/to/openclink/.env",
         "-v",
-        "/absolute/path/to/pal-mcp-server/logs:/app/logs",
-        "pal-mcp-server:latest"
+        "/absolute/path/to/openclink/logs:/app/logs",
+        "openclink:latest"
       ]
     }
   }
@@ -240,17 +267,17 @@ docker run --rm -i --env-file .env pal-mcp-server:latest 2>&1 | tee docker.log
 ```json
 {
   "servers": {
-    "pal-docker": {
+    "openclink-docker": {
       "command": "docker",
       "args": [
         "run",
         "--rm",
         "-i",
         "--env-file",
-        "C:/Users/YourName/path/to/pal-mcp-server/.env",
+        "C:/Users/YourName/path/to/openclink/.env",
         "-v",
-        "C:/Users/YourName/path/to/pal-mcp-server/logs:/app/logs",
-        "pal-mcp-server:latest"
+        "C:/Users/YourName/path/to/openclink/logs:/app/logs",
+        "openclink:latest"
       ]
     }
   }
@@ -262,14 +289,14 @@ docker run --rm -i --env-file .env pal-mcp-server:latest 2>&1 | tee docker.log
 ```json
 {
   "servers": {
-    "pal-docker": {
+    "openclink-docker": {
       "command": "docker-compose",
       "args": [
         "-f",
-        "/absolute/path/to/pal-mcp-server/docker-compose.yml",
+        "/absolute/path/to/openclink/docker-compose.yml",
         "run",
         "--rm",
-        "pal-mcp"
+        "openclink"
       ]
     }
   }
@@ -304,10 +331,10 @@ CUSTOM_API_URL=
 
 ```bash
 # Test container starts correctly
-docker run --rm pal-mcp-server:latest python --version
+docker run --rm openclink:latest python --version
 
 # Test health check
-docker run --rm -e GEMINI_API_KEY="test" pal-mcp-server:latest python /usr/local/bin/healthcheck.py
+docker run --rm -e GEMINI_API_KEY="test" openclink:latest python /usr/local/bin/healthcheck.py
 ```
 
 ### 2. Test MCP Protocol
@@ -315,7 +342,7 @@ docker run --rm -e GEMINI_API_KEY="test" pal-mcp-server:latest python /usr/local
 ```bash
 # Test basic MCP communication
 echo '{"jsonrpc": "2.0", "method": "initialize", "params": {}}' | \
-  docker run --rm -i --env-file .env pal-mcp-server:latest python server.py
+  docker run --rm -i --env-file .env openclink:latest python server.py
 ```
 
 ### 3. Validate Configuration
@@ -330,7 +357,7 @@ python -m json.tool .vscode/mcp.json
 
 ## Available Tools
 
-The PAL MCP Server provides these tools when properly configured:
+The OpenClink provides these tools when properly configured:
 
 - **chat** - General AI conversation and collaboration
 - **thinkdeep** - Multi-stage investigation and reasoning  

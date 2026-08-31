@@ -1,18 +1,36 @@
 #!/bin/bash
 
-# PAL MCP Server - Code Quality Checks
+# OpenClink - Code Quality Checks
 # This script runs all required linting and testing checks before committing changes.
 # ALL checks must pass 100% for CI/CD to succeed.
 
-set -e  # Exit on any error
+# Deliberately NOT `set -e`. Under it the first failing check aborted the script,
+# and the formatting checks run before the unit suite — so one misplaced space
+# meant the 1000+ tests never ran and the agent learned nothing about whether its
+# code worked (#79). Formatting is the cheapest, least informative check here;
+# gating the most informative one behind it makes the gate useless exactly when
+# there is real work to check.
+#
+# Instead every check records its outcome and the script fails at the end.
+FAILED_CHECKS=()
 
-echo "🔍 Running Code Quality Checks for PAL MCP Server"
+# record <name> <exit-code> — remember a failure without abandoning the run.
+record() {
+    if [ "$2" -ne 0 ]; then
+        FAILED_CHECKS+=("$1")
+        echo "❌ $1: FAILED"
+    else
+        echo "✅ $1: passed"
+    fi
+}
+
+echo "🔍 Running Code Quality Checks for OpenClink"
 echo "================================================="
 
 # Determine Python command
-if [[ -f ".pal_venv/bin/python" ]]; then
-    PYTHON_CMD=".pal_venv/bin/python"
-    PIP_CMD=".pal_venv/bin/pip"
+if [[ -f ".openclink_venv/bin/python" ]]; then
+    PYTHON_CMD=".openclink_venv/bin/python"
+    PIP_CMD=".openclink_venv/bin/pip"
     echo "✅ Using venv"
 elif [[ -n "$VIRTUAL_ENV" ]]; then
     PYTHON_CMD="python"
@@ -32,7 +50,7 @@ DEV_DEPS_NEEDED=false
 # Check each dev dependency
 for tool in ruff black isort pytest; do
     # Check if tool exists in venv or in PATH
-    if [[ -f ".pal_venv/bin/$tool" ]] || command -v $tool &> /dev/null; then
+    if [[ -f ".openclink_venv/bin/$tool" ]] || command -v $tool &> /dev/null; then
         continue
     else
         DEV_DEPS_NEEDED=true
@@ -49,11 +67,11 @@ else
 fi
 
 # Set tool paths
-if [[ -f ".pal_venv/bin/ruff" ]]; then
-    RUFF=".pal_venv/bin/ruff"
-    BLACK=".pal_venv/bin/black"
-    ISORT=".pal_venv/bin/isort"
-    PYTEST=".pal_venv/bin/pytest"
+if [[ -f ".openclink_venv/bin/ruff" ]]; then
+    RUFF=".openclink_venv/bin/ruff"
+    BLACK=".openclink_venv/bin/black"
+    ISORT=".openclink_venv/bin/isort"
+    PYTEST=".openclink_venv/bin/pytest"
 else
     RUFF="ruff"
     BLACK="black"
@@ -66,38 +84,58 @@ echo ""
 echo "📋 Step 1: Running Linting and Formatting Checks"
 echo "--------------------------------------------------"
 
-echo "🔧 Running ruff linting with auto-fix..."
-$RUFF check --fix --exclude test_simulation_files --exclude .pal_venv
+# These REPORT; they do not rewrite. A gate that edits your tree behind you is
+# not a gate — it exits 0 having changed tracked files, and the next `git add -A`
+# sweeps them into an unrelated commit. That happened twice on 2026-08-04, once
+# carrying a settings change that had been explicitly rejected (#63).
+# To fix what these report, run the same commands without --check/--check-only.
 
-echo "🎨 Running black code formatting..."
-$BLACK . --exclude="test_simulation_files/" --exclude=".pal_venv/"
+echo "🔍 Running ruff linting..."
+$RUFF check --exclude test_simulation_files --exclude .openclink_venv
+record "Linting (ruff)" $?
 
-echo "📦 Running import sorting with isort..."
-$ISORT . --skip-glob=".pal_venv/*" --skip-glob="test_simulation_files/*"
+echo "🎨 Checking black formatting..."
+$BLACK . --check --exclude="test_simulation_files/" --exclude=".openclink_venv/"
+record "Formatting (black)" $?
 
-echo "✅ Verifying all linting passes..."
-$RUFF check --exclude test_simulation_files --exclude .pal_venv
+echo "📦 Checking import sorting with isort..."
+$ISORT . --check-only --skip-glob=".openclink_venv/*" --skip-glob="test_simulation_files/*"
+record "Import sorting (isort)" $?
 
-echo "✅ Step 1 Complete: All linting and formatting checks passed!"
 echo ""
 
-# Step 2: Unit Tests
+# Step 2: Unit Tests — reached even when the checks above failed, because they
+# are the ones that tell you whether the code works.
 echo "🧪 Step 2: Running Complete Unit Test Suite"
 echo "---------------------------------------------"
 
 echo "🏃 Running unit tests (excluding integration tests)..."
-$PYTHON_CMD -m pytest tests/ -v -x -m "not integration"
-
-echo "✅ Step 2 Complete: All unit tests passed!"
+$PYTHON_CMD -m pytest tests/ -q -m "not integration"
+record "Unit tests" $?
 echo ""
 
-# Step 3: Final Summary
+# Step 3: Final Summary — the outcome is stated here, once, from what actually
+# ran. The old version printed "PASSED" for all four unconditionally and relied
+# on `set -e` never reaching it; that is only true while nothing fails, which is
+# the one case the summary does not matter.
+echo "=================================="
+if [ ${#FAILED_CHECKS[@]} -gt 0 ]; then
+    echo "❌ Code Quality Checks FAILED"
+    echo "=================================="
+    for check in "${FAILED_CHECKS[@]}"; do
+        echo "   failed: $check"
+    done
+    echo ""
+    echo "💡 For a formatting or import failure, run the same command without"
+    echo "   --check / --check-only to fix it:"
+    echo "     $BLACK . --exclude=\"test_simulation_files/\" --exclude=\".openclink_venv/\""
+    echo "     $ISORT . --skip-glob=\".openclink_venv/*\" --skip-glob=\"test_simulation_files/*\""
+    exit 1
+fi
+
 echo "🎉 All Code Quality Checks Passed!"
 echo "=================================="
-echo "✅ Linting (ruff): PASSED"
-echo "✅ Formatting (black): PASSED" 
-echo "✅ Import sorting (isort): PASSED"
-echo "✅ Unit tests: PASSED"
+echo "✅ Linting (ruff) · Formatting (black) · Import sorting (isort) · Unit tests"
 echo ""
 echo "🚀 Your code is ready for commit and GitHub Actions!"
 echo "💡 Remember to add simulator tests if you modified tools"

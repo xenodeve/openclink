@@ -2,6 +2,9 @@
 
 import pytest
 
+from clink.agents.base import BaseCLIAgent, CLIAgentError
+from clink.models import ResolvedCLIClient
+from clink.parsers.base import NO_ANSWER_METADATA_KEY
 from clink.parsers.gemini import GeminiJSONParser, ParserError
 
 
@@ -36,7 +39,7 @@ def test_gemini_parser_handles_rate_limit_empty_response():
 
     assert "429" in parsed.content
     assert parsed.metadata.get("rate_limit_status") == 429
-    assert parsed.metadata.get("empty_response") is True
+    assert parsed.metadata.get(NO_ANSWER_METADATA_KEY) is True
     assert "Attempt 1 failed" in parsed.metadata.get("stderr", "")
 
 
@@ -46,3 +49,33 @@ def test_gemini_parser_still_errors_when_no_fallback_available():
 
     with pytest.raises(ParserError):
         parser.parse(stdout, stderr="")
+
+
+def test_gemini_no_answer_is_failure_even_on_clean_exit():
+    parser = GeminiJSONParser()
+    stdout = _build_rate_limit_stdout()
+    stderr = "Attempt 1 failed with status 429. Retrying with backoff... ApiError: quota exceeded"
+    parsed = parser.parse(stdout, stderr)
+    agent = BaseCLIAgent(
+        ResolvedCLIClient(
+            name="gemini",
+            executable=["gemini"],
+            working_dir=None,
+            timeout_seconds=30,
+            parser="gemini_json",
+            roles={},
+        )
+    )
+
+    with pytest.raises(CLIAgentError) as excinfo:
+        agent.finalize_output(
+            parsed=parsed,
+            sanitized_command=["gemini"],
+            returncode=0,
+            stdout=stdout,
+            stderr=stderr,
+            duration_seconds=0.1,
+        )
+
+    assert excinfo.value.parsed is not None
+    assert excinfo.value.parsed.content == parsed.content

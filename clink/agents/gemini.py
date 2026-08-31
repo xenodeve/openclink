@@ -14,6 +14,18 @@ from .base import AgentOutput, BaseCLIAgent
 class GeminiAgent(BaseCLIAgent):
     """Gemini-specific behaviour."""
 
+    # The gemini parser files the token block under `token_usage`, never `usage`,
+    # and spells every class differently from the normalised account. `total` and
+    # `tool` are deliberately unmapped: neither has a counterpart, and `total` is
+    # the dangerous one because it would look plausible in `input_tokens`.
+    USAGE_METADATA_KEY = "token_usage"
+    USAGE_FIELD_MAP = {
+        "prompt": "input_tokens",
+        "cached": "cached_input_tokens",
+        "candidates": "output_tokens",
+        "thoughts": "reasoning_output_tokens",
+    }
+
     def __init__(self, client: ResolvedCLIClient):
         super().__init__(client)
 
@@ -74,13 +86,12 @@ class GeminiAgent(BaseCLIAgent):
         }
 
         parsed = ParsedCLIResponse(content=message or header, metadata=metadata)
-        return AgentOutput(
+        return self.finalize_output(
             parsed=parsed,
             sanitized_command=sanitized_command,
             returncode=returncode,
             stdout=stdout,
             stderr=stderr,
             duration_seconds=duration_seconds,
-            parser_name=self._parser.name,
             output_file_content=output_file_content,
         )

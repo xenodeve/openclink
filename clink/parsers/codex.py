@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from .base import BaseParser, ParsedCLIResponse, ParserError
+from .base import NO_ANSWER_METADATA_KEY, BaseParser, ParsedCLIResponse, ParserError
 
 
 class CodexJSONLParser(BaseParser):
@@ -45,6 +45,10 @@ class CodexJSONLParser(BaseParser):
                 if isinstance(turn_usage, dict):
                     usage = turn_usage
 
+        # Content assembled purely from error events is a diagnosis, not a reply.
+        # Keep it — a caller still needs it — but say which it is, or a clean exit
+        # that only errored reads as a successful answer.
+        answered = bool(agent_messages)
         if not agent_messages and errors:
             agent_messages.extend(errors)
 
@@ -53,6 +57,8 @@ class CodexJSONLParser(BaseParser):
 
         content = "\n\n".join(agent_messages).strip()
         metadata: dict[str, Any] = {"events": events}
+        if not answered:
+            metadata[NO_ANSWER_METADATA_KEY] = True
         if errors:
             metadata["errors"] = errors
         if usage:

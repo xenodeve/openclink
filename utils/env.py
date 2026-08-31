@@ -1,4 +1,4 @@
-"""Centralized environment variable access for PAL MCP Server."""
+"""Centralized environment variable access for OpenClink."""
 
 from __future__ import annotations
 
@@ -27,9 +27,18 @@ def _read_dotenv_values() -> dict[str, str | None]:
     return {}
 
 
+# The variable's current name, then every name it has shipped under. A user's
+# `.env` lives outside the repository, so no rename sweep can reach it: dropping
+# the old name does not raise, it just stops applying the user's setting while
+# reporting nothing. First match wins, so an explicit new setting beats a stale one.
+_FORCE_OVERRIDE_KEYS = ("OPENCLINK_MCP_FORCE_ENV_OVERRIDE", "PAL_MCP_FORCE_ENV_OVERRIDE")
+
+
 def _compute_force_override(values: Mapping[str, str | None]) -> bool:
-    raw = (values.get("PAL_MCP_FORCE_ENV_OVERRIDE") or "false").strip().lower()
-    return raw == "true"
+    for key in _FORCE_OVERRIDE_KEYS:
+        if values.get(key) is not None:
+            return (values[key] or "").strip().lower() == "true"
+    return False
 
 
 def reload_env(dotenv_mapping: Mapping[str, str | None] | None = None) -> None:
@@ -58,13 +67,13 @@ reload_env()
 
 
 def env_override_enabled() -> bool:
-    """Return True when PAL_MCP_FORCE_ENV_OVERRIDE is enabled via the .env file."""
+    """Return True when OPENCLINK_MCP_FORCE_ENV_OVERRIDE is enabled via the .env file."""
 
     return _FORCE_ENV_OVERRIDE
 
 
 def get_env(key: str, default: str | None = None) -> str | None:
-    """Retrieve environment variables respecting PAL_MCP_FORCE_ENV_OVERRIDE."""
+    """Retrieve environment variables respecting OPENCLINK_MCP_FORCE_ENV_OVERRIDE."""
 
     if env_override_enabled():
         if key in _DOTENV_VALUES:

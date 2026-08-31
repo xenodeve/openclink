@@ -1,6 +1,6 @@
-# Contributing to PAL MCP Server
+# Contributing to OpenClink
 
-Thank you for your interest in contributing to PAL MCP Server! This guide will help you understand our development process, coding standards, and how to submit high-quality contributions.
+Thank you for your interest in contributing to OpenClink! This guide will help you understand our development process, coding standards, and how to submit high-quality contributions.
 
 ## Getting Started
 
@@ -245,4 +245,4 @@ Contributors are recognized in:
 - Release notes for significant contributions
 - Special mentions for exceptional work
 
-Thank you for contributing to PAL MCP Server! Your efforts help make this tool better for everyone.
+Thank you for contributing to OpenClink! Your efforts help make this tool better for everyone.

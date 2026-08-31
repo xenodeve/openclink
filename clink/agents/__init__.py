@@ -5,16 +5,20 @@ from __future__ import annotations
 from clink.models import ResolvedCLIClient
 
 from .antigravity import AntigravityAgent
-from .base import AgentOutput, BaseCLIAgent, CLIAgentError
+from .base import AgentOutput, BaseCLIAgent, CLIAgentError, TokenUsage
 from .claude import ClaudeAgent
 from .codex import CodexAgent
+from .cursor import CursorAgent
 from .gemini import GeminiAgent
+from .opencode import OpenCodeAgent
 
 _AGENTS: dict[str, type[BaseCLIAgent]] = {
     "gemini": GeminiAgent,
     "codex": CodexAgent,
     "claude": ClaudeAgent,
     "antigravity": AntigravityAgent,
+    "cursor": CursorAgent,
+    "opencode": OpenCodeAgent,
 }
 
 
@@ -28,5 +32,6 @@ __all__ = [
     "AgentOutput",
     "BaseCLIAgent",
     "CLIAgentError",
+    "TokenUsage",
     "create_agent",
 ]

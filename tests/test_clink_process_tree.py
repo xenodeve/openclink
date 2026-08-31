@@ -115,6 +115,15 @@ def test_process_group_kills_grandchild_and_confirms_before_returning(tmp_path):
 
 
 class DummyProcessWithPid:
+    """A child that never answers until something kills it.
+
+    The first `communicate()` hangs (surfacing as the timeout). The drain call
+    afterwards only returns once the process is actually dead -- and what kills
+    it is termination of the *group*, not `process.kill()`, which is the whole
+    point of #144. A double that returns the transcript regardless would pass
+    even if the tree were never terminated.
+    """
+
     def __init__(self, *, stdout: bytes = b"", stderr: bytes = b"", returncode: int = 0, pid: int = 4242):
         self._stdout = stdout
         self._stderr = stderr
@@ -136,6 +145,9 @@ class FakeProcessGroup:
     terminate_calls: list[float] = []
     closed: list[bool] = []
     terminate_delay = 0.2
+    # The process this group owns, so terminating the group kills the child the
+    # way the real OS primitives do.
+    process = None
 
     def __init__(self, pid):
         FakeProcessGroup.created_with.append(pid)
@@ -143,6 +155,8 @@ class FakeProcessGroup:
     async def terminate(self, timeout: float = 5.0) -> bool:
         await asyncio.sleep(FakeProcessGroup.terminate_delay)
         FakeProcessGroup.terminate_calls.append(timeout)
+        if FakeProcessGroup.process is not None:
+            FakeProcessGroup.process.kill()
         return True
 
     def close(self):
@@ -179,7 +193,11 @@ async def test_run_spawns_process_group_and_waits_for_confirmed_termination_on_t
     from clink.agents import base as base_module
 
     agent, role = claude_agent
-    process = DummyProcessWithPid(pid=9999)
+    process = DummyProcessWithPid(
+        pid=9999,
+        stdout=b"partial answer before the deadline",
+        stderr=b"partial diagnostics",
+    )
 
     captured_kwargs: dict = {}
 
@@ -190,6 +208,7 @@ async def test_run_spawns_process_group_and_waits_for_confirmed_termination_on_t
     FakeProcessGroup.created_with = []
     FakeProcessGroup.terminate_calls = []
     FakeProcessGroup.closed = []
+    FakeProcessGroup.process = process
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
@@ -197,7 +216,7 @@ async def test_run_spawns_process_group_and_waits_for_confirmed_termination_on_t
     monkeypatch.setattr(base_module, "ProcessGroup", FakeProcessGroup)
 
     start = time.monotonic()
-    with pytest.raises(CLIAgentError):
+    with pytest.raises(CLIAgentError) as excinfo:
         await agent.run(role=role, prompt="hello", files=[], images=[])
     elapsed = time.monotonic() - start
 
@@ -214,6 +233,12 @@ async def test_run_spawns_process_group_and_waits_for_confirmed_termination_on_t
 
     # Resources are released regardless of outcome.
     assert FakeProcessGroup.closed == [True]
+
+    # Killing the whole tree must not cost the partial transcript (#49): the
+    # drain after termination is the only record of what the run got through
+    # before the deadline, and it is still reported on the timeout error.
+    assert "partial answer before the deadline" in (excinfo.value.stdout or "")
+    assert "partial diagnostics" in (excinfo.value.stderr or "")
 
 
 @pytest.mark.asyncio

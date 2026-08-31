@@ -39,6 +39,7 @@ async def test_clink_tool_execute(monkeypatch):
         "role": "default",
         "absolute_file_paths": [],
         "images": [],
+        "model": "test-model",
     }
 
     results = await tool.execute(arguments)
@@ -95,6 +96,7 @@ async def test_clink_tool_defaults_to_first_cli(monkeypatch):
         "prompt": "Hello",
         "absolute_file_paths": [],
         "images": [],
+        "model": "test-model",
     }
 
     result = await tool.execute(arguments)
@@ -134,6 +136,7 @@ async def test_clink_tool_truncates_large_output(monkeypatch):
         "cli_name": tool._default_cli_name,
         "absolute_file_paths": [],
         "images": [],
+        "model": "test-model",
     }
 
     result = await tool.execute(arguments)
@@ -175,6 +178,7 @@ async def test_clink_tool_truncates_without_summary(monkeypatch):
         "cli_name": tool._default_cli_name,
         "absolute_file_paths": [],
         "images": [],
+        "model": "test-model",
     }
 
     result = await tool.execute(arguments)

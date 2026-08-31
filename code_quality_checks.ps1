@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    Code quality checks script for PAL MCP server on Windows.
+    Code quality checks script for OpenClink on Windows.
 
 .DESCRIPTION
-    This PowerShell script performs code quality checks for the PAL MCP server project:
+    This PowerShell script performs code quality checks for the OpenClink project:
     - Runs static analysis and linting tools on the codebase
     - Ensures code style compliance and detects potential issues
     - Can be integrated into CI/CD pipelines or used locally before commits
@@ -26,7 +26,7 @@
     Script Author      : GiGiDKR (https://github.com/GiGiDKR)
     Date               : 07-05-2025
     Version            : See project documentation
-    References         : https://github.com/BeehiveInnovations/pal-mcp-server
+    References         : https://github.com/xenodeve/openclink
 #>
 #Requires -Version 5.1
 [CmdletBinding()]
@@ -61,23 +61,23 @@ function Write-Emoji {
     Write-ColorText $Text -Color $Color
 }
 
-Write-Emoji "🔍" "Running Code Quality Checks for PAL MCP Server" -Color Cyan
+Write-Emoji "🔍" "Running Code Quality Checks for OpenClink" -Color Cyan
 Write-ColorText "=================================================" -Color Cyan
 
 # Determine Python command
 $pythonCmd = $null
 $pipCmd = $null
 
-if (Test-Path ".pal_venv") {
+if (Test-Path ".openclink_venv") {
     if ($IsWindows -or $env:OS -eq "Windows_NT") {
-        if (Test-Path ".pal_venv\Scripts\python.exe") {
-            $pythonCmd = ".pal_venv\Scripts\python.exe"
-            $pipCmd = ".pal_venv\Scripts\pip.exe"
+        if (Test-Path ".openclink_venv\Scripts\python.exe") {
+            $pythonCmd = ".openclink_venv\Scripts\python.exe"
+            $pipCmd = ".openclink_venv\Scripts\pip.exe"
         }
     } else {
-        if (Test-Path ".pal_venv/bin/python") {
-            $pythonCmd = ".pal_venv/bin/python"
-            $pipCmd = ".pal_venv/bin/pip"
+        if (Test-Path ".openclink_venv/bin/python") {
+            $pythonCmd = ".openclink_venv/bin/python"
+            $pipCmd = ".openclink_venv/bin/pip"
         }
     }
     
@@ -108,11 +108,11 @@ foreach ($tool in $devTools) {
     
     # Check in venv
     if ($IsWindows -or $env:OS -eq "Windows_NT") {
-        if (Test-Path ".pal_venv\Scripts\$tool.exe") {
+        if (Test-Path ".openclink_venv\Scripts\$tool.exe") {
             $toolFound = $true
         }
     } else {
-        if (Test-Path ".pal_venv/bin/$tool") {
+        if (Test-Path ".openclink_venv/bin/$tool") {
             $toolFound = $true
         }
     }
@@ -152,15 +152,15 @@ if ($devDepsNeeded) {
 
 # Set tool paths
 if ($IsWindows -or $env:OS -eq "Windows_NT") {
-    $ruffCmd = if (Test-Path ".pal_venv\Scripts\ruff.exe") { ".pal_venv\Scripts\ruff.exe" } else { "ruff" }
-    $blackCmd = if (Test-Path ".pal_venv\Scripts\black.exe") { ".pal_venv\Scripts\black.exe" } else { "black" }
-    $isortCmd = if (Test-Path ".pal_venv\Scripts\isort.exe") { ".pal_venv\Scripts\isort.exe" } else { "isort" }
-    $pytestCmd = if (Test-Path ".pal_venv\Scripts\pytest.exe") { ".pal_venv\Scripts\pytest.exe" } else { "pytest" }
+    $ruffCmd = if (Test-Path ".openclink_venv\Scripts\ruff.exe") { ".openclink_venv\Scripts\ruff.exe" } else { "ruff" }
+    $blackCmd = if (Test-Path ".openclink_venv\Scripts\black.exe") { ".openclink_venv\Scripts\black.exe" } else { "black" }
+    $isortCmd = if (Test-Path ".openclink_venv\Scripts\isort.exe") { ".openclink_venv\Scripts\isort.exe" } else { "isort" }
+    $pytestCmd = if (Test-Path ".openclink_venv\Scripts\pytest.exe") { ".openclink_venv\Scripts\pytest.exe" } else { "pytest" }
 } else {
-    $ruffCmd = if (Test-Path ".pal_venv/bin/ruff") { ".pal_venv/bin/ruff" } else { "ruff" }
-    $blackCmd = if (Test-Path ".pal_venv/bin/black") { ".pal_venv/bin/black" } else { "black" }
-    $isortCmd = if (Test-Path ".pal_venv/bin/isort") { ".pal_venv/bin/isort" } else { "isort" }
-    $pytestCmd = if (Test-Path ".pal_venv/bin/pytest") { ".pal_venv/bin/pytest" } else { "pytest" }
+    $ruffCmd = if (Test-Path ".openclink_venv/bin/ruff") { ".openclink_venv/bin/ruff" } else { "ruff" }
+    $blackCmd = if (Test-Path ".openclink_venv/bin/black") { ".openclink_venv/bin/black" } else { "black" }
+    $isortCmd = if (Test-Path ".openclink_venv/bin/isort") { ".openclink_venv/bin/isort" } else { "isort" }
+    $pytestCmd = if (Test-Path ".openclink_venv/bin/pytest") { ".openclink_venv/bin/pytest" } else { "pytest" }
 }
 
 Write-Host ""
@@ -170,30 +170,39 @@ if (!$SkipLinting) {
     Write-Emoji "📋" "Step 1: Running Linting and Formatting Checks" -Color Cyan
     Write-ColorText "--------------------------------------------------" -Color Cyan
 
+    # These REPORT; they do not rewrite. A gate that edits your tree behind you is
+    # not a gate — it exits 0 having changed tracked files, and the next `git add -A`
+    # sweeps them into an unrelated commit. That happened twice on 2026-08-04, once
+    # carrying a settings change that had been explicitly rejected (#63).
+    # To fix what these report, run the same commands without --check/--check-only.
+    #
+    # #63 was fixed on the .sh copy alone and the guard test read only that file,
+    # so this script kept auto-fixing for six weeks — on the platform this repo is
+    # primarily developed on (#121). Both copies are now parametrized in
+    # tests/test_quality_gate_does_not_mutate.py so neither can drift again.
     try {
-        Write-Emoji "🔧" "Running ruff linting with auto-fix..." -Color Yellow
-        & $ruffCmd check --fix --exclude test_simulation_files --exclude .pal_venv
+        Write-Emoji "🔍" "Running ruff linting..." -Color Yellow
+        & $ruffCmd check --exclude test_simulation_files --exclude .openclink_venv
         if ($LASTEXITCODE -ne 0) {
             throw "Ruff linting failed"
         }
 
-        Write-Emoji "🎨" "Running black code formatting..." -Color Yellow
-        & $blackCmd . --exclude="test_simulation_files/" --exclude=".pal_venv/"
+        Write-Emoji "🎨" "Checking black formatting..." -Color Yellow
+        & $blackCmd . --check --exclude="test_simulation_files/" --exclude=".openclink_venv/"
         if ($LASTEXITCODE -ne 0) {
             throw "Black formatting failed"
         }
 
-        Write-Emoji "📦" "Running import sorting with isort..." -Color Yellow
-        & $isortCmd . --skip-glob=".pal_venv/*" --skip-glob="test_simulation_files/*"
+        Write-Emoji "📦" "Checking import sorting with isort..." -Color Yellow
+        & $isortCmd . --check-only --skip-glob=".openclink_venv/*" --skip-glob="test_simulation_files/*"
         if ($LASTEXITCODE -ne 0) {
             throw "Import sorting failed"
         }
 
-        Write-Emoji "✅" "Verifying all linting passes..." -Color Yellow
-        & $ruffCmd check --exclude test_simulation_files --exclude .pal_venv
-        if ($LASTEXITCODE -ne 0) {
-            throw "Final linting verification failed"
-        }
+        # The "verify all linting passes" re-run that used to sit here is gone. It
+        # only ever existed because the first ruff run had --fix: a second pass
+        # after an auto-fix cannot fail, which is exactly what made #63 invisible.
+        # With the first run reporting, re-running it asserts nothing.
 
         Write-Emoji "✅" "Step 1 Complete: All linting and formatting checks passed!" -Color Green
     } catch {

@@ -1,0 +1,26 @@
+{
+  "name": "claude-9arm",
+  "_comment": "Active preset for THIS fork's 9arm Qwen gateway. `command` is resolved from PATH + known install locations (discovery.py), and `~/.claude-9arm.json` expands to your home. If claude.exe or the gateway settings file are absent, the call fails with a clear 'not found'. For a different gateway, copy claude-9arm.json.example instead.",
+  "command": "claude",
+  "additional_args": [
+    "--settings",
+    "~/.claude-9arm.json",
+    "--model",
+    "qwen3.6-35b-a3b"
+  ],
+  "env": {},
+  "roles": {
+    "default": {
+      "prompt_path": "systemprompts/clink/default.txt",
+      "role_args": []
+    },
+    "planner": {
+      "prompt_path": "systemprompts/clink/default_planner.txt",
+      "role_args": []
+    },
+    "codereviewer": {
+      "prompt_path": "systemprompts/clink/default_codereviewer.txt",
+      "role_args": []
+    }
+  }
+}

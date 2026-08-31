@@ -2,6 +2,8 @@
 Tests for utility functions
 """
 
+import os
+
 from utils import check_token_limit, estimate_tokens, read_file_content, read_files
 
 
@@ -30,9 +32,16 @@ class TestFileUtils:
         assert tokens > 0
 
     def test_read_file_content_dangerous_files_blocked(self):
-        """Test that dangerous system files are blocked"""
-        # /etc/passwd should be blocked as it's under /etc (dangerous path)
-        content, tokens = read_file_content("/etc/passwd")
+        """Test that dangerous system files are blocked.
+
+        The path has to be one the host OS actually treats as absolute and
+        dangerous: "/etc/passwd" is not absolute on Windows (it carries no
+        drive), so it would be rejected as a *relative* path before the
+        system-directory check ever ran — green for the wrong reason.
+        """
+        # Under a blocked system directory on this platform.
+        target = "C:\\Windows\\System32\\config\\SAM" if os.name == "nt" else "/etc/passwd"
+        content, tokens = read_file_content(target)
         assert "--- ERROR ACCESSING FILE:" in content
         assert "Access to system directory denied" in content
         assert tokens > 0

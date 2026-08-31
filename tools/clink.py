@@ -1,9 +1,11 @@
-"""clink tool - bridge PAL MCP requests to external AI CLIs."""
+"""clink tool - bridge OpenClink requests to external AI CLIs."""
 
 from __future__ import annotations
 
 import logging
+import os
 import re
+from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -14,6 +16,7 @@ from pydantic import BaseModel, Field
 from clink import get_registry
 from clink.agents import AgentOutput, CLIAgentError, create_agent
 from clink.models import ResolvedCLIClient, ResolvedCLIRole
+from clink.pricing import NO_RATE_CARD, CallCost, CostUnavailable, sum_thread_accounts
 from config import TEMPERATURE_BALANCED
 from tools.models import ToolModelCategory, ToolOutput
 from tools.shared.base_models import COMMON_FIELD_DESCRIPTIONS
@@ -22,8 +25,62 @@ from tools.simple.base import SchemaBuilder, SimpleTool
 
 logger = logging.getLogger(__name__)
 
+
+def _provider_name(provider: Any) -> str | None:
+    """Normalise a provider the way `SimpleTool._record_assistant_turn` does.
+
+    clink always passes its client name, a string — but the base accepts a
+    provider *object* and unwraps it, and an override that only handles the
+    string narrows that contract silently. Pydantic then rejects the object at
+    the storage boundary rather than here, which is a long way from the cause
+    (#77).
+    """
+    if provider is None or isinstance(provider, str):
+        return provider
+    try:
+        return provider.get_provider_type().value
+    except AttributeError:
+        return str(provider)
+
+
 MAX_RESPONSE_CHARS = 20_000
 SUMMARY_PATTERN = re.compile(r"<SUMMARY>(.*?)</SUMMARY>", re.IGNORECASE | re.DOTALL)
+
+
+def _names_one_model(resolved: str, observed: str) -> bool:
+    """Whether two model names plausibly denote the same model.
+
+    A client asks for an alias and the CLI reports a canonical id — the shipped
+    claude config asks for `sonnet` and gets back `claude-sonnet-4-5-20250929`.
+    Those are one model written in two naming systems, and nothing here maps
+    between them, so comparing the raw strings calls **every ordinary run** of
+    that client a substitution.
+
+    Deliberately biased toward silence: after casefolding and dropping
+    punctuation, containment either way counts as agreement. A missed
+    substitution costs nothing beyond the status quo — the caller still receives
+    both names and can compare them itself — whereas a false one on every
+    default run leaves the flag unable to carry the single signal it exists for.
+    """
+    left = re.sub(r"[^a-z0-9]", "", resolved.casefold())
+    right = re.sub(r"[^a-z0-9]", "", observed.casefold())
+    if not left or not right:
+        return resolved == observed
+    return left in right or right in left
+
+
+def _store_diagnostic(metadata: dict[str, Any], truncated: list[str], field: str, value: str) -> None:
+    """Record one failure diagnostic, bounded, and name it if it had to be cut.
+
+    The error path never runs `_apply_output_limit`, so every string a failed run
+    carries has to be bounded here — and through one function, because bounding
+    them one at a time is how the timeout transcript ended up capped while the
+    non-zero-exit path stayed open. A fourth diagnostic added later joins this.
+    """
+    if len(value) > MAX_RESPONSE_CHARS:
+        value = value[:MAX_RESPONSE_CHARS]
+        truncated.append(field)
+    metadata[field] = value
 
 
 class CLinkRequest(BaseModel):
@@ -53,8 +110,8 @@ class CLinkRequest(BaseModel):
     model: str | None = Field(
         default=None,
         description=(
-            "Override the model for this call (codex: -m; others: --model). "
-            "Omit to use the CLI's configured default."
+            "Model for this call (codex: -m; others: --model). Required — an omitted "
+            "model is refused, not resolved to the client's configured default."
         ),
     )
     reasoning_effort: str | None = Field(
@@ -92,7 +149,7 @@ class CLinkTool(SimpleTool):
 
     def get_description(self) -> str:
         return (
-            "Link a request to an external AI CLI (Gemini CLI, Qwen CLI, etc.) through PAL MCP to reuse "
+            "Link a request to an external AI CLI (Gemini CLI, Qwen CLI, etc.) through OpenClink to reuse "
             "their capabilities inside existing workflows."
         )
 
@@ -160,8 +217,8 @@ class CLinkTool(SimpleTool):
             "model": {
                 "type": "string",
                 "description": (
-                    "Override the model for this call (codex: -m; others: --model). "
-                    "Omit to use the CLI's configured default."
+                    "Model for this call (codex: -m; others: --model). Required — an omitted "
+                    "model is refused, not resolved to the client's configured default."
                 ),
             },
             "reasoning_effort": {
@@ -177,7 +234,11 @@ class CLinkTool(SimpleTool):
         schema = {
             "type": "object",
             "properties": properties,
-            "required": ["prompt"],
+            # `model` is declared required, not merely described as required: an MCP
+            # client validates against this list, so a schema that says it only in
+            # prose lets a caller omit the field, pass validation, and meet the
+            # refusal at execution time instead (#29).
+            "required": ["prompt", "model"],
             "additionalProperties": False,
         }
 
@@ -212,9 +273,35 @@ class CLinkTool(SimpleTool):
         except KeyError as exc:
             self._raise_tool_error(str(exc))
 
+        # Refused here, before the prompt is prepared and before an agent exists, so
+        # the caller never pays for a call it was never going to be allowed to make.
+        # An omitted model used to fall through to whatever the client's config said,
+        # which made a model nobody chose indistinguishable from one someone did —
+        # the same defect as #27 and #28, one step earlier in the chain. Decision
+        # recorded on #29 before any code: refuse immediately, no grace period.
+        if request.model is None:
+            self._raise_tool_error(
+                f"CLI '{client_config.name}' was given no model. An omitted model is no longer "
+                "resolved to the client's configured default, because a model nobody chose must "
+                "not be reported the same way as one someone did. Pass `model` explicitly."
+            )
+
         absolute_file_paths = self.get_request_files(request)
         images = self.get_request_images(request)
         continuation_id = self.get_request_continuation_id(request)
+
+        # No clink agent consumes `images`: every runner discards it (`_ = (files,
+        # images)`), and unlike file paths it cannot be embedded into a text prompt.
+        # Accepting it silently returns exit 0 from a CLI that never saw the image,
+        # which reads as success. Fail loudly instead, and point at what does work.
+        if images:
+            self._raise_tool_error(
+                "clink does not support the `images` parameter: the underlying CLIs "
+                "take a text prompt only, so images are silently dropped rather than "
+                "delivered. Put the absolute image path in the `prompt` text and ask "
+                "the agent to open it with its own tools instead — that works for "
+                "vision-capable models."
+            )
 
         self._model_context = arguments.get("_model_context")
 
@@ -261,14 +348,23 @@ class CLinkTool(SimpleTool):
 
         model_info = {
             "provider": client_config.name,
-            "model_name": result.parsed.metadata.get("model_used"),
+            # Prefer what the CLI reported it ran; fall back to what the command
+            # asked for. Without the fallback, codex and antigravity record a
+            # null model on every stored turn while the response names one.
+            "model_name": result.parsed.metadata.get("model_used") or result.resolved_model,
+            # This call's own account, so the turn carries what it cost. The base
+            # class builds turn metadata only from a provider `model_response`,
+            # which clink has none of — it spawns a CLI — so every clink turn was
+            # persisted with `model_metadata=None` and a thread had nothing to
+            # sum (#26).
+            "accounting": self._call_accounting(result),
         }
 
         if continuation_id:
-            try:
-                self._record_assistant_turn(continuation_id, content, request, model_info)
-            except Exception:
-                logger.debug("Failed to record assistant turn for continuation %s", continuation_id, exc_info=True)
+            # Totals cover the turns already stored plus this one, which is not
+            # in the thread until it has been recorded — so the two happen
+            # together, and separately enough that one failing is reported.
+            metadata.update(self._record_turn_and_total(continuation_id, content, request, model_info))
 
         continuation_offer = self._create_continuation_offer(request, model_info)
         if continuation_offer:
@@ -349,12 +445,195 @@ class CLinkTool(SimpleTool):
             "return_code": result.returncode,
         }
         metadata.update(result.parsed.metadata)
+        metadata.update(self._call_accounting(result))
 
         if result.stderr.strip():
             metadata.setdefault("stderr", result.stderr.strip())
         if result.output_file_content and "raw" not in metadata:
             metadata["raw_output_file"] = result.output_file_content
         return metadata
+
+    def _record_assistant_turn(
+        self, continuation_id: str, response_text: str, request, model_info: dict[str, Any] | None
+    ) -> None:
+        """Store the turn with this call's account attached.
+
+        Overridden rather than widening the base, which every `SimpleTool`
+        shares: the base builds `model_metadata` only from a provider
+        `model_response`, and clink has none. Overriding here is the established
+        per-tool escape hatch — `tools/chat.py` does the same. `model_metadata`
+        is the documented home for this (`utils/conversation_memory.py`: "e.g.
+        thinking mode, token usage"), so the account is stored, not smuggled.
+        """
+        from utils.conversation_memory import add_turn
+
+        if not continuation_id:
+            return
+        accounting = (model_info or {}).get("accounting") or {}
+        add_turn(
+            continuation_id,
+            "assistant",
+            response_text,
+            files=self.get_request_files(request),
+            images=self.get_request_images(request),
+            tool_name=self.get_name(),
+            model_provider=_provider_name((model_info or {}).get("provider")),
+            model_name=(model_info or {}).get("model_name"),
+            model_metadata={"accounting": accounting} if accounting else None,
+        )
+
+    def _record_turn_and_total(
+        self, continuation_id: str, content: str, request, model_info: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Store this turn, then total the thread — as two outcomes, not one.
+
+        They shared a single `except` and a `debug` log, so a storage failure
+        removed the cumulative figures from the response with nothing visible at
+        the default level, and left the next call totalling a thread quietly
+        missing a turn (#77). A failure to record is now reported at `warning`
+        and yields no totals rather than wrong ones.
+        """
+        try:
+            self._record_assistant_turn(continuation_id, content, request, model_info)
+        except Exception:
+            logger.warning(
+                "clink could not record its turn for continuation %s; this call is missing from the thread total",
+                continuation_id,
+                exc_info=True,
+            )
+            return {}
+        try:
+            return self._thread_totals(continuation_id)
+        except Exception:
+            logger.warning("clink stored its turn but could not total continuation %s", continuation_id, exc_info=True)
+            return {}
+
+    def _thread_totals(self, continuation_id: str) -> dict[str, Any]:
+        """Cumulative usage and cost across the thread, beside the per-call figures.
+
+        Read here rather than threaded through `AgentOutput`: the tool already
+        holds the thread id, so carrying it down into the agent layer would add a
+        field there so the tool could learn something it was already told.
+        """
+        from utils.conversation_memory import get_thread
+
+        thread = get_thread(continuation_id)
+        if thread is None:
+            return {}
+        accounts = [
+            turn.model_metadata["accounting"]
+            for turn in thread.turns
+            if isinstance(getattr(turn, "model_metadata", None), dict) and turn.model_metadata.get("accounting")
+        ]
+        totals = sum_thread_accounts(accounts)
+        if totals:
+            # How many turns the figures cover. A thread is cross-tool by design
+            # (`utils/conversation_memory.py`), and only clink turns carry an
+            # account — so "cumulative" over a mixed thread describes a subset.
+            # The count lets a caller compare it against the thread's own length
+            # instead of reading the name as a claim about the whole thread (#77).
+            totals["cumulative_turns"] = len(accounts)
+        return totals
+
+    def _call_accounting(self, result: AgentOutput | CLIAgentError) -> dict[str, Any]:
+        """What the call requested and what it consumed, omitting what is unknown.
+
+        A key is absent when the client reported nothing for it, so a caller can
+        tell "not reported" from a reported zero.
+
+        Takes either outcome. `CLIAgentError` carries these fields under the same
+        names as `AgentOutput` so one projection serves both paths (#41) — the
+        annotation has to say so, or the next reader reasonably assumes the error
+        path has its own copy, which is the duplication this replaced.
+        """
+        accounting: dict[str, Any] = {}
+        if result.requested_model is not None:
+            accounting["requested_model"] = result.requested_model
+        if result.resolved_model is not None:
+            accounting["resolved_model"] = result.resolved_model
+        # Omitted when unobserved, not reported as the literal "unknown": that string
+        # is truthy and string-typed, so a caller could not tell "not observed" from
+        # "a model actually named unknown" — and it contradicted this function's own
+        # docstring two lines up. Absence is now expressed the same way twice in one
+        # object, matching `normalized_usage` (#41).
+        if result.observed_model is not None:
+            accounting["observed_model"] = result.observed_model
+        if (
+            result.resolved_model is not None
+            and result.observed_model is not None
+            and not _names_one_model(result.resolved_model, result.observed_model)
+        ):
+            accounting["model_substituted"] = True
+        if result.resolved_effort is not None:
+            accounting["resolved_effort"] = result.resolved_effort
+        # Which binary ran, as an absolute path. `BaseCLIAgent.run` rewrites
+        # `command[0]` with `shutil.which`, so an absolute first element is a
+        # resolved one and a bare name never was — reported only in the first
+        # case, per this function's absence convention. Clink resolves from the
+        # PROCESS PATH at load time, so two OpenClink processes on one machine can run
+        # different binaries under one `cli_name`, and a stale one blames the
+        # model for its own age (#64).
+        command = result.sanitized_command
+        if command and os.path.isabs(command[0]):
+            accounting["resolved_executable"] = command[0]
+        if result.token_usage is not None:
+            # `normalized_usage`, not `token_usage`: the gemini parser already
+            # publishes `token_usage` in that CLI's own raw shape, and one key
+            # carrying two schemas would force every consumer to sniff.
+            accounting["normalized_usage"] = {
+                name: value for name, value in asdict(result.token_usage).items() if value is not None
+            }
+        elif result.usage_unavailable:
+            # Said out loud, because silence here already means something else:
+            # a client whose adapter is simply unwritten also reports nothing.
+            # Never zeros — a call whose consumption is unknown is not a call
+            # that consumed nothing.
+            accounting["usage_unavailable"] = True
+        if isinstance(result.cost, CallCost):
+            # The unit travels with the number. A caller routing across a
+            # subscription backend and a token-billed one cannot sum credits
+            # with currency, and a bare float invites exactly that.
+            accounting["cost"] = {"value": result.cost.value, "unit": result.cost.unit}
+            if result.cost.unpriced_classes:
+                accounting["cost_unpriced_classes"] = list(result.cost.unpriced_classes)
+        elif isinstance(result.cost, CostUnavailable) and result.cost.reason != NO_RATE_CARD:
+            # Absent figure plus a reason, never a raised error and never a
+            # guessed number: a model released this morning must not turn every
+            # delegation into a failure.
+            #
+            # `no_rate_card` is the one reason NOT projected, for the same
+            # argument #24 slice 4 made about an unwritten adapter: it is a fact
+            # about OpenClink, not about the CLI or this call. Marking it would put
+            # the key on every response of every client until someone configures
+            # a card, and a marker present on everything marks nothing.
+            accounting["cost_unavailable"] = result.cost.reason
+        # A cost the CLI measured itself, under its own key (#126). Every other
+        # client needs OpenClink to price it, and no bundled config declares a
+        # rate card (#77) — but opencode reports `part.cost` per step and the
+        # parser accumulates it, so for that one client the pricing layer is not
+        # unreachable, it is unnecessary.
+        #
+        # NOT folded into `cost`: that key means "OpenClink multiplied an account
+        # by a rate card", and a vendor's meter is a different claim. One key
+        # carrying both would leave no way to tell which a figure was.
+        #
+        # Keyed on the metadata, never on the cli_name — a projection that named
+        # the client would put a figure on every other one as soon as somebody
+        # copied this block.
+        metadata = (result.parsed.metadata or {}) if result.parsed else {}
+        reported_cost = metadata.get("cli_cost")
+        reported_unit = metadata.get("cli_cost_unit")
+        # `is not None`, because a free call reports exactly 0 and truthiness
+        # would turn "this was free" into "cost unknown". The unit is required for
+        # the reason #25 gives: a bare number invites summing credits with
+        # currency, so a cost with no declared unit is not reported at all.
+        if reported_cost is not None and reported_unit:
+            accounting["cli_reported_cost"] = {
+                "value": reported_cost,
+                "unit": reported_unit,
+                "source": result.parser_name,
+            }
+        return accounting
 
     def _merge_metadata(self, base: dict[str, Any] | None, extra: dict[str, Any]) -> dict[str, Any]:
         merged = dict(base or {})
@@ -441,16 +720,25 @@ class CLinkTool(SimpleTool):
         *,
         reason: str,
     ) -> dict[str, Any]:
+        # Everything a parser stores beside the answer for its own diagnostics, none of
+        # which the tool reads: `events`, plus the parsers' whole decoded payload —
+        # gemini as `raw`, claude as `raw` and `raw_events`. `raw`/`raw_events` passed
+        # through no bound at all, so a large CLI response was capped in the field a
+        # caller reads and unbounded in the field next to it (#37). Dropped rather than
+        # capped, and dropped here, the one place both the success and the error path
+        # already pass through, so the bound cannot be stated per-parser and drift.
         cleaned = dict(metadata)
-        events = cleaned.pop("events", None)
-        if events is not None:
-            cleaned[f"events_removed_for_{reason}"] = True
-            logger.debug(
-                "Clink dropped %s events metadata for %s response (%s)",
-                client.name,
-                reason,
-                type(events).__name__,
-            )
+        for key in ("events", "raw", "raw_events"):
+            payload = cleaned.pop(key, None)
+            if payload is not None:
+                cleaned[f"{key}_removed_for_{reason}"] = True
+                logger.debug(
+                    "Clink dropped %s %s metadata for %s response (%s)",
+                    client.name,
+                    key,
+                    reason,
+                    type(payload).__name__,
+                )
         return cleaned
 
     def _build_error_metadata(self, client: ResolvedCLIClient, exc: CLIAgentError) -> dict[str, Any]:
@@ -459,10 +747,27 @@ class CLinkTool(SimpleTool):
             "cli_name": client.name,
             "return_code": exc.returncode,
         }
+        truncated_fields: list[str] = []
+        # A failed run still says something and still spent something. Both have to
+        # reach the caller, or reporting the failure honestly would cost them the
+        # diagnosis and the accounting at the same time.
+        if exc.parsed is not None:
+            # Parser metadata is merged wholesale, so it goes in FIRST: a bounded
+            # field this method owns must not be replaceable by a parser key that
+            # happens to share its name.
+            metadata.update(self._prune_metadata(exc.parsed.metadata, client, reason="error"))
+            _store_diagnostic(metadata, truncated_fields, "salvaged_content", exc.parsed.content)
+        # One projection for both outcomes (#41). `CLIAgentError` carries the same
+        # field names as `AgentOutput` precisely so this can be the same function —
+        # two hand-written blocks were how the error path came to report usage but
+        # not which model spent it.
+        metadata.update(self._call_accounting(exc))
         if exc.stdout:
-            metadata["stdout"] = exc.stdout.strip()
+            _store_diagnostic(metadata, truncated_fields, "stdout", exc.stdout.strip())
         if exc.stderr:
-            metadata["stderr"] = exc.stderr.strip()
+            _store_diagnostic(metadata, truncated_fields, "stderr", exc.stderr.strip())
+        if truncated_fields:
+            metadata["truncated_fields"] = sorted(truncated_fields)
         return metadata
 
     def _raise_tool_error(self, message: str, metadata: dict[str, Any] | None = None) -> None:
@@ -474,7 +779,7 @@ class CLinkTool(SimpleTool):
             "You are operating through the Gemini CLI agent. You have access to your full suite of "
             "CLI capabilities—including launching web searches, reading files, and using any other "
             "available tools. Gather current information yourself and deliver the final answer without "
-            "asking the PAL MCP host to perform searches or file reads."
+            "asking the OpenClink host to perform searches or file reads."
         )
 
     def _format_file_references(self, files: list[str]) -> str:

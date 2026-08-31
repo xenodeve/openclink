@@ -11,7 +11,7 @@ __pycache__/
 env/
 venv/
 .venv/
-.pal_venv/
+.openclink_venv/
 ENV/
 env.bak/
 venv.bak/

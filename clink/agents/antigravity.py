@@ -2,7 +2,7 @@
 
 Google retired the Gemini CLI (June 2026) in favour of the Antigravity CLI, a Go binary
 invoked as `agy`. It only emits output to a real terminal: under a plain piped subprocess
-(how every MCP server, including PAL, normally spawns a CLI) it exits 0 with EMPTY stdout.
+(how every MCP server, including OpenClink, normally spawns a CLI) it exits 0 with EMPTY stdout.
 So this agent drives agy through a Windows ConPTY via `pywinpty` — agy sees a TTY, prints
 its plain-text reply, and we capture it; the `antigravity_text` parser strips the ANSI
 escape codes the terminal introduces. The prompt is passed as a positional argument
@@ -28,6 +28,67 @@ from .base import AgentOutput, BaseCLIAgent, CLIAgentError
 class AntigravityAgent(BaseCLIAgent):
     """Run `agy` inside a ConPTY and capture its plain-text output."""
 
+    # agy's print mode emits prose and nothing else — there is no usage block to
+    # adapt, in any mode OpenClink runs. Declared rather than left to an empty field
+    # map so a caller can tell this from an adapter nobody has written yet.
+    USAGE_UNAVAILABLE = True
+
+    # Declared so `_resolve_model_effort` can read the effort back off the command.
+    # Writing the flag without declaring it here reports `resolved_effort: None`
+    # while the CLI honours it — the silent hole #27 closed for codex.
+    EFFORT_FLAGS = ("--effort",)
+
+    def _model_args(self, model: str | None, reasoning_effort: str | None) -> list[str]:
+        # `agy --effort low|medium|high` is a real flag — the base implementation's
+        # "effort is baked into the model name for these CLIs" is only half true here,
+        # and dropping it silently is the defect this fixes (#43).
+        args: list[str] = []
+        if model:
+            args += ["--model", model]
+        if reasoning_effort:
+            args += ["--effort", reasoning_effort]
+        return args
+
+    def refuse_unservable(self, command: Sequence[str]) -> None:
+        # agy's two knobs are mutually exclusive for every model it serves. Measured
+        # 2026-08-04 against the real binary: a tiered id gives "--model X conflicts
+        # with --effort=Y", an untiered one gives "--effort is not supported for
+        # model X", and `agy models` shows every id either bakes its tier in or has
+        # no ladder — so no tuple exists where both are servable. The CLI fails
+        # closed on its own; refusing here keeps a guaranteed-error command from
+        # ever being spawned (#27's rule), and names both values so the caller
+        # knows which to drop.
+        model, effort = self._resolve_model_effort(command)
+        if model and effort:
+            raise CLIAgentError(
+                f"CLI '{self.client.name}' cannot serve a model and a reasoning effort together: "
+                f"--model {model!r} with --effort {effort!r}. agy bakes the tier into the model id "
+                f"(e.g. 'gemini-3.1-pro-high'), so pass one or the other, not both.",
+                returncode=None,
+            )
+        super().refuse_unservable(command)
+
+    def _build_command(
+        self,
+        *,
+        role: ResolvedCLIRole,
+        system_prompt: str | None = None,
+        model: str | None = None,
+        reasoning_effort: str | None = None,
+    ) -> list[str]:
+        # agy's `--print` (carried in internal_args) is VALUE-TAKING — it consumes the
+        # NEXT token as the prompt. base.py appends model options LAST, producing
+        # `agy --print --model "X" <prompt>` where `--print` swallows `--model` as its
+        # value (prompt), leaving model empty so agy silently uses the persisted default
+        # (verified live). Place model options right after the executable, before
+        # `--print`, so the requested model actually reaches the backend.
+        command = list(self.client.executable)
+        command.extend(self._model_args(model, reasoning_effort))
+        command.extend(self.client.internal_args)
+        command.extend(self.client.config_args)
+        command.extend(role.role_args)
+        return command
+
     async def run(
         self,
         *,
@@ -46,6 +107,10 @@ class AntigravityAgent(BaseCLIAgent):
             model=model,
             reasoning_effort=reasoning_effort,
         )
+        # This runner overrides `run` wholesale, so it inherits nothing from the
+        # base loop — the refusal has to be called here too or agy is the one
+        # client that spawns an unservable model.
+        self.refuse_unservable(command)
 
         resolved = shutil.which(command[0])
         if resolved is None:
@@ -66,6 +131,35 @@ class AntigravityAgent(BaseCLIAgent):
         )
         duration = time.monotonic() - start_time
 
+        # Fail closed: agy exits non-zero (with a catalog error) when a requested model
+        # is unsupported/rejected. Raise instead of returning the fallback as success,
+        # so a bad `--model` surfaces as an error rather than a silent wrong-model reply.
+        if returncode != 0:
+            # agy names its own cause, and the ConPTY merges stderr into the captured
+            # output, so the reason is already in hand — read it instead of guessing.
+            # Measured 2026-08-05 in the text mode this client actually runs:
+            #   agy --print-timeout 3s --print "…"
+            #   -> exit 1, stdout empty, stderr 'Error: timeout waiting for response'
+            # Reporting that as "a requested model may be unsupported/rejected" names
+            # the WRONG cause, which is worse than a vague one because it sends the
+            # reader somewhere. The deadline is agy's own, defaults to 5m0s, sits
+            # inside clink's 1800s child timeout, and bounds the wait for the FIRST
+            # response rather than the whole call — a 20s bound on a much longer
+            # prompt still succeeded, because the model began answering inside it (#49).
+            if "timeout waiting for response" in raw_output.lower():
+                detail = (
+                    "agy's own print-mode deadline elapsed (`--print-timeout`, default 5m0s) — "
+                    "it bounds the wait for the first response, not the whole call. Raise it, or "
+                    "shorten the prompt so the backend starts answering sooner"
+                )
+            else:
+                detail = "a requested model may be unsupported/rejected"
+            raise CLIAgentError(
+                f"CLI '{self.client.name}' exited with status {returncode} ({detail})",
+                returncode=returncode,
+                stdout=raw_output,
+            )
+
         try:
             parsed = self._parser.parse(raw_output, "")
         except Exception as exc:
@@ -75,23 +169,23 @@ class AntigravityAgent(BaseCLIAgent):
                 stdout=raw_output,
             ) from exc
 
-        return AgentOutput(
+        return self.finalize_output(
             parsed=parsed,
             sanitized_command=list(command),  # logged without the prompt payload
             returncode=returncode,
             stdout=raw_output,
             stderr="",
             duration_seconds=duration,
-            parser_name=self._parser.name,
+            requested_model=model,
         )
 
     def _run_in_pty(self, command: list[str], env: dict[str, str], cwd: str | None, timeout: int) -> tuple[int, str]:
         """Spawn the CLI in a ConPTY and read until it exits. Blocking — call via to_thread."""
         try:
-            import winpty  # lazy import: PAL still starts (and other CLIs work) if pywinpty is absent
+            import winpty  # lazy import: OpenClink still starts (and other CLIs work) if pywinpty is absent
         except ImportError as exc:  # pragma: no cover
             raise CLIAgentError(
-                f"CLI '{self.client.name}' requires the 'pywinpty' package — add it to PAL's dependencies."
+                f"CLI '{self.client.name}' requires the 'pywinpty' package — add it to OpenClink's dependencies."
             ) from exc
 
         proc = winpty.PtyProcess.spawn(command, cwd=cwd, env=env, dimensions=(50, 200))

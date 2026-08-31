@@ -1,12 +1,28 @@
 # Fork changes
 
-This is a fork of [BeehiveInnovations/pal-mcp-server](https://github.com/BeehiveInnovations/pal-mcp-server) (Apache-2.0), which has been **unmaintained since ~mid-2026**. Everything from upstream is unchanged except for the additive `clink` changes described below: two new agents (`antigravity`, `claude-9arm`) plus an optional **per-call `model` / `reasoning_effort` override**. Existing CLI (`gemini`, `claude`, `codex`) behavior is unchanged whenever the new params are omitted — they default to off.
+This is a fork of [BeehiveInnovations/pal-mcp-server](https://github.com/BeehiveInnovations/pal-mcp-server) (Apache-2.0), which has been **unmaintained since ~mid-2026**. Everything from upstream is unchanged except for the `clink` changes described below: four new agents (`antigravity`, `claude-9arm`, `cursor`, `opencode`) plus a per-call `model` / `reasoning_effort` override.
+
+**One of those changes is not additive — see [Breaking changes](#breaking-changes) below.** `model` is now **required**; it used to be optional and fall through to the client's configured default.
+
+## Breaking changes
+
+### `model` is required — an omitted model is refused, not resolved to the client's default (#29)
+
+`clink`'s `model` field used to advertise *"Omit to use the CLI's configured default."* That fallback is what made **a model nobody chose indistinguishable from a model someone did** — the caller received a `resolved_model` either way, with nothing to say whether a human or a config file picked it. It is the same defect class as refusing a model the client cannot serve (#27) and flagging a silent substitution (#28), one step earlier in the chain.
+
+An omitted (or explicitly `null`) `model` is now refused before an agent is created, with an error naming the field. It is also declared in the tool schema's `required` list, so a validating MCP client rejects the call before it is ever sent — a description that says "required" is not a contract, and the enforced one has to match the advertised one.
+
+**No grace period.** The decision is recorded on #29 with its reasoning: a warning window keeps serving the unchosen model, which is the defect being removed; the caller is an agent with no habit of reading deprecation metadata; and every caller is one of this developer's own repos, so a one-step break is a same-day fix. **Reverse this if that premise is wrong** — the whole argument rests on no caller outside these repos omitting the model.
+
+**To migrate:** pass the model you were relying on explicitly. It is the one named in that client's `conf/cli_clients/<name>.json` `additional_args` (`-m` for codex, `--model` for the rest). Passing it changes nothing about the run — only about whether the choice is attributable.
+
+A consequence worth knowing: `requested_model` is now always present in a response's metadata from a call made through the tool, because the state in which it could be absent no longer exists.
 
 ## What was added
 
 ### `antigravity` — Google's Antigravity CLI (`agy`) as a clink agent
 
-Google retired the Gemini CLI in mid-2026 in favor of Antigravity, a new closed-source Go binary invoked as `agy`. It only prints output when it thinks it's attached to a real terminal — a plain piped subprocess (the normal way every MCP server, including PAL, spawns a child CLI) gets back an empty stdout with exit code 0.
+Google retired the Gemini CLI in mid-2026 in favor of Antigravity, a new closed-source Go binary invoked as `agy`. It only prints output when it thinks it's attached to a real terminal — a plain piped subprocess (the normal way every MCP server, including OpenClink, spawns a child CLI) gets back an empty stdout with exit code 0.
 
 The fix is to drive `agy` through a real Windows pseudo-console (ConPTY) via [`pywinpty`](https://pypi.org/project/pywinpty/), so it believes it has a TTY and prints normally. New files:
 
@@ -31,6 +47,153 @@ To activate:
 3. Replace the `--settings`/`--model` placeholders with your gateway's settings file path and model ID
 4. Restart the MCP server (config is cached at process start, not read per-call)
 
+### `cursor` — Cursor's CLI (`cursor-agent`) as a clink agent
+
+Cursor ships a headless agent binary, `cursor-agent`, that runs non-interactively with `-p`. It needs **no new code**: `clink/agents/base.py`'s `BaseCLIAgent` already pipes the prompt over stdin and appends `--model <model>`, which is exactly `cursor-agent`'s interface. So this is a `constants.py` entry plus a config file:
+
+- `clink/constants.py` — a `cursor` entry with `runner=None` (falls through to `BaseCLIAgent` because `create_agent()` resolves `client.runner or client.name` and `"cursor"` isn't in `_AGENTS`) and `parser="antigravity_text"`, reusing the ANSI-stripping parser.
+- `conf/cli_clients/cursor.json` — preset config (`command: "cursor-agent"`, resolved via `PATH` at call time).
+
+Fixed args are `-p --trust --output-format text`:
+
+- `-p` (`--print`) is a **boolean** flag here, unlike `agy --print` — it does not swallow the next token, so the `--model` ordering hazard documented below does not apply.
+- `--trust` is required, otherwise a non-interactive run in a directory Cursor hasn't seen aborts with *"Workspace Trust Required"* and exit code 1.
+- `--output-format text` rather than `json`: `cursor-agent`'s JSON shape is not Claude Code's, so `claude_json` cannot parse it; plain text through `antigravity_text` is both simpler and sufficient.
+
+#### On Windows, a `SHELL` pointing at bash silently kills the agent's tools
+
+If the parent process exports `SHELL=…/bash.exe` — which an MCP client may well do — `cursor-agent` runs its internal commands through bash, they are Windows-shaped, and every tool call dies. `Read`, `Shell`, `Grep`, `Glob` and MCP access all fail, and the agent then answers **from the prompt text alone with exit 0**, so the reply looks legitimate while the client is effectively text-only.
+
+Fix it per machine rather than in the shipped preset, since the correct value is platform-specific — drop a `conf/cli_clients/cursor.json` into `~/.openclink/cli_clients/` (that directory is a search path — the pre-rename `~/.pal/cli_clients/` is still read too — and unlike `site-packages` it survives `uv tool upgrade`):
+
+```json
+{ "name": "cursor", "command": "cursor-agent",
+  "env": { "SHELL": "C:/WINDOWS/system32/cmd.exe" }, "...": "…" }
+```
+
+Verified by A/B on one otherwise-identical command: `SHELL` at bash fails, `SHELL` at `cmd.exe` reads the file and returns its contents.
+
+Two traps this hides behind:
+
+- **The agent misattributes it.** It reports a *"PreToolUse hook"* failure with a bash syntax error. No hooks file is involved — but the *mechanism* it describes (Windows commands run under bash) is exactly right, so treat the label as wrong and the mechanism as a lead.
+- **`--auto-review` looks like the fix and is not.** It is gated on account entitlement; where it is unavailable it prints `Falling back to Allowlist` and changes nothing. It was briefly shipped here as the fix on the strength of runs that passed only because `SHELL` happened to be unset in that shell — the flag was never doing the work. It is no longer in the preset.
+
+`reasoning_effort` is ignored, as with Antigravity — Cursor bakes effort into the model *name* (`-low` / `-high` / `-xhigh`), selected via `model`.
+
+### `mcp` pinned below 2.0
+
+`pyproject.toml` asked for `mcp>=1.0.0` with no upper bound. `mcp` 2.0.0 removed `Server.list_tools`, which `server.py` uses as a decorator at module scope — so the server dies during import with `AttributeError: 'Server' object has no attribute 'list_tools'` and never gets far enough to report anything useful. From the client side that surfaces only as a bare `-32000`; the real traceback is reachable only by running the entry point by hand.
+
+Nothing has to break for you to hit this. A routine `uv tool upgrade openclink` re-resolves dependencies, picks up 2.x, and takes down a previously working install. Now pinned to `mcp>=1.0.0,<2` — lift it only alongside a port to the 2.x server API.
+
+The reason to add it: `cursor-agent --list-models` exposes model families no other clink client reaches, notably `cursor-grok-4.5-high` (xAI) and `kimi-k3-high` (Moonshot), alongside the usual GPT/Claude/Codex tiers — useful when you want genuinely independent opinions rather than three calls into the same two families.
+
+Install: see Cursor's CLI install docs, then `clink cli_name="cursor"` works out of the box.
+
+**Windows path gotcha.** A config's `command` is passed through `shlex.split()` in POSIX mode, which treats `\` as an escape character — so an absolute Windows path written with backslashes (`C:\\Users\\me\\...` in JSON) is silently mangled into `C:Usersme...` and fails with *"Executable not found in PATH"*. If the binary isn't on `PATH` and you must hardcode a path, write it with **forward slashes** (`C:/Users/me/AppData/Local/cursor-agent/cursor-agent.cmd`). This applies to every clink client, not just this one.
+
+### `opencode` — the OpenCode CLI as a clink agent
+
+[OpenCode](https://opencode.ai) runs headless as `opencode run <message> --format json`, emitting one
+JSON event per line. Wiring (issue #85): a `constants.py` entry, `conf/cli_clients/opencode.json`, a
+`_KNOWN_LOCATIONS` entry, plus a parser and an agent class.
+
+**Why it needs its own parser rather than reusing `codex_jsonl`.** The shapes are close and not the
+same: codex nests the reply under `item`, keys usage at the event root, and reports no cost at all.
+OpenCode puts the reply in `part.text` on `type:"text"`, and the account in `part.tokens` on
+`type:"step_finish"` — plus a `part.cost` that no other client provides.
+
+**It reports the price of its own call, and that figure is now accounted rather than merely present.**
+`part.cost` arrives per step, so OpenClink needs no rate card to know what a call cost. That matters
+because OpenClink's own pricing layer is unreachable (#77) — no bundled config declares a `rate_card`,
+so `price_call` returns `no_rate_card` for every client and the tool suppresses that reason
+deliberately.
+
+#77 framed the choice as *ship a real rate card* or *reduce the surface*. OpenCode makes a third option
+available, because it is the only client that measures itself: for it the pricing layer is not
+unreachable, it is unnecessary. So the measured figure is projected into the accounting block (#126):
+
+```json
+"cli_reported_cost": { "value": 0.007392, "unit": "USD", "source": "opencode_jsonl" }
+```
+
+**Stated precisely, because the first write-up of this overstated it.** The number was never invisible
+— parser metadata is merged into the response wholesale, so a bare float always reached the caller at
+top level. What it lacked was a place in `accounting` beside the account it belongs to, a unit, and any
+statement of where it came from.
+
+**Its own key, not `cost` — in both places.** In the accounting block, `cost` means *OpenClink
+multiplied an account by a rate card* and this is a vendor's meter; one key carrying both claims would
+leave no way to tell which a figure was. In parser metadata it is published as `cli_cost` for a sharper
+reason: the tool merges parser metadata and then the accounting block into one dict, so a float under
+`cost` is overwritten by the accounting dict the moment any client gets a rate card — silently, and
+with the two claims swapped. `AgentOutput.cost` still reads `CostUnavailable(no_rate_card)`, correctly.
+
+The unit is declared by the parser, which knows the CLI, rather than assumed by the consumer; a cost
+published without one is **not reported at all**, because a bare number invites summing credits with
+currency. And a reported `0` is emitted rather than swallowed — the free tier genuinely bills nothing,
+and "this call was free" is a different claim from "cost unknown". Both halves survive a failed run
+too: the `step_finish` arrives before whatever killed the call, and `CLIAgentError` carries the same
+field names as `AgentOutput` so one projection serves both.
+
+**Reasoning effort reaches it too, as `--variant` (#125).** `opencode run --variant <v>` is a real
+flag, and until #125 `OpenCodeAgent` inherited the base behaviour of discarding the caller's
+`reasoning_effort` — silently, because `resolved_effort` is only reported when non-null. Valid values
+are per model and enumerable: `opencode models opencode --verbose` publishes a `variants` object, with
+`low`/`high`/`max` for `deepseek-v4-flash` and five tiers for `claude-opus-5`.
+
+Two measured caveats, stated because the flag now looks fully supported and is not quite:
+**an invalid variant is accepted and silently ignored** by the CLI (`--variant not-a-real-variant`
+exits 0 and answers normally), and OpenClink does not validate against the per-model list because that
+would cost a ~30s `opencode models` call per delegation. And **no observable effect could be
+demonstrated on `deepseek-v4-flash`** — three runs of one prompt at no variant, `low` and `max` gave
+indistinguishable token profiles. OpenClink writes the flag and can read it back; whether the provider
+acts on it for that model is unverified.
+
+**Per-step accounting, which is the trap.** An agentic run closes a `step_finish` per tool round-trip,
+and each one reports only *its own* spend. Taking the last — the obvious reading, and what the first
+version did — reports the cheap closing step and discards the expensive one that did the work:
+measured on a real two-step file-read at **1,053 input tokens against 102,535 actually spent**, and
+**0.000248 against 0.007392**. It reads as a plausible small number rather than as an error, and no
+single-step fixture can fail that way. The parser accumulates; a single-step run sums a set of one.
+
+**Cache-read is now accounted; cache-write still has nowhere to go.** These were bundled once and are
+not the same problem. `tokens.cache.read` has exactly the right home — `cached_input_tokens` — and was
+being dropped only because the base's field map was flat and `cache` is a dict; #127 gave the map a
+dotted path (`"cache.read": "cached_input_tokens"`) and it lands. That mattered more than "incomplete"
+suggests: on the recorded two-step run the dropped class was **larger than the reported one**, 144,256
+against 102,535 input, so anything reasoning about cache effectiveness from that account was wrong by
+over a factor of two with nothing to say so.
+
+`tokens.cache.write` stays absent, for the other reason: the normalised account has no field for
+cache-creation at all (#56). Folding it somewhere plausible would make the account wrong rather than
+incomplete, and an incomplete one is recoverable.
+
+The dotted path is opt-in per client — every other adapter is flat and unchanged — and a path whose
+parent is missing, or arrives as a scalar, yields no field rather than an exception.
+
+**`--auto` is deliberately not passed.** OpenCode's own help calls it *"auto-approve permissions that
+are not explicitly denied (dangerous!)"*, and its docs note that most permissions already default to
+`allow` and that `--auto` only flips what would otherwise ask. A verified `run` call without it exits
+0 and does use its tools. Declare a `permission` block in your own `opencode.json` if you need to
+loosen or tighten it — that is reviewable in a file, where a flag buried in `additional_args` is not.
+
+**Discovery.** OpenCode installs via bun to `~/.bun/bin`, which bun does not add to `PATH` — verified
+absent from `PATH` on the development machine while the binary was present. `_KNOWN_LOCATIONS` covers
+it, so `clink cli_name="opencode"` resolves with zero setup.
+
+**Quota note, not a code concern.** The `opencode-go` provider meters in **dollars** (5-hour $12,
+weekly $30, monthly $60), and its models are not interchangeable in cost — `deepseek-v4-flash` buys
+roughly 323× the work of `kimi-k3` from the same allowance. Pick the model deliberately.
+
+### `images` now fails loudly instead of being silently dropped
+
+`tools/clink.py` accepted an `images` parameter that **no runner has ever consumed** — every agent discards it (`_ = (files, images)`), and unlike `absolute_file_paths` an image cannot be embedded into a text prompt, so nothing reached the CLI. The call still returned exit 0 with a plausible answer, which is the worst possible shape for a bug: the model simply never saw the picture and answered around it.
+
+It now raises a tool error naming the working alternative — put the absolute image path in the `prompt` text and ask the agent to open it with its own tools. That path is verified: with tools available, a vision-capable model opens the file and describes it correctly. So this is a transport limitation of the CLIs, not a model one.
+
+This is the one change here that touches shared code rather than only the Cursor preset.
+
 ### Per-call `model` + `reasoning_effort` override
 
 Upstream `clink` fixes each CLI's model and reasoning at **config time** (`conf/cli_clients/*.json` args) — to vary them you had to edit the JSON and restart the server, or define a separate client per variant. This fork adds two **optional** clink tool params so a caller can choose the model + effort **per call**:
@@ -48,6 +211,71 @@ clink(cli_name="codex", model="gpt-5.6-sol",  reasoning_effort="max",  prompt="�
 clink(cli_name="codex", model="gpt-5.6-luna", reasoning_effort="high", prompt="…")  # cheap / quota-thrifty
 clink(cli_name="antigravity", model="Claude Opus 4.6 (Thinking)",      prompt="…")  # non-OpenAI check
 ```
+
+**Antigravity `--model` ordering (critical).** `agy`'s `--print` flag is **value-taking** — it
+consumes the next token as the prompt. The naive order `agy --print --model "X" "<prompt>"`
+makes `--print` swallow `--model` as its value, so `agy` runs with an empty model and silently
+falls back to the persisted default (verified live: it reports *Gemini 3.5 Flash* regardless of
+the requested model). `AntigravityAgent._build_command()` therefore places model options
+**before** `--print` → `agy --model "X" --print "<prompt>"`, which live-testing confirmed makes
+the requested model reach the backend. `AntigravityAgent.run()` also now **fails closed**:
+`agy` exits non-zero (with a catalog error) on an unsupported model, so the runner raises instead
+of returning the fallback as success. Covered by `test_antigravity_places_model_before_print`.
+
+### Zero-setup CLI discovery + active `claude-9arm`
+
+Install OpenClink the normal way (README) and `codex`, `antigravity` (`agy`), and `claude-9arm` work
+**with no extra setup** — if the CLI is installed on the machine. How:
+
+- **Executable discovery** (`clink/discovery.py`, wired into the registry): a client's bare
+  `command` (`agy`/`claude`/`codex`/`gemini`) is resolved to an absolute path via **PATH first,
+  then per-CLI known install locations** (winget, `%LOCALAPPDATA%\agy\bin`, `npm`, …). This fixes
+  the common case where the editor launches OpenClink with a minimal `PATH` that omits user-profile
+  install dirs. If nothing resolves, the bare name passes through and the **call fails with a
+  clear "not found in PATH"** — a missing CLI is a graceful per-client error, not a load failure.
+- **`config_args` are `~`/`%VAR%`-expanded** at load, so a bundled preset can reference a
+  user-profile path portably (e.g. `--settings ~/.claude-9arm.json`).
+- **`conf/cli_clients/claude-9arm.json` ships active** (this fork's 9arm Qwen gateway): bare
+  `claude` (discovery-resolved) + `--settings ~/.claude-9arm.json --model qwen3.6-35b-a3b`. Absent
+  `claude.exe` or gateway settings → the usual "not found" at call time. (`claude-9arm.json.example`
+  stays as the generic template for a different gateway.)
+
+Net: a fresh `uv tool install` / `uvx` launch exposes all four/five clients; the ones whose CLI is
+present run, the rest report "not found" when called.
+
+### Overriding paths/gateways in `~/.openclink/cli_clients/` (survives reinstalls, shared across installs)
+
+Editing the bundled `conf/cli_clients/*.json` inside an installed package (site-packages) is
+**ephemeral** — `uv tool install --force` / a `uvx` refresh overwrites it, and each install
+location (uv-tool vs uvx) has its own copy. Instead, put machine-specific activations in the
+**user config dir the registry already reads last (so it overrides the bundled config):
+`~/.openclink/cli_clients/*.json`** (`USER_CONFIG_DIR` in `clink/constants.py`; the pre-rename
+`~/.pal/cli_clients/` — `LEGACY_USER_CONFIG_DIR`, checked first — is still read too, so an
+override written before the rename keeps applying; also honored: `CLI_CLIENTS_CONFIG_PATH`).
+Configs there:
+
+- **persist across reinstalls** (they're outside the package), and
+- are read by **every** OpenClink instance on the machine — so a client activated once is available to
+  both your editor's OpenClink (a `uv tool install`) and another tool's OpenClink (e.g. Codex's `uvx --from
+  git+…` launch) with no per-install setup.
+
+Use it for the two things the bundled config can't ship portably — an **absolute executable path**
+(when the CLI isn't on the OpenClink process's `PATH`) and **activating `claude-9arm`** against your
+gateway. Drop-in examples (fill in your own paths / model):
+
+`~/.openclink/cli_clients/antigravity.json` (absolute `agy` so it resolves regardless of OpenClink's PATH):
+```json
+{ "name": "antigravity", "command": "C:/…/agy.exe", "additional_args": [],
+  "roles": { "default": { "prompt_path": "systemprompts/clink/default.txt", "role_args": [] } } }
+```
+`~/.openclink/cli_clients/claude-9arm.json` (activate the Claude-Code-through-a-gateway client):
+```json
+{ "name": "claude-9arm", "command": "C:/…/claude.exe",
+  "additional_args": ["--settings","C:/…/your-gateway.json","--model","<gateway-model-id>"],
+  "roles": { "default": { "prompt_path": "systemprompts/clink/default.txt", "role_args": [] } } }
+```
+Keep `prompt_path` **relative** (`systemprompts/clink/…`) so it resolves against each install's own
+package root, not a hard-coded location. Restart OpenClink after adding files (config is cached at start).
 
 ## Known gotchas carried over from development
 

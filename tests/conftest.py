@@ -1,10 +1,13 @@
 """
-Pytest configuration for PAL MCP Server tests
+Pytest configuration for OpenClink tests
 """
 
 import asyncio
+import functools
 import importlib
 import os
+import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -26,7 +29,7 @@ if str(parent_dir) not in sys.path:
 import utils.env as env_config  # noqa: E402
 
 # Ensure tests operate with runtime environment rather than .env overrides during imports
-env_config.reload_env({"PAL_MCP_FORCE_ENV_OVERRIDE": "false"})
+env_config.reload_env({"OPENCLINK_MCP_FORCE_ENV_OVERRIDE": "false"})
 
 # Set default model to a specific value for tests to avoid auto mode
 # This prevents all tests from failing due to missing model parameter
@@ -43,6 +46,77 @@ importlib.reload(config)
 # Configure asyncio for Windows compatibility
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+
+def _force_utf8_replay_cassettes() -> None:
+    """Make the vendored google-genai replay client read cassettes as UTF-8.
+
+    `_replay_api_client.py` calls `open(path, 'r')` with no encoding, so Python
+    falls back to the locale default — cp1252 on a stock Windows box. The gemini
+    cassettes contain non-ASCII characters ('│', '•', '—') that then decode into
+    mojibake, and the replay client compares the request body for exact equality,
+    so a single mangled character fails the test. The OpenAI cassettes are pure
+    ASCII, which is why only the gemini ones break.
+
+    This is upstream's bug (a missing `encoding='utf-8'`), not a stale cassette:
+    read as UTF-8 the recorded body matches the generated one exactly.
+    """
+    try:
+        import google.genai._replay_api_client as replay_client
+    except ImportError:  # SDK absent — nothing to patch
+        return
+
+    builtin_open = open
+
+    def utf8_open(file, mode="r", *args, **kwargs):
+        if "b" not in mode:
+            kwargs.setdefault("encoding", "utf-8")
+        return builtin_open(file, mode, *args, **kwargs)
+
+    # Patch the module global so both the read and the record-mode write use UTF-8.
+    replay_client.open = utf8_open
+
+
+_force_utf8_replay_cassettes()
+
+
+_GIT_BASH_CANDIDATES = (
+    r"C:\Program Files\Git\bin\bash.exe",
+    r"C:\Program Files\Git\usr\bin\bash.exe",
+    r"C:\Program Files (x86)\Git\bin\bash.exe",
+)
+
+
+@functools.lru_cache(maxsize=1)
+def find_bash() -> str | None:
+    """Absolute path to a bash that actually runs, or None.
+
+    Passing the bare name "bash" to subprocess is unusable on Windows:
+    CreateProcess searches C:\\Windows\\system32 before PATH, and the bash.exe
+    there is the WSL launcher stub, which fails with a relay error on a machine
+    with no WSL distro. `shutil.which("bash")` does NOT agree with that lookup —
+    it reports the Git-for-Windows bash — so the resolver has to validate by
+    executing rather than trusting `which`.
+
+    Git-for-Windows is preferred over whatever `which` returns because a working
+    WSL bash would pass the probe below and still choke on the Windows-style
+    paths (`source "D:\\..."`) these tests interpolate.
+    """
+    candidates = []
+    if sys.platform == "win32":
+        candidates += [p for p in _GIT_BASH_CANDIDATES if Path(p).is_file()]
+    found = shutil.which("bash")
+    if found:
+        candidates.append(found)
+    for exe in candidates:
+        try:
+            proc = subprocess.run([exe, "-c", "echo ok"], capture_output=True, text=True, timeout=30)
+        except (OSError, subprocess.SubprocessError):
+            continue
+        if proc.returncode == 0 and proc.stdout.strip() == "ok":
+            return exe
+    return None
+
 
 # Register providers for all tests
 from providers.gemini import GeminiModelProvider  # noqa: E402
@@ -178,6 +252,7 @@ def mock_provider_availability(request, monkeypatch):
 @pytest.fixture(autouse=True)
 def clear_model_restriction_env(monkeypatch):
     """Ensure per-test isolation from user-defined model restriction env vars."""
+    import utils.model_restrictions as model_restrictions
 
     restriction_vars = [
         "OPENAI_ALLOWED_MODELS",
@@ -190,13 +265,22 @@ def clear_model_restriction_env(monkeypatch):
     for var in restriction_vars:
         monkeypatch.delenv(var, raising=False)
 
+    # Clearing the env vars is not enough on its own: the service snapshots them
+    # once at construction and lives in a module-level singleton, so a test that
+    # already built it under a restrictive env keeps restricting every test after
+    # it. Reset on both sides — before, so this test starts clean; after, so a
+    # test whose own cleanup was skipped by a raise cannot leak into the next one.
+    monkeypatch.setattr(model_restrictions, "_restriction_service", None)
+    yield
+    model_restrictions._restriction_service = None
+
 
 @pytest.fixture(autouse=True)
 def disable_force_env_override(monkeypatch):
     """Default tests to runtime environment visibility unless they explicitly opt in."""
 
-    monkeypatch.setenv("PAL_MCP_FORCE_ENV_OVERRIDE", "false")
-    env_config.reload_env({"PAL_MCP_FORCE_ENV_OVERRIDE": "false"})
+    monkeypatch.setenv("OPENCLINK_MCP_FORCE_ENV_OVERRIDE", "false")
+    env_config.reload_env({"OPENCLINK_MCP_FORCE_ENV_OVERRIDE": "false"})
     monkeypatch.setenv("DEFAULT_MODEL", "gemini-2.5-flash")
     monkeypatch.setenv("MAX_CONVERSATION_TURNS", "50")
 
