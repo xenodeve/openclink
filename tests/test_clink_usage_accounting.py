@@ -21,13 +21,33 @@ from tools.clink import MAX_RESPONSE_CHARS, CLinkTool
 
 
 class DummyProcess:
-    def __init__(self, *, stdout: bytes = b"", stderr: bytes = b"", returncode: int = 0):
+    def __init__(self, *, stdout: bytes = b"", stderr: bytes = b"", returncode: int = 0, pid: int = 4242):
         self._stdout = stdout
         self._stderr = stderr
         self.returncode = returncode
+        self.pid = pid
 
     async def communicate(self, _input):
         return self._stdout, self._stderr
+
+
+class _NoopProcessGroup:
+    """Stand-in for the real process group in the timeout tests below.
+
+    Those doubles carry a fabricated pid, and the real `ProcessGroup` would take
+    it to the OS -- `killpg` on POSIX, a kill-on-close Job Object on Windows --
+    against whatever process happens to own that pid. Group behaviour itself is
+    covered by `tests/test_clink_process_tree.py`; here it only has to not be real.
+    """
+
+    def __init__(self, pid):
+        self.pid = pid
+
+    async def terminate(self, timeout: float = 5.0) -> bool:
+        return True
+
+    def close(self) -> None:
+        pass
 
 
 def _codex_agent(*, config_args: list[str] | None = None):
@@ -185,6 +205,7 @@ async def test_a_timeout_preserves_what_the_cli_had_already_emitted(monkeypatch)
 
     class HangingProcess:
         returncode = None
+        pid = 4242
 
         def __init__(self):
             self._drained = False
@@ -203,6 +224,7 @@ async def test_a_timeout_preserves_what_the_cli_had_already_emitted(monkeypatch)
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr("clink.agents.base.ProcessGroup", _NoopProcessGroup)
 
     with pytest.raises(CLIAgentError) as excinfo:
         await agent.run(role=role, prompt="do something", files=[], images=[])
@@ -225,6 +247,7 @@ async def test_a_timeout_keeps_only_the_tail_of_a_large_transcript(monkeypatch):
 
     class HangingProcess:
         returncode = None
+        pid = 4242
 
         def __init__(self):
             self._drained = False
@@ -243,6 +266,7 @@ async def test_a_timeout_keeps_only_the_tail_of_a_large_transcript(monkeypatch):
 
     monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr("clink.agents.base.ProcessGroup", _NoopProcessGroup)
 
     with pytest.raises(CLIAgentError) as excinfo:
         await agent.run(role=role, prompt="do something", files=[], images=[])

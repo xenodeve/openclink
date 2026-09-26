@@ -33,10 +33,11 @@ def test_which_name_pairs_denote_one_model(resolved, observed, same):
 
 
 class DummyProcess:
-    def __init__(self, *, stdout: bytes, stderr: bytes = b"", returncode: int = 0):
+    def __init__(self, *, stdout: bytes, stderr: bytes = b"", returncode: int = 0, pid: int = 4242):
         self._stdout = stdout
         self._stderr = stderr
         self.returncode = returncode
+        self.pid = pid
 
     async def communicate(self, _input):
         return self._stdout, self._stderr

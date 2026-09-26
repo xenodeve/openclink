@@ -19,6 +19,7 @@ import shutil
 import time
 from collections.abc import Sequence
 
+from clink.agents.process_tree import ProcessGroup
 from clink.models import ResolvedCLIRole
 
 from .base import AgentOutput, BaseCLIAgent, CLIAgentError
@@ -188,31 +189,46 @@ class AntigravityAgent(BaseCLIAgent):
             ) from exc
 
         proc = winpty.PtyProcess.spawn(command, cwd=cwd, env=env, dimensions=(50, 200))
-        chunks: list[str] = []
-        start = time.monotonic()
-        timed_out = False
-        while True:
-            if time.monotonic() - start > timeout:
-                timed_out = True
-                break
-            try:
-                data = proc.read()
-            except EOFError:
-                break
-            if data:
-                chunks.append(data)
-            elif not proc.isalive():
-                break
-            else:
-                time.sleep(0.05)
-
-        exit_status = getattr(proc, "exitstatus", None)
+        # Join the same ownership model as the pipe runner (base.py) -- a
+        # descendant `agy` spawns must not survive a timeout either (#144).
+        group = ProcessGroup(proc.pid)
         try:
-            proc.close(force=True)
-        except Exception:  # pragma: no cover - best effort cleanup
-            pass
+            chunks: list[str] = []
+            start = time.monotonic()
+            timed_out = False
+            while True:
+                if time.monotonic() - start > timeout:
+                    timed_out = True
+                    break
+                try:
+                    data = proc.read()
+                except EOFError:
+                    break
+                if data:
+                    chunks.append(data)
+                elif not proc.isalive():
+                    break
+                else:
+                    time.sleep(0.05)
 
-        if timed_out:
-            raise CLIAgentError(f"CLI '{self.client.name}' timed out after {timeout} seconds", returncode=None)
+            exit_status = getattr(proc, "exitstatus", None)
 
-        return (exit_status or 0), "".join(chunks)
+            if timed_out:
+                # Confirmed by the OS before we proceed -- do not return early.
+                group.terminate_blocking()
+                try:
+                    proc.close(force=True)
+                except Exception:  # pragma: no cover - best effort cleanup
+                    pass
+                raise CLIAgentError(f"CLI '{self.client.name}' timed out after {timeout} seconds", returncode=None)
+
+            try:
+                proc.close(force=True)
+            except Exception:  # pragma: no cover - best effort cleanup
+                pass
+
+            return (exit_status or 0), "".join(chunks)
+        finally:
+            # Cleanup runs on every exit path -- success, failure, cancellation
+            # and server shutdown (#20 story 32).
+            group.close()

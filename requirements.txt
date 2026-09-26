@@ -10,6 +10,7 @@ openai>=1.55.2  # Minimum version for httpx 0.28.0 compatibility
 pydantic>=2.0.0
 python-dotenv>=1.0.0
 pywinpty>=2.0.0; sys_platform=='win32'
+pywin32>=305; sys_platform=='win32'
 importlib-resources>=5.0.0; python_version<"3.9"
 
 # Development dependencies (install with pip install -r requirements-dev.txt)

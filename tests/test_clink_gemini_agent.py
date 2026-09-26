@@ -10,10 +10,11 @@ from clink.models import ResolvedCLIClient, ResolvedCLIRole
 
 
 class DummyProcess:
-    def __init__(self, *, stdout: bytes = b"", stderr: bytes = b"", returncode: int = 0):
+    def __init__(self, *, stdout: bytes = b"", stderr: bytes = b"", returncode: int = 0, pid: int = 4242):
         self._stdout = stdout
         self._stderr = stderr
         self.returncode = returncode
+        self.pid = pid
 
     async def communicate(self, _input):
         return self._stdout, self._stderr
