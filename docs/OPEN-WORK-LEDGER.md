@@ -10,6 +10,43 @@ protocol in `docs/agents/` and the entry map (`using-t4`).
 
 ## Active
 
+### 🔴 GitHub Actions is not running at all — the account is billing-locked (2026-08-31)
+
+Every check on every PR fails in ~2s with **"The job was not started because your account is
+locked due to a billing issue."** Confirmed on both open PRs (#154, #155), and confirmed still
+live by re-running #154's failed jobs today. So `Build Docker Image`, `Validate PR`, `lint` and
+`test (3.10/3.11/3.12)` have produced **no signal whatsoever** on either — a red check here means
+"never started", not "failed".
+
+**This needs a billing action on the GitHub account; no code change reaches it.** Until then
+server-side CI cannot gate anything, and the local `t4-gate` verify is the only gate — which is
+itself red on this box for pre-existing reasons (see #144's park note). Both open PRs are
+`MERGEABLE` and parked on these two.
+
+### 🟡 #149 is done and parked on those two gates — PR #155 (2026-08-31)
+
+`clink/run_journal.py` — one durable record per agent return, a whole run readable back by
+identifier. Built on #98's store rather than the append-only JSONL #89 asked for: #98 had already
+measured and rejected that shape (`utils/record_store.py:9-20`), and a phased run is concurrent by
+construction, so the interleaving objection is the normal case rather than an edge one. **This is
+the second caller #98 was built for** — `identities()` had no callers before this PR.
+
+Two calls the issue left to the implementer, both recorded in the PR body: **ordering comes from a
+sequence carried in the record** (never from `identities()`, which documents itself as unordered),
+and **the caller supplies that sequence** — deriving it from the records already present is a
+read-then-write race, and a fan-out is exactly where two agents return at once, so the counter
+would collide precisely when it mattered. #150's engine is the caller that will supply it.
+
+Evidence: RED observed first (`ModuleNotFoundError`), 12 tests green, and **mutation-tested** —
+sorting by identity instead of sequence kills 2 tests, dropping the separator from the prefix scan
+kills 1. Full suite `1276 passed, 21 failed`, the 21 being the pre-existing set #144 documents;
+none in `clink/` or `utils/record_store.py`. `/simplify` · `/code-review` · `/scrutinize` ·
+`/security-review` all ran.
+
+**Left deliberately unguarded and flagged:** `read()` does not handle `store.get()` returning
+`None` for an identity `identities()` just listed. That needs a record deleted mid-scan, nothing
+deletes records, and a guard would invent behaviour for a case that could not be produced.
+
 ### 🟡 Two PRDs were uncut, and now are — #20 and #89 (2026-08-19)
 
 Both said their deliverables would be split into issues; neither had a single child. Cut today into
