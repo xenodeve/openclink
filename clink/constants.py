@@ -58,6 +58,14 @@ INTERNAL_DEFAULTS: dict[str, CLIInternalDefaults] = {
         default_role_prompt="systemprompts/clink/default.txt",
         runner="claude",
     ),
+    # Claude Code pointed at a local Anthropic-compatible server (Qwen on EXL3);
+    # same output format as claude, a separate name so it can sit beside claude-9arm.
+    "claude-exl3": CLIInternalDefaults(
+        parser="claude_json",
+        additional_args=["--print", "--output-format", "json"],
+        default_role_prompt="systemprompts/clink/default.txt",
+        runner="claude",
+    ),
     "antigravity": CLIInternalDefaults(
         parser="antigravity_text",
         additional_args=["--print"],
